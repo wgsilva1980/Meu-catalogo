@@ -1,0 +1,42 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import SignOutButton from '@/components/SignOutButton'
+
+const items = [
+  { href: '/master', label: 'Empresas' },
+  { href: '/master/nova', label: 'Nova empresa' },
+]
+
+export default function MasterSidebar({ email }: { email: string }) {
+  const pathname = usePathname()
+
+  return (
+    <aside className="w-full md:w-52 shrink-0 border-b md:border-b-0 md:border-r border-line bg-paper flex md:flex-col gap-1 p-3 md:p-4">
+      <div className="font-display text-lg px-2 pb-3 hidden md:block">Painel master</div>
+
+      <nav className="flex md:flex-col gap-1 flex-1 overflow-x-auto">
+        {items.map((item) => {
+          const active = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${
+                active ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-black/5'
+              }`}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      <div className="hidden md:block mt-auto pt-3 border-t border-line text-xs text-muted">
+        <p className="truncate">{email}</p>
+        <SignOutButton className="mt-2 font-semibold text-accent" />
+      </div>
+    </aside>
+  )
+}

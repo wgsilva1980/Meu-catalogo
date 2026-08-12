@@ -1,0 +1,32 @@
+{
+  "name": "bn-suplementos",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
+    "@imgly/background-removal": "^1.7.0",
+    "@sparticuz/chromium": "^129.0.0",
+    "@supabase/ssr": "^0.5.1",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "^16.2.12",
+    "puppeteer-core": "^23.5.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.15",
+    "@types/react": "^18.3.4",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "puppeteer": "^23.5.0",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4"
+  }
+}
