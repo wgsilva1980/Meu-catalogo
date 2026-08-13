@@ -6,6 +6,63 @@ function formatPrice(value: number) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
+// Estimativas em mm usadas para decidir quantos itens cabem em uma página
+// (não há medição real do DOM neste ponto, então os valores são conservadores).
+const PAGE_CONTENT_BUDGET_MM = 225
+const CATEGORY_HEADER_MM = 22
+const PRODUCT_ROW_MM = 24
+
+type CategorySegment = {
+  category: CategoryWithProducts
+  products: Product[]
+  isContinuation: boolean
+}
+
+// Divide as categorias em páginas, permitindo várias por página e, quando uma
+// categoria tem produtos demais para caber, continuando-a na página seguinte
+// em vez de deixar itens transbordando (e sendo cortados) no fim da página.
+function packProductsIntoPages(categories: CategoryWithProducts[]) {
+  const pages: CategorySegment[][] = []
+  let current: CategorySegment[] = []
+  let currentHeight = 0
+
+  const flush = () => {
+    if (current.length > 0) {
+      pages.push(current)
+      current = []
+      currentHeight = 0
+    }
+  }
+
+  for (const category of categories) {
+    let remaining = category.products
+    let isFirstSegment = true
+
+    while (remaining.length > 0) {
+      let available = PAGE_CONTENT_BUDGET_MM - currentHeight
+      let capacity = Math.floor((available - CATEGORY_HEADER_MM) / PRODUCT_ROW_MM)
+
+      if (capacity <= 0) {
+        flush()
+        available = PAGE_CONTENT_BUDGET_MM
+        capacity = Math.floor((available - CATEGORY_HEADER_MM) / PRODUCT_ROW_MM)
+      }
+      capacity = Math.max(capacity, 1)
+
+      const take = Math.min(capacity, remaining.length)
+      current.push({ category, products: remaining.slice(0, take), isContinuation: !isFirstSegment })
+      currentHeight += CATEGORY_HEADER_MM + take * PRODUCT_ROW_MM
+      remaining = remaining.slice(take)
+      isFirstSegment = false
+
+      if (remaining.length > 0) flush()
+    }
+  }
+  flush()
+
+  return pages
+}
+
 export function buildCatalogHtml({
   company,
   categories,
@@ -19,6 +76,7 @@ export function buildCatalogHtml({
     <section class="page cover">
       <div class="cover-band"><span class="eyebrow">Catálogo de Produtos</span></div>
       <div class="cover-body">
+        ${company.logo_url ? `<img class="cover-logo" src="${company.logo_url}" alt="${company.name}" />` : ''}
         <h1 class="brand">${company.name}</h1>
         <div class="cover-title">
           <div class="title">Catálogo</div>
@@ -32,55 +90,54 @@ export function buildCatalogHtml({
       </div>
     </section>`
 
-  const tocPage = `
-    <section class="page toc">
-      <div class="toc-eyebrow">Índice</div>
-      <h2 class="toc-title">Sumário</h2>
-      <div class="toc-list">
-        ${categories
-          .map(
-            (c, i) => `
-          <div class="toc-row">
-            <span class="num">${String(i + 1).padStart(2, '0')}</span>
-            <span class="name">${c.name}</span>
-            <span class="leader"></span>
-          </div>`
-          )
-          .join('')}
-      </div>
-    </section>`
+  const pages = packProductsIntoPages(categories)
+  const categoryNumber = new Map(categories.map((c, i) => [c.id, i + 1]))
 
-  const categoryPages = categories
-    .map(
-      (c, i) => `
-    <section class="page catpage">
-      <div class="cat-header">
-        <div>
-          <div class="cat-eyebrow">${String(i + 1).padStart(2, '0')} · Categoria</div>
-          <h2 class="cat-name">${c.name}</h2>
+  const categoryPages = pages
+    .map((pageSegments) => {
+      const blocks = pageSegments
+        .map((segment) => {
+          const { category: c, products, isContinuation } = segment
+          const num = String(categoryNumber.get(c.id)).padStart(2, '0')
+          return `
+      <div class="cat-block">
+        <div class="cat-header">
+          <div>
+            <div class="cat-eyebrow">${num} · Categoria${isContinuation ? ' (continuação)' : ''}</div>
+            <h2 class="cat-name">${c.name}</h2>
+          </div>
+          <div class="cat-count">${c.products.length} ${c.products.length === 1 ? 'item' : 'itens'}</div>
         </div>
-        <div class="cat-count">${c.products.length} ${c.products.length === 1 ? 'item' : 'itens'}</div>
+        <div class="cat-products">
+          ${products
+            .map(
+              (p) => `
+            <div class="prod-row">
+              <div class="prod-img">${p.image_url ? `<img src="${p.image_url}" />` : ''}</div>
+              <div class="prod-main">
+                <div class="prod-name">${p.name}</div>
+                <div class="prod-brand">${p.brand}</div>
+                <div class="prod-desc">${p.short_description}</div>
+                ${p.promo_note ? `<span class="prod-promo">${p.promo_note}</span>` : ''}
+              </div>
+              <div class="prod-price">${formatPrice(p.price)}</div>
+            </div>`
+            )
+            .join('')}
+        </div>
+      </div>`
+        })
+        .join('')
+
+      return `
+    <section class="page catpage">
+      <div class="catpage-body">${blocks}</div>
+      <div class="catpage-footer">
+        ${company.logo_url ? `<img class="footer-logo" src="${company.logo_url}" alt="" />` : ''}
+        <span>${company.name}${company.phone ? ' · ' + company.phone : ''}</span>
       </div>
-      <div class="cat-products">
-        ${c.products
-          .map(
-            (p) => `
-          <div class="prod-row">
-            <div class="prod-img">${p.image_url ? `<img src="${p.image_url}" />` : ''}</div>
-            <div class="prod-main">
-              <div class="prod-name">${p.name}</div>
-              <div class="prod-brand">${p.brand}</div>
-              <div class="prod-desc">${p.short_description}</div>
-              ${p.promo_note ? `<span class="prod-promo">${p.promo_note}</span>` : ''}
-            </div>
-            <div class="prod-price">${formatPrice(p.price)}</div>
-          </div>`
-          )
-          .join('')}
-      </div>
-      <div class="catpage-footer"><span>${company.name}${company.phone ? ' · ' + company.phone : ''}</span></div>
     </section>`
-    )
+    })
     .join('')
 
   return `<!doctype html>
@@ -89,7 +146,7 @@ export function buildCatalogHtml({
 <meta charset="utf-8" />
 <style>${catalogCss}</style>
 </head>
-<body>${coverPage}${tocPage}${categoryPages}</body>
+<body>${coverPage}${categoryPages}</body>
 </html>`
 }
 
@@ -101,6 +158,7 @@ const catalogCss = `
   .cover-band { height: 30%; background: linear-gradient(155deg, #12182A 0%, #2A2233 60%, #FF5A36 130%); display: flex; align-items: flex-end; padding: 20mm 18mm; }
   .eyebrow { color: rgba(255,255,255,0.75); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
   .cover-body { padding: 18mm; flex: 1; display: flex; flex-direction: column; }
+  .cover-logo { max-height: 26mm; max-width: 70mm; object-fit: contain; margin-bottom: 8mm; }
   .brand { font-family: Georgia, serif; font-size: 40px; margin: 0; }
   .sub { font-family: Georgia, serif; font-style: italic; color: #5B6472; font-size: 16px; margin: 6px 0 0; }
   .cover-title { margin-top: auto; }
@@ -109,27 +167,21 @@ const catalogCss = `
   .cover-contact { border-top: 1px solid #E4E1D9; padding: 12mm 18mm; display: flex; justify-content: space-between; font-size: 10px; color: #5B6472; }
   .cover-contact strong { display: block; color: #12182A; font-size: 10px; margin-bottom: 2px; }
 
-  .toc { padding: 24mm 18mm; }
-  .toc-eyebrow { font-size: 11px; color: #FF5A36; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
-  .toc-title { font-family: Georgia, serif; font-size: 26px; margin: 4px 0 20px; border-bottom: 2px solid #12182A; padding-bottom: 10px; }
-  .toc-row { display: flex; align-items: flex-end; gap: 8px; padding: 10px 0; border-bottom: 1px solid #E4E1D9; }
-  .toc-row .num { font-size: 12px; color: #5B6472; width: 20px; }
-  .toc-row .name { font-size: 14px; font-weight: 700; white-space: nowrap; }
-  .toc-row .leader { flex: 1; border-bottom: 1px dotted #E4E1D9; margin-bottom: 4px; }
-
-  .catpage { padding: 20mm 18mm; }
-  .cat-header { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #12182A; padding-bottom: 10px; }
+  .catpage { padding: 16mm 16mm; }
+  .catpage-body { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+  .cat-header { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #12182A; padding-bottom: 8px; }
   .cat-eyebrow { font-size: 11px; color: #FF5A36; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
-  .cat-name { font-family: Georgia, serif; font-size: 24px; margin: 2px 0 0; }
+  .cat-name { font-family: Georgia, serif; font-size: 22px; margin: 2px 0 0; }
   .cat-count { font-size: 11px; color: #5B6472; }
-  .prod-row { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid #E4E1D9; }
-  .prod-img { width: 22mm; height: 22mm; border-radius: 4px; background: #F4F5F1; border: 1px solid #E4E1D9; flex-shrink: 0; overflow: hidden; }
+  .prod-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #E4E1D9; }
+  .prod-img { width: 18mm; height: 18mm; border-radius: 4px; background: #F4F5F1; border: 1px solid #E4E1D9; flex-shrink: 0; overflow: hidden; }
   .prod-img img { width: 100%; height: 100%; object-fit: cover; }
   .prod-main { flex: 1; }
-  .prod-name { font-size: 14px; font-weight: 700; }
-  .prod-brand { font-size: 10px; color: #5B6472; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 1px; }
-  .prod-desc { font-size: 11px; color: #5B6472; margin-top: 4px; line-height: 1.4; }
-  .prod-promo { display: inline-block; margin-top: 5px; font-size: 10px; font-weight: 700; color: #C97A17; background: rgba(201,122,23,0.12); padding: 2px 7px; border-radius: 5px; }
-  .prod-price { font-size: 15px; font-weight: 700; white-space: nowrap; }
-  .catpage-footer { margin-top: auto; border-top: 1px solid #E4E1D9; padding-top: 8px; font-size: 9px; color: #5B6472; }
+  .prod-name { font-size: 13px; font-weight: 700; }
+  .prod-brand { font-size: 9px; color: #5B6472; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 1px; }
+  .prod-desc { font-size: 10.5px; color: #5B6472; margin-top: 3px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .prod-promo { display: inline-block; margin-top: 4px; font-size: 9px; font-weight: 700; color: #C97A17; background: rgba(201,122,23,0.12); padding: 2px 7px; border-radius: 5px; }
+  .prod-price { font-size: 14px; font-weight: 700; white-space: nowrap; }
+  .catpage-footer { margin-top: auto; border-top: 1px solid #E4E1D9; padding-top: 8px; font-size: 9px; color: #5B6472; display: flex; align-items: center; gap: 6px; }
+  .footer-logo { height: 10mm; width: auto; object-fit: contain; }
 `
