@@ -11,6 +11,10 @@ const nextConfig = {
     },
   },
   serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  outputFileTracingIncludes: {
+    '/api/pedidos/*/pdf/route': ['./node_modules/@sparticuz/chromium/bin/**'],
+    '/api/catalogo/gerar/route': ['./node_modules/@sparticuz/chromium/bin/**'],
+  },
   turbopack: {
     root: __dirname,
   },
