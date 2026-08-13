@@ -136,3 +136,112 @@ export async function toggleCompanyActive(formData: FormData) {
 
   revalidatePath('/master')
 }
+
+export async function createCompanyUser(formData: FormData) {
+  const admin = await requireSuperAdmin()
+  if (!admin) return
+
+  const companyId = formData.get('company_id') as string
+  const email = (formData.get('email') as string)?.trim()
+  const password = formData.get('password') as string
+  const role = (formData.get('role') as string) === 'owner' ? 'owner' : 'staff'
+
+  if (!companyId || !email || !password) return
+
+  const adminClient = createAdminClient()
+  const { data: createdUser, error: userError } = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+  if (userError || !createdUser.user) {
+    redirect(`/master/${companyId}?error=${encodeURIComponent(userError?.message || 'Não foi possível criar o usuário.')}`)
+  }
+
+  const supabase = await createClient()
+  await supabase.from('profiles').insert({
+    id: createdUser.user.id,
+    company_id: companyId,
+    role,
+    is_super_admin: false,
+  })
+
+  revalidatePath(`/master/${companyId}`)
+}
+
+async function requireProfileInCompany(userId: string, companyId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', userId)
+    .eq('company_id', companyId)
+    .single()
+  return !!data
+}
+
+export async function updateUserRole(formData: FormData) {
+  const admin = await requireSuperAdmin()
+  if (!admin) return
+
+  const userId = formData.get('user_id') as string
+  const companyId = formData.get('company_id') as string
+  const role = (formData.get('role') as string) === 'owner' ? 'owner' : 'staff'
+
+  if (!(await requireProfileInCompany(userId, companyId))) return
+
+  const supabase = await createClient()
+  await supabase.from('profiles').update({ role }).eq('id', userId).eq('company_id', companyId)
+
+  revalidatePath(`/master/${companyId}`)
+}
+
+export async function setUserActive(formData: FormData) {
+  const admin = await requireSuperAdmin()
+  if (!admin) return
+
+  const userId = formData.get('user_id') as string
+  const companyId = formData.get('company_id') as string
+  const active = formData.get('active') === 'true'
+
+  if (userId === admin.id) return
+  if (!(await requireProfileInCompany(userId, companyId))) return
+
+  const adminClient = createAdminClient()
+  await adminClient.auth.admin.updateUserById(userId, { ban_duration: active ? 'none' : '876000h' })
+
+  revalidatePath(`/master/${companyId}`)
+}
+
+export async function resetUserPassword(formData: FormData) {
+  const admin = await requireSuperAdmin()
+  if (!admin) return
+
+  const userId = formData.get('user_id') as string
+  const companyId = formData.get('company_id') as string
+  const password = formData.get('password') as string
+
+  if (!password || password.length < 6) return
+  if (!(await requireProfileInCompany(userId, companyId))) return
+
+  const adminClient = createAdminClient()
+  await adminClient.auth.admin.updateUserById(userId, { password })
+
+  revalidatePath(`/master/${companyId}`)
+}
+
+export async function removeUser(formData: FormData) {
+  const admin = await requireSuperAdmin()
+  if (!admin) return
+
+  const userId = formData.get('user_id') as string
+  const companyId = formData.get('company_id') as string
+
+  if (userId === admin.id) return
+  if (!(await requireProfileInCompany(userId, companyId))) return
+
+  const adminClient = createAdminClient()
+  await adminClient.auth.admin.deleteUser(userId)
+
+  revalidatePath(`/master/${companyId}`)
+}
