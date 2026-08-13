@@ -56,7 +56,7 @@ export default async function PainelPage() {
         <StatCard num={catalogosMes ?? 0} label="Catálogos este mês" />
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Link href="/admin/produtos/novo" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">
           + Novo produto
         </Link>
@@ -69,9 +69,9 @@ export default async function PainelPage() {
         <p className="text-xs uppercase tracking-wide text-muted font-semibold mb-2">Atualizados recentemente</p>
         <div className="flex flex-col divide-y divide-line border-t border-line">
           {(recentes ?? []).map((p, i) => (
-            <div key={i} className="py-2 text-sm flex justify-between">
-              <span>{p.name}</span>
-              <span className="text-muted text-xs">{new Date(p.updated_at).toLocaleDateString('pt-BR')}</span>
+            <div key={i} className="py-2 text-sm flex items-center justify-between gap-3">
+              <span className="truncate">{p.name}</span>
+              <span className="text-muted text-xs shrink-0">{new Date(p.updated_at).toLocaleDateString('pt-BR')}</span>
             </div>
           ))}
           {(recentes ?? []).length === 0 && <p className="py-3 text-sm text-muted">Nenhum produto cadastrado ainda.</p>}

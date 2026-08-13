@@ -24,7 +24,7 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
           <input name="name" defaultValue={company.name} required className="input" />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Telefone">
             <input name="phone" defaultValue={company.phone ?? ''} className="input" />
           </Field>
@@ -33,7 +33,7 @@ export default async function EditarEmpresaPage({ params }: { params: Promise<{ 
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Instagram">
             <input name="instagram" defaultValue={company.instagram ?? ''} className="input" />
           </Field>

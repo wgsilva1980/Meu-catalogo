@@ -53,7 +53,7 @@ export default function OrderForm({
     <form action={saveOrder} className="flex flex-col gap-3 max-w-2xl">
       {order && <input type="hidden" name="id" value={order.id} />}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Cliente">
           <select name="customer_id" defaultValue={order?.customer_id ?? ''} required className="input">
             <option value="" disabled>
@@ -84,53 +84,53 @@ export default function OrderForm({
           </button>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {lines.map((line) => (
-            <div key={line.key} className="flex items-end gap-2">
-              <div className="flex-1">
-                <Field label="Produto">
-                  <select
-                    name="product_id"
-                    value={line.product_id}
-                    onChange={(e) => updateLine(line.key, { product_id: e.target.value })}
-                    required
-                    className="input"
-                  >
-                    <option value="" disabled>
-                      Selecione um produto
+            <div key={line.key} className="flex flex-col gap-2 border border-line rounded-lg p-3">
+              <Field label="Produto">
+                <select
+                  name="product_id"
+                  value={line.product_id}
+                  onChange={(e) => updateLine(line.key, { product_id: e.target.value })}
+                  required
+                  className="input"
+                >
+                  <option value="" disabled>
+                    Selecione um produto
+                  </option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {formatPrice(p.price)}
                     </option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} — {formatPrice(p.price)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                  ))}
+                </select>
+              </Field>
+              <div className="flex items-end gap-2">
+                <div className="w-20 shrink-0">
+                  <Field label="Qtd">
+                    <input
+                      name="quantity"
+                      type="number"
+                      min={1}
+                      value={line.quantity}
+                      onChange={(e) => updateLine(line.key, { quantity: Number(e.target.value) })}
+                      required
+                      className="input"
+                    />
+                  </Field>
+                </div>
+                <div className="flex-1 text-right text-sm font-semibold pb-2 tabular-nums truncate">
+                  {formatPrice(priceOf(line.product_id) * (line.quantity || 0))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeLine(line.key)}
+                  disabled={lines.length === 1}
+                  className="text-xs font-semibold text-red-600 pb-2.5 shrink-0 disabled:opacity-30"
+                >
+                  Remover
+                </button>
               </div>
-              <div className="w-20">
-                <Field label="Qtd">
-                  <input
-                    name="quantity"
-                    type="number"
-                    min={1}
-                    value={line.quantity}
-                    onChange={(e) => updateLine(line.key, { quantity: Number(e.target.value) })}
-                    required
-                    className="input"
-                  />
-                </Field>
-              </div>
-              <div className="w-24 text-right text-sm font-semibold pb-2 tabular-nums">
-                {formatPrice(priceOf(line.product_id) * (line.quantity || 0))}
-              </div>
-              <button
-                type="button"
-                onClick={() => removeLine(line.key)}
-                disabled={lines.length === 1}
-                className="text-xs font-semibold text-red-600 pb-2.5 disabled:opacity-30"
-              >
-                Remover
-              </button>
             </div>
           ))}
         </div>
@@ -142,7 +142,7 @@ export default function OrderForm({
         <textarea name="notes" defaultValue={order?.notes ?? ''} className="input h-20" />
       </Field>
 
-      <div className="flex gap-2 justify-end mt-2">
+      <div className="flex flex-wrap gap-2 justify-end mt-2">
         <a href="/admin/pedidos" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">
           Cancelar
         </a>

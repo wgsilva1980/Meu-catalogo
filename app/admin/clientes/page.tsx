@@ -21,7 +21,7 @@ export default async function ClientesPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl">Clientes</h1>
           <p className="text-sm text-muted">Cadastro de clientes da loja</p>
@@ -43,14 +43,14 @@ export default async function ClientesPage({
 
       <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
         {(customers ?? []).map((c) => (
-          <div key={c.id} className="flex items-center gap-3 p-3 text-sm">
-            <div className="flex-1 min-w-0">
+          <div key={c.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
+            <div className="flex-1 min-w-0 basis-full sm:basis-0">
               <p className="font-semibold truncate">{c.name}</p>
               <p className="text-xs text-muted truncate">
                 {[c.phone, c.email].filter(Boolean).join(' · ') || 'Sem contato cadastrado'}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
               <Link
                 href={`/admin/clientes/${c.id}`}
                 title="Editar cliente"

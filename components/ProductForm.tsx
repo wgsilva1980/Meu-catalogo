@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { DragEvent, ReactNode } from 'react'
 import { saveProduct } from '@/app/admin/produtos/actions'
 import type { Category, Product } from '@/lib/types'
@@ -145,6 +145,8 @@ async function squareOnWhite(blob: Blob, targetSize = 1400, marginRatio = 0.04):
 }
 
 export default function ProductForm({ categories, product }: { categories: Category[]; product?: Product }) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [imageUrl, setImageUrl] = useState(product?.image_url ?? '')
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -237,9 +239,10 @@ export default function ProductForm({ categories, product }: { categories: Categ
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
+          onClick={() => !busy && fileInputRef.current?.click()}
           className={`aspect-square border border-dashed rounded-lg overflow-hidden bg-paper flex items-center justify-center text-muted text-xs text-center p-3 transition-colors ${
-            dragOver ? 'border-accent bg-accent/5' : 'border-line'
-          }`}
+            busy ? 'cursor-wait' : 'cursor-pointer'
+          } ${dragOver ? 'border-accent bg-accent/5' : 'border-line'}`}
         >
           {busy ? (
             <span>{status}</span>
@@ -247,16 +250,51 @@ export default function ProductForm({ categories, product }: { categories: Categ
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="" className="w-full h-full object-contain" />
           ) : (
-            <span>Arraste uma foto aqui ou envie um arquivo (JPG ou PNG).<br />O fundo é removido e a imagem é ajustada automaticamente.</span>
+            <span>Toque para escolher uma foto, ou arraste um arquivo aqui (JPG ou PNG).<br />O fundo é removido e a imagem é ajustada automaticamente.</span>
           )}
         </div>
+
+        {/* input "geral": no desktop abre o seletor de arquivos; no celular o próprio
+            sistema já costuma oferecer "Câmera" como opção nesse seletor */}
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
-          className="text-xs"
+          className="hidden"
           onChange={handleFileInput}
           disabled={busy}
         />
+        {/* input dedicado com `capture`: força a abertura direta da câmera no
+            celular, sem passar pela galeria — garante o atalho mesmo em
+            navegadores/aparelhos onde o input geral não oferece essa opção */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleFileInput}
+          disabled={busy}
+        />
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={busy}
+            className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+          >
+            📷 Tirar foto
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+          >
+            Escolher arquivo
+          </button>
+        </div>
         {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
 
@@ -265,7 +303,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
           <input name="name" value={name} onChange={(e) => setName(e.target.value)} required className="input" />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Marca">
             <input name="brand" value={brand} onChange={(e) => setBrand(e.target.value)} required className="input" />
           </Field>
@@ -288,7 +326,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
           />
         </Field>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="Preço (R$)">
             <input name="price" type="number" step="0.01" min="0" defaultValue={product?.price} required className="input" />
           </Field>
@@ -303,7 +341,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
           </Field>
         </div>
 
-        <div className="flex gap-2 justify-end mt-2">
+        <div className="flex flex-wrap gap-2 justify-end mt-2">
           <a href="/admin/produtos" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">Cancelar</a>
           <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">Salvar produto</button>
         </div>

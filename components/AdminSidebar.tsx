@@ -18,8 +18,11 @@ export default function AdminSidebar({ email, companyName }: { email: string; co
   const pathname = usePathname()
 
   return (
-    <aside className="w-full md:w-52 shrink-0 border-b md:border-b-0 md:border-r border-line bg-paper flex md:flex-col gap-1 p-3 md:p-4">
-      <div className="font-display text-lg px-2 pb-3 hidden md:block truncate">{companyName}</div>
+    <aside className="w-full md:w-52 shrink-0 border-b md:border-b-0 md:border-r border-line bg-paper flex flex-col gap-2 p-3 md:p-4">
+      <div className="flex items-center justify-between gap-2 md:block">
+        <span className="font-display text-base md:text-lg px-2 md:pb-3 truncate">{companyName}</span>
+        <SignOutButton className="md:hidden shrink-0 text-xs font-semibold text-accent px-2" />
+      </div>
 
       <nav className="flex md:flex-col gap-1 flex-1 overflow-x-auto">
         {items.map((item) => {

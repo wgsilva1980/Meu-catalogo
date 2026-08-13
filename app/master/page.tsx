@@ -9,7 +9,7 @@ export default async function MasterPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl">Empresas</h1>
           <p className="text-sm text-muted">Todas as empresas cadastradas na plataforma</p>
@@ -24,8 +24,8 @@ export default async function MasterPage() {
 
       <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
         {(companies ?? []).map((c: any) => (
-          <div key={c.id} className="flex items-center gap-3 p-3 text-sm">
-            <div className="flex-1 min-w-0">
+          <div key={c.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
+            <div className="flex-1 min-w-0 basis-full sm:basis-0">
               <p className="font-semibold truncate">{c.name}</p>
               <p className="text-xs text-muted truncate">{c.products?.[0]?.count ?? 0} produtos</p>
             </div>
@@ -36,7 +36,7 @@ export default async function MasterPage() {
             >
               {c.active ? 'Ativa' : 'Inativa'}
             </span>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0 flex-wrap">
               <form action={impersonateCompany}>
                 <input type="hidden" name="company_id" value={c.id} />
                 <button

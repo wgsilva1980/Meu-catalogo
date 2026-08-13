@@ -33,7 +33,7 @@ export default async function ProdutosPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl">Produtos</h1>
           <p className="text-sm text-muted">Busca, filtros e gestão do catálogo</p>
@@ -49,14 +49,14 @@ export default async function ProdutosPage({
 
       <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
         {(products ?? []).map((p: any) => (
-          <div key={p.id} className="flex items-center gap-3 p-3 text-sm">
+          <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <div className="w-10 h-10 rounded-md bg-paper border border-line shrink-0 overflow-hidden">
               {p.image_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={p.image_url} className="w-full h-full object-cover" alt="" />
               )}
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 basis-full sm:basis-0">
               <p className="font-semibold truncate">{p.name}</p>
               <p className="text-xs text-muted truncate">
                 {p.brand} · {p.categories?.name}
@@ -66,7 +66,7 @@ export default async function ProdutosPage({
             <div className="font-bold tabular-nums text-sm whitespace-nowrap">
               R$ {Number(p.price).toFixed(2).replace('.', ',')}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
               <Link
                 href={`/admin/produtos/${p.id}`}
                 title="Editar produto"

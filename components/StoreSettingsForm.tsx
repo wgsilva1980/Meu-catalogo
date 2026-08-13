@@ -37,7 +37,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       {/* Logo */}
       <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
         <h2 className="text-sm font-bold">Logo da loja</h2>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="w-24 h-24 border border-dashed border-line rounded-lg overflow-hidden bg-paper flex items-center justify-center text-muted text-xs text-center p-2 shrink-0">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -68,7 +68,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           <input name="name" defaultValue={settings.name} required className="input" />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Telefone">
             <input name="phone" defaultValue={settings.phone ?? ''} placeholder="(00) 00000-0000" className="input" />
           </Field>
@@ -77,7 +77,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Instagram">
             <input name="instagram" defaultValue={settings.instagram ?? ''} placeholder="@loja" className="input" />
           </Field>
@@ -91,7 +91,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
         </Field>
       </section>
 
-      <div className="flex items-center gap-3 justify-end">
+      <div className="flex flex-wrap items-center gap-3 justify-end">
         {saved && <span className="text-xs text-green-600 font-semibold">Salvo com sucesso!</span>}
         <button type="submit" className="bg-accent text-white rounded-lg px-5 py-2 text-sm font-bold">
           Salvar configurações

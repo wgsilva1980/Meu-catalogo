@@ -28,7 +28,7 @@ export default function OrderPdfButton({ orderId }: { orderId: string }) {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       {result && (
         <a href={result} target="_blank" rel="noreferrer" className="text-sm font-semibold text-accent underline">
           Baixar PDF

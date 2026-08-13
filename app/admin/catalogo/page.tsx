@@ -32,9 +32,9 @@ export default async function GerarCatalogoPage() {
         <p className="text-xs uppercase tracking-wide text-muted font-semibold mb-2">Gerados recentemente</p>
         <div className="flex flex-col divide-y divide-line border-t border-line max-w-md">
           {(recentes ?? []).map((r: any) => (
-            <div key={r.id} className="py-2 text-sm flex justify-between">
-              <span>{r.scope?.type === 'all' ? 'Catálogo completo' : 'Seleção personalizada'}</span>
-              <span className="text-muted text-xs">{new Date(r.created_at).toLocaleDateString('pt-BR')}</span>
+            <div key={r.id} className="py-2 text-sm flex items-center justify-between gap-3">
+              <span className="truncate">{r.scope?.type === 'all' ? 'Catálogo completo' : 'Seleção personalizada'}</span>
+              <span className="text-muted text-xs shrink-0">{new Date(r.created_at).toLocaleDateString('pt-BR')}</span>
             </div>
           ))}
           {(recentes ?? []).length === 0 && <p className="py-3 text-sm text-muted">Nenhum catálogo gerado ainda.</p>}

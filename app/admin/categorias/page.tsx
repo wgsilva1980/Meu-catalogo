@@ -22,9 +22,9 @@ export default async function CategoriasPage() {
 
       <div className="border border-line rounded-lg overflow-hidden bg-white divide-y divide-line">
         {(categories ?? []).map((c: any) => (
-          <div key={c.id} className="flex items-center gap-3 p-3 text-sm">
-            <span className="font-semibold flex-1">{c.name}</span>
-            <span className="text-xs text-muted w-28">{c.products?.[0]?.count ?? 0} produtos</span>
+          <div key={c.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
+            <span className="font-semibold flex-1 min-w-0 truncate">{c.name}</span>
+            <span className="text-xs text-muted whitespace-nowrap">{c.products?.[0]?.count ?? 0} produtos</span>
             {c.is_fixed ? (
               <span className="text-xs text-muted border border-line rounded px-2 py-0.5">fixa</span>
             ) : (

@@ -60,7 +60,7 @@ export default function CustomerForm({ customer }: { customer?: Customer }) {
         <input name="name" defaultValue={customer?.name} required className="input" />
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Telefone/WhatsApp">
           <input name="phone" defaultValue={customer?.phone ?? ''} placeholder="(00) 00000-0000" className="input" />
         </Field>
@@ -93,7 +93,7 @@ export default function CustomerForm({ customer }: { customer?: Customer }) {
           {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
         </div>
 
-        <div className="grid grid-cols-[1fr_8rem] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_8rem] gap-3">
           <Field label="Rua">
             <input name="street" value={street} onChange={(e) => setStreet(e.target.value)} className="input" />
           </Field>
@@ -102,7 +102,7 @@ export default function CustomerForm({ customer }: { customer?: Customer }) {
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Complemento">
             <input name="complement" value={complement} onChange={(e) => setComplement(e.target.value)} className="input" />
           </Field>
@@ -125,7 +125,7 @@ export default function CustomerForm({ customer }: { customer?: Customer }) {
         <textarea name="notes" defaultValue={customer?.notes ?? ''} className="input h-20" />
       </Field>
 
-      <div className="flex gap-2 justify-end mt-2">
+      <div className="flex flex-wrap gap-2 justify-end mt-2">
         <a href="/admin/clientes" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">Cancelar</a>
         <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">Salvar cliente</button>
       </div>
