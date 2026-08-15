@@ -196,7 +196,9 @@ export default function ProductForm({ categories, product }: { categories: Categ
         if (aiData.category_id) setCategoryId(aiData.category_id)
         if (aiData.short_description) setShortDescription(aiData.short_description)
       } else {
-        setError('Imagem processada, mas não foi possível identificar o produto automaticamente. Preencha os campos abaixo.')
+        console.error('Falha ao identificar produto', aiRes.status, aiData)
+        const reason = aiData.error ? ` (${aiData.error})` : ''
+        setError(`Imagem processada, mas não foi possível identificar o produto automaticamente${reason}. Preencha os campos abaixo.`)
       }
     } catch (err) {
       console.error(err)

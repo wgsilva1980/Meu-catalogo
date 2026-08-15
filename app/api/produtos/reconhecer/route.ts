@@ -81,18 +81,21 @@ export async function POST(request: NextRequest) {
   }
 
   if (response.stop_reason === 'refusal') {
+    console.error('Reconhecimento de produto recusado pelo modelo', { fileSize: file.size, mediaType })
     return NextResponse.json({ error: 'Não foi possível identificar o produto nesta imagem' }, { status: 422 })
   }
 
   const textBlock = response.content.find((block) => block.type === 'text')
   if (!textBlock || textBlock.type !== 'text') {
+    console.error('Resposta do reconhecimento sem bloco de texto', { stop_reason: response.stop_reason, content: response.content })
     return NextResponse.json({ error: 'Resposta vazia do reconhecimento' }, { status: 502 })
   }
 
   let parsed: RecognizedProduct
   try {
     parsed = JSON.parse(textBlock.text)
-  } catch {
+  } catch (err) {
+    console.error('Resposta do reconhecimento não é um JSON válido', { text: textBlock.text, err })
     return NextResponse.json({ error: 'Resposta inválida do reconhecimento' }, { status: 502 })
   }
 
