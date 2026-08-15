@@ -77,13 +77,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (err) {
     console.error('Erro ao chamar a API da Anthropic:', err)
-    const detail =
-      err instanceof APIError
-        ? `${err.status ?? ''} ${err.message}`.trim()
-        : err instanceof Error
-          ? err.message
-          : String(err)
-    return NextResponse.json({ error: `Falha ao identificar o produto: ${detail}` }, { status: 502 })
+    const status = err instanceof APIError ? err.status : undefined
+    const detail = status ? `código ${status}` : 'erro de conexão'
+    return NextResponse.json({ error: `Falha ao identificar o produto (${detail})` }, { status: 502 })
   }
 
   if (response.stop_reason === 'refusal') {
