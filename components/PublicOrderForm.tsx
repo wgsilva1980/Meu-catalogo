@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { submitPublicOrder } from '@/app/pedido/[slug]/actions'
-import type { Category, Product } from '@/lib/types'
+import type { Category, Customer, Product } from '@/lib/types'
 
 function formatPrice(value: number) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
@@ -13,10 +13,14 @@ export default function PublicOrderForm({
   slug,
   categories,
   products,
+  foundCustomer,
+  typedDocument,
 }: {
   slug: string
   categories: Category[]
   products: Product[]
+  foundCustomer: Customer | null
+  typedDocument: string | null
 }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({})
 
@@ -76,23 +80,40 @@ export default function PublicOrderForm({
         <span>Total: {formatPrice(total)}</span>
       </div>
 
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
-        <h2 className="text-sm font-bold">Seus dados</h2>
-        <Field label="Nome">
-          <input name="name" required className="input" />
-        </Field>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Telefone/WhatsApp">
-            <input name="phone" required placeholder="(00) 00000-0000" className="input" />
+      {foundCustomer ? (
+        <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+          <input type="hidden" name="customer_id" value={foundCustomer.id} />
+          <h2 className="text-sm font-bold">Seus dados</h2>
+          <p className="text-sm">
+            Cadastro encontrado: <span className="font-semibold">{foundCustomer.name}</span>
+          </p>
+          <a href={`/pedido/${slug}`} className="text-xs text-accent underline w-fit">
+            Não é você? Buscar outro CPF
+          </a>
+          <Field label="Observações">
+            <textarea name="notes" className="input h-20" />
           </Field>
-          <Field label="E-mail">
-            <input name="email" type="email" className="input" />
+        </section>
+      ) : (
+        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+          <h2 className="text-sm font-bold">Seus dados</h2>
+          {typedDocument && <input type="hidden" name="document" value={typedDocument} />}
+          <Field label="Nome">
+            <input name="name" required className="input" />
           </Field>
-        </div>
-        <Field label="Observações">
-          <textarea name="notes" className="input h-20" />
-        </Field>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="Telefone/WhatsApp">
+              <input name="phone" required placeholder="(00) 00000-0000" className="input" />
+            </Field>
+            <Field label="E-mail">
+              <input name="email" type="email" className="input" />
+            </Field>
+          </div>
+          <Field label="Observações">
+            <textarea name="notes" className="input h-20" />
+          </Field>
+        </section>
+      )}
 
       <button
         type="submit"

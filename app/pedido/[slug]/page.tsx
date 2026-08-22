@@ -1,16 +1,17 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import PublicOrderForm from '@/components/PublicOrderForm'
+import DocumentLookupForm from '@/components/DocumentLookupForm'
 
 export default async function PedidoPublicoPage({
   params,
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ sucesso?: string; numero?: string }>
+  searchParams: Promise<{ sucesso?: string; numero?: string; documento?: string }>
 }) {
   const { slug } = await params
-  const { sucesso, numero } = await searchParams
+  const { sucesso, numero, documento } = await searchParams
 
   const supabase = createAdminClient()
   const { data: company } = await supabase
@@ -35,6 +36,22 @@ export default async function PedidoPublicoPage({
     .eq('available', true)
     .order('name')
 
+  // Etapa de identificação: só avança para o carrinho depois que o cliente
+  // informou o CPF (para tentar recuperar um cadastro existente) ou optou
+  // por seguir sem informar ("documento=skip").
+  const identified = documento !== undefined
+  const digits = documento && documento !== 'skip' ? documento.replace(/\D/g, '') : ''
+
+  let foundCustomer = null
+  if (digits) {
+    const { data: candidates } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('company_id', company.id)
+      .not('document', 'is', null)
+    foundCustomer = (candidates ?? []).find((c) => (c.document ?? '').replace(/\D/g, '') === digits) ?? null
+  }
+
   return (
     <main className="min-h-screen flex items-start justify-center px-4 py-10">
       <div className="w-full max-w-2xl bg-white border border-line rounded-2xl p-6 flex flex-col gap-4">
@@ -51,8 +68,16 @@ export default async function PedidoPublicoPage({
           <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
             Pedido {numero ? `#${numero} ` : ''}recebido com sucesso! Em breve entraremos em contato.
           </p>
+        ) : !identified ? (
+          <DocumentLookupForm slug={slug} />
         ) : (
-          <PublicOrderForm slug={slug} categories={categories ?? []} products={products ?? []} />
+          <PublicOrderForm
+            slug={slug}
+            categories={categories ?? []}
+            products={products ?? []}
+            foundCustomer={foundCustomer}
+            typedDocument={digits || null}
+          />
         )}
       </div>
     </main>

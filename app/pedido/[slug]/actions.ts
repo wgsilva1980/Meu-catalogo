@@ -5,9 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function submitPublicOrder(formData: FormData) {
   const slug = formData.get('slug') as string
-  const name = (formData.get('name') as string)?.trim()
-  const phone = (formData.get('phone') as string)?.trim()
-  if (!slug || !name || !phone) return
+  if (!slug) return
 
   const supabase = createAdminClient()
   const { data: company } = await supabase
@@ -49,29 +47,51 @@ export async function submitPublicOrder(formData: FormData) {
 
   if (items.length === 0) return
 
-  let customerId: string
-  const { data: existingCustomer } = await supabase
-    .from('customers')
-    .select('id')
-    .eq('company_id', company.id)
-    .eq('phone', phone)
-    .maybeSingle()
+  let customerId: string | null = null
 
-  if (existingCustomer) {
-    customerId = existingCustomer.id
-  } else {
-    const { data: createdCustomer } = await supabase
+  // Cliente já identificado por CPF na etapa anterior: revalida que o
+  // registro pertence a esta empresa antes de confiar no id vindo do form.
+  const matchedCustomerId = (formData.get('customer_id') as string) || null
+  if (matchedCustomerId) {
+    const { data: verified } = await supabase
       .from('customers')
-      .insert({
-        company_id: company.id,
-        name,
-        phone,
-        email: (formData.get('email') as string) || null,
-      })
       .select('id')
-      .single()
-    if (!createdCustomer) return
-    customerId = createdCustomer.id
+      .eq('id', matchedCustomerId)
+      .eq('company_id', company.id)
+      .maybeSingle()
+    if (verified) customerId = verified.id
+  }
+
+  if (!customerId) {
+    const name = (formData.get('name') as string)?.trim()
+    const phone = (formData.get('phone') as string)?.trim()
+    if (!name || !phone) return
+    const document = (formData.get('document') as string)?.trim() || null
+
+    const { data: existingByPhone } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('company_id', company.id)
+      .eq('phone', phone)
+      .maybeSingle()
+
+    if (existingByPhone) {
+      customerId = existingByPhone.id
+    } else {
+      const { data: createdCustomer } = await supabase
+        .from('customers')
+        .insert({
+          company_id: company.id,
+          name,
+          phone,
+          email: (formData.get('email') as string) || null,
+          document,
+        })
+        .select('id')
+        .single()
+      if (!createdCustomer) return
+      customerId = createdCustomer.id
+    }
   }
 
   const total = items.reduce((sum, item) => sum + item.subtotal, 0)
