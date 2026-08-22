@@ -2,7 +2,6 @@
 
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendTelegramMessage } from '@/lib/telegram'
 
 export async function submitPublicOrder(formData: FormData) {
   const slug = formData.get('slug') as string
@@ -11,7 +10,7 @@ export async function submitPublicOrder(formData: FormData) {
   const supabase = createAdminClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name, telegram_chat_id')
+    .select('id')
     .eq('slug', slug)
     .eq('active', true)
     .single()
@@ -106,17 +105,6 @@ export async function submitPublicOrder(formData: FormData) {
   if (!order) return
 
   await supabase.from('sales_order_items').insert(items.map((item) => ({ ...item, order_id: order.id })))
-
-  if (company.telegram_chat_id) {
-    const { data: customer } = await supabase.from('customers').select('name, phone').eq('id', customerId).single()
-    const itemsList = items.map((item) => `• ${item.quantity}x ${item.product_name}`).join('\n')
-    const totalLabel = `R$ ${total.toFixed(2).replace('.', ',')}`
-    await sendTelegramMessage(
-      company.telegram_chat_id,
-      `🛒 <b>Novo pedido #${order.number}</b>\n${company.name}\n\n` +
-        `Cliente: ${customer?.name ?? '—'}\nTelefone: ${customer?.phone ?? '—'}\n\n${itemsList}\n\nTotal: ${totalLabel}`
-    )
-  }
 
   redirect(`/pedido/${slug}?sucesso=1&numero=${order.number}`)
 }

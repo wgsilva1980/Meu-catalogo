@@ -91,23 +91,6 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
         </Field>
       </section>
 
-      {/* Notificações */}
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
-        <h2 className="text-sm font-bold">Notificações no Telegram</h2>
-        <p className="text-xs text-muted">
-          Receba um aviso no Telegram sempre que um cliente se cadastrar ou enviar um pedido pelo link público.
-          Abra uma conversa com o bot da loja, envie qualquer mensagem e cole aqui o seu chat ID.
-        </p>
-        <Field label="Chat ID do Telegram">
-          <input
-            name="telegram_chat_id"
-            defaultValue={settings.telegram_chat_id ?? ''}
-            placeholder="123456789"
-            className="input max-w-xs"
-          />
-        </Field>
-      </section>
-
       <div className="flex flex-wrap items-center gap-3 justify-end">
         {saved && <span className="text-xs text-green-600 font-semibold">Salvo com sucesso!</span>}
         <button type="submit" className="bg-accent text-white rounded-lg px-5 py-2 text-sm font-bold">
