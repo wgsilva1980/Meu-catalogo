@@ -14,7 +14,21 @@ type ViaCepResponse = {
   complemento?: string
 }
 
-export default function CustomerForm({ customer }: { customer?: Customer }) {
+export default function CustomerForm({
+  customer,
+  action = saveCustomer,
+  hiddenFields,
+  submitLabel = 'Salvar cliente',
+  cancelHref = '/admin/clientes',
+  requirePhone = false,
+}: {
+  customer?: Customer
+  action?: (formData: FormData) => void | Promise<void>
+  hiddenFields?: Record<string, string>
+  submitLabel?: string
+  cancelHref?: string | null
+  requirePhone?: boolean
+}) {
   const [zipCode, setZipCode] = useState(customer?.zip_code ?? '')
   const [street, setStreet] = useState(customer?.street ?? '')
   const [complement, setComplement] = useState(customer?.complement ?? '')
@@ -53,8 +67,10 @@ export default function CustomerForm({ customer }: { customer?: Customer }) {
   }
 
   return (
-    <form action={saveCustomer} className="flex flex-col gap-3 max-w-2xl">
+    <form action={action} className="flex flex-col gap-3 max-w-2xl">
       {customer && <input type="hidden" name="id" value={customer.id} />}
+      {hiddenFields &&
+        Object.entries(hiddenFields).map(([key, value]) => <input key={key} type="hidden" name={key} value={value} />)}
 
       <Field label="Nome">
         <input name="name" defaultValue={customer?.name} required className="input" />
@@ -62,7 +78,13 @@ export default function CustomerForm({ customer }: { customer?: Customer }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Telefone/WhatsApp">
-          <input name="phone" defaultValue={customer?.phone ?? ''} placeholder="(00) 00000-0000" className="input" />
+          <input
+            name="phone"
+            defaultValue={customer?.phone ?? ''}
+            placeholder="(00) 00000-0000"
+            required={requirePhone}
+            className="input"
+          />
         </Field>
         <Field label="E-mail">
           <input name="email" type="email" defaultValue={customer?.email ?? ''} className="input" />
@@ -126,8 +148,10 @@ export default function CustomerForm({ customer }: { customer?: Customer }) {
       </Field>
 
       <div className="flex flex-wrap gap-2 justify-end mt-2">
-        <a href="/admin/clientes" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">Cancelar</a>
-        <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">Salvar cliente</button>
+        {cancelHref && (
+          <a href={cancelHref} className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">Cancelar</a>
+        )}
+        <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">{submitLabel}</button>
       </div>
     </form>
   )
