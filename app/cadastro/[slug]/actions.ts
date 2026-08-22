@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendTelegramMessage } from '@/lib/telegram'
 
 export async function submitPublicCustomer(formData: FormData) {
   const slug = formData.get('slug') as string
@@ -12,7 +13,7 @@ export async function submitPublicCustomer(formData: FormData) {
   const supabase = createAdminClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id')
+    .select('id, name, telegram_chat_id')
     .eq('slug', slug)
     .eq('active', true)
     .single()
@@ -43,6 +44,13 @@ export async function submitPublicCustomer(formData: FormData) {
     city: (formData.get('city') as string) || null,
     state: (formData.get('state') as string) || null,
   })
+
+  if (company.telegram_chat_id) {
+    await sendTelegramMessage(
+      company.telegram_chat_id,
+      `👤 <b>Novo cliente cadastrado</b>\n${company.name}\n\nNome: ${name}\nTelefone: ${phone ?? '—'}`
+    )
+  }
 
   redirect(`/cadastro/${slug}?sucesso=1`)
 }

@@ -32,6 +32,7 @@ export type Company = {
   instagram: string | null
   website: string | null
   address: string | null
+  telegram_chat_id: string | null
   active: boolean
   created_at: string
 }

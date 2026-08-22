@@ -18,6 +18,7 @@ export async function saveStoreSettings(formData: FormData) {
     instagram: (formData.get('instagram') as string) || null,
     website: (formData.get('website') as string) || null,
     address: (formData.get('address') as string) || null,
+    telegram_chat_id: (formData.get('telegram_chat_id') as string) || null,
   }
 
   await supabase.from('companies').update(payload).eq('id', active.companyId)

@@ -22,6 +22,7 @@ export default async function ConfiguracoesPage() {
     instagram: null,
     website: null,
     address: null,
+    telegram_chat_id: null,
     active: true,
     created_at: new Date().toISOString(),
   }
