@@ -30,6 +30,7 @@ export default async function ConfiguracoesPage() {
   const host = requestHeaders.get('host')
   const protocol = host?.startsWith('localhost') ? 'http' : 'https'
   const publicSignupUrl = settings.slug ? `${protocol}://${host}/cadastro/${settings.slug}` : null
+  const publicOrderUrl = settings.slug ? `${protocol}://${host}/pedido/${settings.slug}` : null
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -43,6 +44,17 @@ export default async function ConfiguracoesPage() {
             Compartilhe este link com seus clientes para que eles se cadastrem diretamente no sistema.
           </p>
           <CopyLinkField url={publicSignupUrl} />
+        </section>
+      )}
+
+      {publicOrderUrl && (
+        <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+          <h2 className="text-sm font-bold">Link de pedido</h2>
+          <p className="text-xs text-muted">
+            Compartilhe este link para que seus clientes montem e enviem o próprio pedido, sem precisar de cadastro
+            prévio. O pedido entra como rascunho para você revisar e confirmar.
+          </p>
+          <CopyLinkField url={publicOrderUrl} />
         </section>
       )}
     </div>
