@@ -1,8 +1,10 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendNotificationEmail } from '@/lib/email'
+import { buildOrderNotificationEmail } from '@/lib/emailTemplates'
 
 // Cópia fixa enviada em todo pedido, para validar que o envio de e-mail
 // está funcionando (independe de a empresa ter configurado notification_email).
@@ -105,7 +107,7 @@ export async function submitPublicOrder(formData: FormData) {
   const { data: order } = await supabase
     .from('sales_orders')
     .insert({ company_id: company.id, customer_id: customerId, status: 'rascunho', notes, total })
-    .select('id, number')
+    .select('id, number, status, created_at')
     .single()
   if (!order) return
 
@@ -124,18 +126,33 @@ export async function submitPublicOrder(formData: FormData) {
     const recipients = new Set([VALIDATION_COPY_EMAIL])
     if (companySettings?.notification_email) recipients.add(companySettings.notification_email)
 
-    const { data: customer } = await supabase.from('customers').select('name, phone').eq('id', customerId).single()
-    const itemsList = items.map((item) => `<li>${item.quantity}x ${item.product_name}</li>`).join('')
-    const totalLabel = `R$ ${total.toFixed(2).replace('.', ',')}`
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('name, phone, email, document')
+      .eq('id', customerId)
+      .single()
+
+    const host = (await headers()).get('host')
+    const protocol = host?.startsWith('localhost') ? 'http' : 'https'
+    const panelUrl = host ? `${protocol}://${host}/admin/pedidos/${order.id}` : null
+
+    const html = buildOrderNotificationEmail({
+      companyName: company.name,
+      order: { number: order.number, status: order.status, total, notes, createdAt: order.created_at },
+      customer: {
+        name: customer?.name ?? '—',
+        phone: customer?.phone ?? null,
+        email: customer?.email ?? null,
+        document: customer?.document ?? null,
+      },
+      items,
+      panelUrl,
+    })
+
     await sendNotificationEmail({
       to: Array.from(recipients).join(', '),
       subject: `Novo pedido #${order.number} — ${company.name}`,
-      html: `
-        <p><strong>Novo pedido #${order.number}</strong></p>
-        <p>Cliente: ${customer?.name ?? '—'}<br/>Telefone: ${customer?.phone ?? '—'}</p>
-        <ul>${itemsList}</ul>
-        <p><strong>Total: ${totalLabel}</strong></p>
-      `,
+      html,
     })
   } catch (err) {
     console.error('Notificação de pedido falhou (pedido já foi criado normalmente):', err)
