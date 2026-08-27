@@ -18,6 +18,10 @@ export type Product = {
   promo_note: string | null
   available: boolean
   image_url: string | null
+  weight_kg: number | null
+  length_cm: number | null
+  width_cm: number | null
+  height_cm: number | null
   created_at: string
   updated_at: string
 }

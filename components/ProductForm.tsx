@@ -343,6 +343,27 @@ export default function ProductForm({ categories, product }: { categories: Categ
           </Field>
         </div>
 
+        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+          <div>
+            <h2 className="text-sm font-bold">Envio</h2>
+            <p className="text-xs text-muted">Usado no futuro para calcular o frete. Deixe em branco se ainda não souber.</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Field label="Peso (kg)">
+              <input name="weight_kg" type="number" step="0.001" min="0" defaultValue={product?.weight_kg ?? ''} placeholder="0,300" className="input" />
+            </Field>
+            <Field label="Comprimento (cm)">
+              <input name="length_cm" type="number" step="0.1" min="0" defaultValue={product?.length_cm ?? ''} className="input" />
+            </Field>
+            <Field label="Largura (cm)">
+              <input name="width_cm" type="number" step="0.1" min="0" defaultValue={product?.width_cm ?? ''} className="input" />
+            </Field>
+            <Field label="Altura (cm)">
+              <input name="height_cm" type="number" step="0.1" min="0" defaultValue={product?.height_cm ?? ''} className="input" />
+            </Field>
+          </div>
+        </section>
+
         <div className="flex flex-wrap gap-2 justify-end mt-2">
           <a href="/admin/produtos" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">Cancelar</a>
           <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">Salvar produto</button>

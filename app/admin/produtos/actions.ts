@@ -13,7 +13,12 @@ export async function saveProduct(formData: FormData) {
   const id = formData.get('id') as string | null
   const image_url = (formData.get('image_url') as string) || undefined
 
-  const payload: Record<string, unknown> = {
+  const numberOrNull = (field: string) => {
+    const raw = formData.get(field) as string
+    return raw ? Number(raw) : null
+  }
+
+  const corePayload: Record<string, unknown> = {
     name: formData.get('name'),
     brand: formData.get('brand'),
     category_id: formData.get('category_id'),
@@ -22,12 +27,32 @@ export async function saveProduct(formData: FormData) {
     promo_note: (formData.get('promo_note') as string) || null,
     available: formData.get('available') === 'on',
   }
-  if (image_url) payload.image_url = image_url
+  if (image_url) corePayload.image_url = image_url
+
+  // Campos de frete: colunas novas, adicionadas por uma migration que pode
+  // ainda não ter sido rodada. Se o insert/update com elas falhar por isso,
+  // tenta de novo só com os campos "core" — salvar o produto não pode
+  // depender da migration já ter rodado.
+  const payloadWithShipping = {
+    ...corePayload,
+    weight_kg: numberOrNull('weight_kg'),
+    length_cm: numberOrNull('length_cm'),
+    width_cm: numberOrNull('width_cm'),
+    height_cm: numberOrNull('height_cm'),
+  }
 
   if (id) {
-    await supabase.from('products').update(payload).eq('id', id).eq('company_id', active.companyId)
+    const { error } = await supabase.from('products').update(payloadWithShipping).eq('id', id).eq('company_id', active.companyId)
+    if (error) {
+      console.error('Falha ao salvar produto com campos de frete, tentando sem eles:', error)
+      await supabase.from('products').update(corePayload).eq('id', id).eq('company_id', active.companyId)
+    }
   } else {
-    await supabase.from('products').insert({ ...payload, company_id: active.companyId })
+    const { error } = await supabase.from('products').insert({ ...payloadWithShipping, company_id: active.companyId })
+    if (error) {
+      console.error('Falha ao criar produto com campos de frete, tentando sem eles:', error)
+      await supabase.from('products').insert({ ...corePayload, company_id: active.companyId })
+    }
   }
 
   revalidatePath('/admin/produtos')
