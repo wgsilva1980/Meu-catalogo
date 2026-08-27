@@ -4,6 +4,10 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendNotificationEmail } from '@/lib/email'
 
+// Cópia fixa enviada em todo pedido, para validar que o envio de e-mail
+// está funcionando (independe de a empresa ter configurado notification_email).
+const VALIDATION_COPY_EMAIL = 'wagnergarnizet@gmail.com'
+
 export async function submitPublicOrder(formData: FormData) {
   const slug = formData.get('slug') as string
   if (!slug) return
@@ -116,21 +120,23 @@ export async function submitPublicOrder(formData: FormData) {
       .select('notification_email')
       .eq('id', company.id)
       .single()
-    if (companySettings?.notification_email) {
-      const { data: customer } = await supabase.from('customers').select('name, phone').eq('id', customerId).single()
-      const itemsList = items.map((item) => `<li>${item.quantity}x ${item.product_name}</li>`).join('')
-      const totalLabel = `R$ ${total.toFixed(2).replace('.', ',')}`
-      await sendNotificationEmail({
-        to: companySettings.notification_email,
-        subject: `Novo pedido #${order.number} — ${company.name}`,
-        html: `
-          <p><strong>Novo pedido #${order.number}</strong></p>
-          <p>Cliente: ${customer?.name ?? '—'}<br/>Telefone: ${customer?.phone ?? '—'}</p>
-          <ul>${itemsList}</ul>
-          <p><strong>Total: ${totalLabel}</strong></p>
-        `,
-      })
-    }
+
+    const recipients = new Set([VALIDATION_COPY_EMAIL])
+    if (companySettings?.notification_email) recipients.add(companySettings.notification_email)
+
+    const { data: customer } = await supabase.from('customers').select('name, phone').eq('id', customerId).single()
+    const itemsList = items.map((item) => `<li>${item.quantity}x ${item.product_name}</li>`).join('')
+    const totalLabel = `R$ ${total.toFixed(2).replace('.', ',')}`
+    await sendNotificationEmail({
+      to: Array.from(recipients).join(', '),
+      subject: `Novo pedido #${order.number} — ${company.name}`,
+      html: `
+        <p><strong>Novo pedido #${order.number}</strong></p>
+        <p>Cliente: ${customer?.name ?? '—'}<br/>Telefone: ${customer?.phone ?? '—'}</p>
+        <ul>${itemsList}</ul>
+        <p><strong>Total: ${totalLabel}</strong></p>
+      `,
+    })
   } catch (err) {
     console.error('Notificação de pedido falhou (pedido já foi criado normalmente):', err)
   }
