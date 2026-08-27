@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendNotificationEmail } from '@/lib/email'
 
 export async function submitPublicOrder(formData: FormData) {
   const slug = formData.get('slug') as string
@@ -10,7 +11,7 @@ export async function submitPublicOrder(formData: FormData) {
   const supabase = createAdminClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id')
+    .select('id, name')
     .eq('slug', slug)
     .eq('active', true)
     .single()
@@ -105,6 +106,34 @@ export async function submitPublicOrder(formData: FormData) {
   if (!order) return
 
   await supabase.from('sales_order_items').insert(items.map((item) => ({ ...item, order_id: order.id })))
+
+  // Notificação por e-mail: melhor esforço, isolada em try/catch própria
+  // para nunca impedir a confirmação do pedido (mesmo que a coluna
+  // notification_email ainda não exista, por falta de migration).
+  try {
+    const { data: companySettings } = await supabase
+      .from('companies')
+      .select('notification_email')
+      .eq('id', company.id)
+      .single()
+    if (companySettings?.notification_email) {
+      const { data: customer } = await supabase.from('customers').select('name, phone').eq('id', customerId).single()
+      const itemsList = items.map((item) => `<li>${item.quantity}x ${item.product_name}</li>`).join('')
+      const totalLabel = `R$ ${total.toFixed(2).replace('.', ',')}`
+      await sendNotificationEmail({
+        to: companySettings.notification_email,
+        subject: `Novo pedido #${order.number} — ${company.name}`,
+        html: `
+          <p><strong>Novo pedido #${order.number}</strong></p>
+          <p>Cliente: ${customer?.name ?? '—'}<br/>Telefone: ${customer?.phone ?? '—'}</p>
+          <ul>${itemsList}</ul>
+          <p><strong>Total: ${totalLabel}</strong></p>
+        `,
+      })
+    }
+  } catch (err) {
+    console.error('Notificação de pedido falhou (pedido já foi criado normalmente):', err)
+  }
 
   redirect(`/pedido/${slug}?sucesso=1&numero=${order.number}`)
 }

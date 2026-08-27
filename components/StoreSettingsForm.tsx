@@ -91,6 +91,23 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
         </Field>
       </section>
 
+      {/* Notificações */}
+      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+        <h2 className="text-sm font-bold">Notificações por e-mail</h2>
+        <p className="text-xs text-muted">
+          Receba um e-mail sempre que um cliente se cadastrar ou enviar um pedido pelo link público.
+        </p>
+        <Field label="E-mail para receber notificações">
+          <input
+            name="notification_email"
+            type="email"
+            defaultValue={settings.notification_email ?? ''}
+            placeholder="voce@exemplo.com"
+            className="input max-w-xs"
+          />
+        </Field>
+      </section>
+
       <div className="flex flex-wrap items-center gap-3 justify-end">
         {saved && <span className="text-xs text-green-600 font-semibold">Salvo com sucesso!</span>}
         <button type="submit" className="bg-accent text-white rounded-lg px-5 py-2 text-sm font-bold">

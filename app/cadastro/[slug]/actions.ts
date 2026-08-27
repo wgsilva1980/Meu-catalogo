@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendNotificationEmail } from '@/lib/email'
 
 export async function submitPublicCustomer(formData: FormData) {
   const slug = formData.get('slug') as string
@@ -12,7 +13,7 @@ export async function submitPublicCustomer(formData: FormData) {
   const supabase = createAdminClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id')
+    .select('id, name')
     .eq('slug', slug)
     .eq('active', true)
     .single()
@@ -43,6 +44,25 @@ export async function submitPublicCustomer(formData: FormData) {
     city: (formData.get('city') as string) || null,
     state: (formData.get('state') as string) || null,
   })
+
+  // Notificação por e-mail: melhor esforço, nunca deve impedir o cadastro
+  // em si (mesmo que a coluna notification_email ainda não exista).
+  try {
+    const { data: companySettings } = await supabase
+      .from('companies')
+      .select('notification_email')
+      .eq('id', company.id)
+      .single()
+    if (companySettings?.notification_email) {
+      await sendNotificationEmail({
+        to: companySettings.notification_email,
+        subject: `Novo cliente cadastrado — ${company.name}`,
+        html: `<p><strong>Novo cliente cadastrado</strong></p><p>Nome: ${name}<br/>Telefone: ${phone ?? '—'}</p>`,
+      })
+    }
+  } catch (err) {
+    console.error('Notificação de cadastro falhou (cliente já foi criado normalmente):', err)
+  }
 
   redirect(`/cadastro/${slug}?sucesso=1`)
 }
