@@ -61,10 +61,14 @@ async function requestToken(environment: MelhorEnvioEnvironment, body: Record<st
   const clientSecret = process.env.MELHOR_ENVIO_CLIENT_SECRET
   if (!clientId || !clientSecret) throw new Error('Credenciais do Melhor Envio não configuradas')
 
+  // Diferente do resto da API (que usa JSON), a rota OAuth2 de token espera
+  // o corpo como application/x-www-form-urlencoded — enviar JSON aqui faz o
+  // servidor não enxergar client_id/client_secret e responder "invalid_client".
+  const form = new URLSearchParams({ ...body, client_id: clientId, client_secret: clientSecret })
   const res = await fetch(`${baseUrl(environment)}/oauth/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ ...body, client_id: clientId, client_secret: clientSecret }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+    body: form.toString(),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
