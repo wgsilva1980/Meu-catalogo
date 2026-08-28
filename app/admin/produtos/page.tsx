@@ -5,6 +5,7 @@ import { resolveActiveCompany } from '@/lib/company'
 import ProductFilterBar from './ProductFilterBar'
 import { deleteProduct } from './actions'
 import { PencilIcon, TrashIcon } from '@/components/icons'
+import FillWeightButton from '@/components/FillWeightButton'
 
 export default async function ProdutosPage({
   searchParams,
@@ -31,6 +32,15 @@ export default async function ProdutosPage({
   if (categoria) query = query.eq('category_id', categoria)
   const { data: products } = await query
 
+  // Conta independente dos filtros de busca acima: o botão de IA processa
+  // todos os produtos pendentes da empresa, não só os que estão na tela.
+  const { count: pendingWeightCount } = await supabase
+    .from('products')
+    .select('id', { count: 'exact', head: true })
+    .eq('company_id', active.companyId)
+    .is('weight_kg', null)
+    .not('image_url', 'is', null)
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -38,9 +48,12 @@ export default async function ProdutosPage({
           <h1 className="font-display text-2xl">Produtos</h1>
           <p className="text-sm text-muted">Busca, filtros e gestão do catálogo</p>
         </div>
-        <Link href="/admin/produtos/novo" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap">
-          + Novo produto
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <FillWeightButton pendingCount={pendingWeightCount ?? 0} />
+          <Link href="/admin/produtos/novo" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap">
+            + Novo produto
+          </Link>
+        </div>
       </div>
 
       <Suspense fallback={null}>

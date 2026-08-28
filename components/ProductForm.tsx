@@ -156,6 +156,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
   const [brand, setBrand] = useState(product?.brand ?? '')
   const [categoryId, setCategoryId] = useState(product?.category_id ?? categories[0]?.id ?? '')
   const [shortDescription, setShortDescription] = useState(product?.short_description ?? '')
+  const [weightKg, setWeightKg] = useState<number | string>(product?.weight_kg ?? '')
 
   const busy = status !== null
 
@@ -195,6 +196,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
         if (aiData.brand) setBrand(aiData.brand)
         if (aiData.category_id) setCategoryId(aiData.category_id)
         if (aiData.short_description) setShortDescription(aiData.short_description)
+        if (aiData.weight_kg) setWeightKg(aiData.weight_kg)
       } else {
         console.error('Falha ao identificar produto', aiRes.status, aiData)
         const reason = aiData.error ? ` (${aiData.error})` : ''
@@ -350,7 +352,16 @@ export default function ProductForm({ categories, product }: { categories: Categ
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Field label="Peso (kg)">
-              <input name="weight_kg" type="number" step="0.001" min="0" defaultValue={product?.weight_kg ?? ''} placeholder="0,300" className="input" />
+              <input
+                name="weight_kg"
+                type="number"
+                step="0.001"
+                min="0"
+                value={weightKg}
+                onChange={(e) => setWeightKg(e.target.value)}
+                placeholder="0,300"
+                className="input"
+              />
             </Field>
             <Field label="Comprimento (cm)">
               <input name="length_cm" type="number" step="0.1" min="0" defaultValue={product?.length_cm ?? ''} className="input" />

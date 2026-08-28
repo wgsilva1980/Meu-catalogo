@@ -7,6 +7,7 @@ type RecognizedProduct = {
   brand: string
   category: string
   short_description: string
+  net_weight_kg: number | null
 }
 
 export async function POST(request: NextRequest) {
@@ -47,8 +48,13 @@ export async function POST(request: NextRequest) {
         ...(categoryNames.length ? { enum: categoryNames } : {}),
       },
       short_description: { type: 'string', description: 'Descrição curta (1 a 2 frases) para o catálogo, em português' },
+      net_weight_kg: {
+        type: ['number', 'null'],
+        description:
+          'Peso líquido do produto em quilogramas, convertido a partir do valor impresso no rótulo (ex.: "900g" vira 0.9, "60 cápsulas" sem peso em gramas vira null). Use null se o peso não estiver legível ou impresso na embalagem — não estime.',
+      },
     },
-    required: ['name', 'brand', 'category', 'short_description'],
+    required: ['name', 'brand', 'category', 'short_description', 'net_weight_kg'],
     additionalProperties: false,
   }
 
@@ -69,7 +75,7 @@ export async function POST(request: NextRequest) {
               type: 'text',
               text: `Você está ajudando a cadastrar um produto em um catálogo de loja de suplementos alimentares. Analise a foto da embalagem e identifique: nome do produto (sem a marca), marca, categoria mais adequada${
                 categoryNames.length ? ` (escolha exatamente uma entre: ${categoryNames.join(', ')})` : ''
-              }, e uma descrição curta (1 a 2 frases) para o catálogo, em português. Se não tiver certeza de algum campo, forneça sua melhor estimativa com base no que é visível na embalagem.`,
+              }, uma descrição curta (1 a 2 frases) para o catálogo em português, e o peso líquido em quilogramas lido diretamente do valor impresso no rótulo (ex.: "900g" → 0.9). Se não tiver certeza de nome/marca/categoria/descrição, forneça sua melhor estimativa com base no que é visível na embalagem — mas para o peso, use null se o valor não estiver legível ou impresso, não estime.`,
             },
           ],
         },
@@ -108,5 +114,6 @@ export async function POST(request: NextRequest) {
     brand: parsed.brand,
     category_id: matchedCategory?.id ?? null,
     short_description: parsed.short_description,
+    weight_kg: parsed.net_weight_kg ?? null,
   })
 }
