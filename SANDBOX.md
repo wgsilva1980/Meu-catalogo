@@ -7,3 +7,5 @@ domínio de produção.
 
 Pode apagar este arquivo (e a branch) depois que a integração estiver
 validada em sandbox.
+
+<!-- redeploy: força novo build para captar env vars adicionadas depois do build anterior -->
