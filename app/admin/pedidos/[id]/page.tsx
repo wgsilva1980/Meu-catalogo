@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import OrderForm from '@/components/OrderForm'
 import OrderPdfButton from '@/components/OrderPdfButton'
+import ShippingCard from '@/components/ShippingCard'
 
 export default async function EditarPedidoPage({ params }: { params: Promise<{ id: string }> }) {
   const active = await resolveActiveCompany()
@@ -20,10 +21,12 @@ export default async function EditarPedidoPage({ params }: { params: Promise<{ i
 
   if (!order) notFound()
 
-  const [{ data: items }, { data: customers }, { data: products }] = await Promise.all([
+  const [{ data: items }, { data: customers }, { data: products }, { data: melhorEnvioAccount }, { data: shipment }] = await Promise.all([
     supabase.from('sales_order_items').select('*').eq('order_id', id).eq('company_id', active.companyId),
     supabase.from('customers').select('*').eq('company_id', active.companyId).order('name'),
     supabase.from('products').select('*').eq('company_id', active.companyId).order('name'),
+    supabase.from('melhor_envio_accounts').select('company_id').eq('company_id', active.companyId).maybeSingle(),
+    supabase.from('shipments').select('*').eq('order_id', id).eq('company_id', active.companyId).maybeSingle(),
   ])
 
   return (
@@ -36,6 +39,7 @@ export default async function EditarPedidoPage({ params }: { params: Promise<{ i
         <OrderPdfButton orderId={order.id} />
       </div>
       <OrderForm order={order} items={items ?? []} customers={customers ?? []} products={products ?? []} />
+      <ShippingCard orderId={order.id} connected={!!melhorEnvioAccount} shipment={shipment ?? null} />
     </div>
   )
 }

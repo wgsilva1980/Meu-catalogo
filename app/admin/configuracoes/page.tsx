@@ -3,14 +3,30 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import StoreSettingsForm from '@/components/StoreSettingsForm'
 import CopyLinkField from '@/components/CopyLinkField'
+import MelhorEnvioCard from '@/components/MelhorEnvioCard'
 import type { Company } from '@/lib/types'
 
-export default async function ConfiguracoesPage() {
+export default async function ConfiguracoesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ melhor_envio_erro?: string; melhor_envio_conectado?: string }>
+}) {
   const active = await resolveActiveCompany()
   if (!active.ok) return null
 
+  const { melhor_envio_erro, melhor_envio_conectado } = await searchParams
+
   const supabase = await createClient()
   const { data } = await supabase.from('companies').select('*').eq('id', active.companyId).single()
+
+  // Isolado do resto da página: se a migration ainda não rodou, a tabela não
+  // existe e essa consulta falha sozinha — o resto de Configurações continua
+  // funcionando, só o card de integração fica sem mostrar "conectado".
+  const { data: melhorEnvioAccount } = await supabase
+    .from('melhor_envio_accounts')
+    .select('*')
+    .eq('company_id', active.companyId)
+    .maybeSingle()
 
   const settings: Company = data ?? {
     id: active.companyId,
@@ -58,6 +74,8 @@ export default async function ConfiguracoesPage() {
           <CopyLinkField url={publicOrderUrl} />
         </section>
       )}
+
+      <MelhorEnvioCard account={melhorEnvioAccount ?? null} error={melhor_envio_erro} justConnected={melhor_envio_conectado === '1'} />
     </div>
   )
 }

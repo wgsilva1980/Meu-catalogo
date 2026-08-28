@@ -37,6 +37,17 @@ export type Company = {
   website: string | null
   address: string | null
   notification_email: string | null
+  shipping_origin_name: string | null
+  shipping_origin_document: string | null
+  shipping_origin_phone: string | null
+  shipping_origin_email: string | null
+  shipping_origin_zip_code: string | null
+  shipping_origin_street: string | null
+  shipping_origin_number: string | null
+  shipping_origin_complement: string | null
+  shipping_origin_neighborhood: string | null
+  shipping_origin_city: string | null
+  shipping_origin_state: string | null
   active: boolean
   created_at: string
 }
@@ -90,6 +101,35 @@ export type SalesOrder = {
   notes: string | null
   total: number
   pdf_path: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type MelhorEnvioEnvironment = 'sandbox' | 'production'
+
+export type MelhorEnvioAccount = {
+  company_id: string
+  environment: MelhorEnvioEnvironment
+  access_token: string
+  refresh_token: string
+  expires_at: string
+  connected_at: string
+  updated_at: string
+}
+
+export type ShipmentStatus = 'cotado' | 'no_carrinho' | 'pago' | 'gerado' | 'cancelado'
+
+export type Shipment = {
+  id: string
+  company_id: string
+  order_id: string
+  melhor_envio_id: string | null
+  service_id: number | null
+  service_name: string | null
+  price: number | null
+  status: ShipmentStatus
+  tracking_code: string | null
+  print_url: string | null
   created_at: string
   updated_at: string
 }
