@@ -290,14 +290,26 @@ export async function purchaseAndGenerateLabel({
   to: ShippingAddress
   items: ShippingQuoteItem[]
 }) {
+  // document e phone precisam ir só com dígitos — mandar com pontuação
+  // (ex.: "123.456.789-00" ou "(11) 91234-5678") faz a API do Melhor Envio
+  // falhar ao salvar o pedido no carrinho com um 500 genérico, sem indicar
+  // o campo culpado.
+  const sanitizeAddress = (addr: ShippingAddress) => ({
+    ...addr,
+    document: addr.document ? onlyDigits(addr.document) : addr.document,
+    phone: addr.phone ? onlyDigits(addr.phone) : addr.phone,
+    postal_code: onlyDigits(addr.postal_code),
+    country_id: 'BR',
+  })
+
   const cartItem = await melhorEnvioRequest<{ id: string }>({
     companyId,
     method: 'POST',
     path: '/api/v2/me/cart',
     body: {
       service: serviceId,
-      from: { ...from, postal_code: onlyDigits(from.postal_code), country_id: 'BR' },
-      to: { ...to, postal_code: onlyDigits(to.postal_code), country_id: 'BR' },
+      from: sanitizeAddress(from),
+      to: sanitizeAddress(to),
       volumes: items.map((item) => ({
         height: item.height_cm,
         width: item.width_cm,
