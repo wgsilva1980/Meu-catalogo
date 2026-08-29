@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const state = searchParams.get('state')
   const errorParam = searchParams.get('error')
+  const errorDescription = searchParams.get('error_description')
+  const errorHint = searchParams.get('hint')
 
   const cookieStore = await cookies()
   const expectedState = cookieStore.get(OAUTH_STATE_COOKIE)?.value
@@ -24,7 +26,15 @@ export async function GET(request: NextRequest) {
   const fail = (message: string) =>
     NextResponse.redirect(new URL(`/admin/configuracoes?melhor_envio_erro=${encodeURIComponent(message)}`, origin))
 
-  if (errorParam) return fail('Autorização cancelada ou negada no Melhor Envio')
+  if (errorParam) {
+    // Repassa o motivo real que o Melhor Envio manda (ex.: invalid_scope,
+    // access_denied) em vez de esconder atrás de uma mensagem genérica —
+    // isso é o que aparece na tela quando algo dá errado, então precisa ser
+    // diagnosticável sem depender de olhar a rede do navegador.
+    if (errorParam === 'access_denied') return fail('Autorização cancelada no Melhor Envio')
+    const detail = [errorDescription, errorHint].filter(Boolean).join(' — ')
+    return fail(detail ? `Erro do Melhor Envio (${errorParam}): ${detail}` : `Erro do Melhor Envio: ${errorParam}`)
+  }
   if (!code || !state) return fail('Retorno inválido do Melhor Envio')
   if (!expectedState || state !== expectedState) return fail('Sessão de autorização expirada, tente novamente')
 

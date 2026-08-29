@@ -32,7 +32,7 @@ export function getAuthorizeUrl({ redirectUri, state }: { redirectUri: string; s
 
   const scopes = [
     'shipping-calculate',
-    'shipping-cart',
+    'cart-write',
     'shipping-checkout',
     'shipping-generate',
     'shipping-print',
