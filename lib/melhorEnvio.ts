@@ -193,7 +193,11 @@ async function melhorEnvioRequest<T>({ companyId, method, path, body }: MelhorEn
 
   if (!res.ok) {
     console.error('Erro na API do Melhor Envio:', path, res.status, data)
-    throw new Error(`Melhor Envio retornou erro (${res.status})`)
+    // Inclui o corpo da resposta (mensagem/erros de validação) na própria
+    // exceção — essas chamadas rodam no servidor, então sem isso o usuário só
+    // vê "erro (422)" sem saber qual campo a API rejeitou.
+    const detail = typeof data === 'string' ? data : JSON.stringify(data)
+    throw new Error(`Melhor Envio retornou erro (${res.status}) em ${path}: ${detail}`)
   }
   return data as T
 }
