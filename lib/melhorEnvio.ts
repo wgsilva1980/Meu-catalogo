@@ -72,7 +72,13 @@ async function requestToken(environment: MelhorEnvioEnvironment, body: Record<st
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`Falha ao obter token do Melhor Envio (${res.status}): ${text}`)
+    // Inclui o client_id (nunca o secret) usado nesta troca — essa chamada
+    // acontece no servidor, então é a única forma de confirmar pela própria
+    // mensagem de erro (sem acesso aos logs do Vercel) qual credencial foi
+    // realmente lida do ambiente no momento da falha.
+    throw new Error(
+      `Falha ao obter token do Melhor Envio (${res.status}) [ambiente: ${environment}, client_id usado: ${clientId}, redirect_uri usado: ${body.redirect_uri ?? '(n/a)'}]: ${text}`
+    )
   }
   return (await res.json()) as TokenResponse
 }
