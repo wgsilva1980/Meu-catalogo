@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
     })
   } catch (err) {
     console.error('Falha ao conectar conta do Melhor Envio:', err)
-    return fail('Falha ao concluir a conexão com o Melhor Envio')
+    const detail = err instanceof Error ? err.message : String(err)
+    return fail(`Falha ao concluir a conexão com o Melhor Envio: ${detail}`)
   }
 
   return NextResponse.redirect(new URL('/admin/configuracoes?melhor_envio_conectado=1', origin))
