@@ -249,7 +249,7 @@ export async function calculateShipping({
         width: item.width_cm,
         height: item.height_cm,
         length: item.length_cm,
-        weight: item.weight_kg,
+        weight: clampPackageWeight(item.weight_kg),
         insurance_value: item.insurance_value,
         quantity: item.quantity,
       })),
@@ -302,7 +302,7 @@ export async function purchaseAndGenerateLabel({
         height: item.height_cm,
         width: item.width_cm,
         length: item.length_cm,
-        weight: item.weight_kg,
+        weight: clampPackageWeight(item.weight_kg),
       })),
       products: items.map((item, i) => ({
         name: item.name || `Item ${i + 1}`,
@@ -339,4 +339,12 @@ export async function purchaseAndGenerateLabel({
 
 function onlyDigits(value: string) {
   return value.replace(/\D/g, '')
+}
+
+// O Melhor Envio exige peso mínimo de 0.01kg (10g) por pacote — abaixo disso
+// a API rejeita com 422. Produtos leves reais (ex.: cápsulas soltas, poucos
+// gramas) ficam abaixo desse piso, então aplicamos o mínimo aqui na saída
+// para a transportadora, sem alterar o peso cadastrado do produto.
+function clampPackageWeight(weightKg: number) {
+  return Math.max(weightKg, 0.01)
 }
