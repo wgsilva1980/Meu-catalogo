@@ -27,7 +27,7 @@ function userAgent() {
 
 export function getAuthorizeUrl({ redirectUri, state }: { redirectUri: string; state: string }) {
   const environment = melhorEnvioEnvironment()
-  const clientId = process.env.MELHOR_ENVIO_CLIENT_ID
+  const clientId = process.env.MELHOR_ENVIO_CLIENT_ID?.trim()
   if (!clientId) throw new Error('MELHOR_ENVIO_CLIENT_ID não configurada')
 
   const scopes = [
@@ -57,8 +57,8 @@ type TokenResponse = {
 }
 
 async function requestToken(environment: MelhorEnvioEnvironment, body: Record<string, string>) {
-  const clientId = process.env.MELHOR_ENVIO_CLIENT_ID
-  const clientSecret = process.env.MELHOR_ENVIO_CLIENT_SECRET
+  const clientId = process.env.MELHOR_ENVIO_CLIENT_ID?.trim()
+  const clientSecret = process.env.MELHOR_ENVIO_CLIENT_SECRET?.trim()
   if (!clientId || !clientSecret) throw new Error('Credenciais do Melhor Envio não configuradas')
 
   // Diferente do resto da API (que usa JSON), a rota OAuth2 de token espera
