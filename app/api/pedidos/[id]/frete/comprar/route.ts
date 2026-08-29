@@ -45,7 +45,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const productIds = items.map((item) => item.product_id)
   const { data: products } = await supabase
     .from('products')
-    .select('id, weight_kg, length_cm, width_cm, height_cm')
+    .select('id, name, weight_kg, length_cm, width_cm, height_cm')
     .in('id', productIds)
 
   const quoteItems: ShippingQuoteItem[] = []
@@ -61,6 +61,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       height_cm: Number(product.height_cm),
       quantity: item.quantity,
       insurance_value: Number(item.unit_price) * item.quantity,
+      name: product.name,
+      unit_value: Number(item.unit_price),
     })
   }
 

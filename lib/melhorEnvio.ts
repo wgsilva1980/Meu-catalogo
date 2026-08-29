@@ -209,6 +209,12 @@ export type ShippingQuoteItem = {
   weight_kg: number
   quantity: number
   insurance_value: number
+  // Só usados na compra (não no cálculo): a API do Melhor Envio exige a
+  // lista de produtos no carrinho sempre que há declaração de conteúdo
+  // (isto é, sempre que insurance_value > 0), senão o /api/v2/me/cart
+  // responde 422 pedindo "products".
+  name?: string
+  unit_value?: number
 }
 
 export type ShippingQuoteOption = {
@@ -297,6 +303,11 @@ export async function purchaseAndGenerateLabel({
         width: item.width_cm,
         length: item.length_cm,
         weight: item.weight_kg,
+      })),
+      products: items.map((item, i) => ({
+        name: item.name || `Item ${i + 1}`,
+        quantity: item.quantity,
+        unitary_value: item.unit_value ?? 0,
       })),
       options: { insurance_value: items.reduce((sum, i) => sum + i.insurance_value, 0), receipt: false, own_hand: false },
     },
