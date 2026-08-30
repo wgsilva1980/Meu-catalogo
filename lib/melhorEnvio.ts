@@ -4,7 +4,7 @@
 // `melhor_envio_accounts`. Nunca importar em código client — usa a service
 // role para ler/gravar tokens, que não passam pelo navegador do usuário.
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { MelhorEnvioEnvironment } from '@/lib/types'
+import type { MelhorEnvioEnvironment, ShippingBox } from '@/lib/types'
 
 const BASE_URL: Record<MelhorEnvioEnvironment, string> = {
   sandbox: 'https://sandbox.melhorenvio.com.br',
@@ -214,13 +214,87 @@ export type ShippingQuoteItem = {
   unit_value?: number
 }
 
-// Caixa padrão da loja (cm). Todos os itens de um pedido viajam numa única
+// Caixa escolhida para o pedido (cm). Todos os itens viajam numa única
 // caixa com estas dimensões e o peso somado dos produtos, gerando uma
 // etiqueta só.
 export type ShippingPackage = {
   length_cm: number
   width_cm: number
   height_cm: number
+}
+
+// Produto com dimensões, usado só para escolher a caixa.
+export type PackableItem = {
+  length_cm: number
+  width_cm: number
+  height_cm: number
+  weight_kg: number
+  quantity: number
+}
+
+// Folga de empacotamento: nunca se aproveita 100% do volume interno de uma
+// caixa, então exigimos que o volume somado dos produtos caiba em 80% dela.
+const BOX_FILL_FACTOR = 0.8
+
+function sortedDims(l: number, w: number, h: number) {
+  return [l, w, h].sort((a, b) => a - b)
+}
+
+function boxVolume(box: ShippingBox) {
+  return box.length_cm * box.width_cm * box.height_cm
+}
+
+// Escolhe a menor caixa (por volume) em que o pedido caiba:
+//  - cada produto, na melhor orientação, cabe dentro da caixa;
+//  - o volume somado dos produtos <= volume interno da caixa * BOX_FILL_FACTOR;
+//  - o peso total respeita max_weight_kg da caixa, se informado.
+// Se nenhuma caixa serve, devolve a maior com `fits: false` (a UI avisa e o
+// admin pode trocar). Retorna null quando não há caixa cadastrada.
+export function pickShippingBox(
+  boxes: ShippingBox[],
+  items: PackableItem[]
+): { box: ShippingBox; fits: boolean } | null {
+  if (boxes.length === 0) return null
+
+  const totalWeight = items.reduce((sum, i) => sum + i.weight_kg * i.quantity, 0)
+  const totalVolume = items.reduce((sum, i) => sum + i.length_cm * i.width_cm * i.height_cm * i.quantity, 0)
+  const itemDims = items.map((i) => sortedDims(i.length_cm, i.width_cm, i.height_cm))
+
+  const byVolume = [...boxes].sort((a, b) => boxVolume(a) - boxVolume(b))
+
+  for (const box of byVolume) {
+    const bd = sortedDims(box.length_cm, box.width_cm, box.height_cm)
+    const everyItemFits = itemDims.every((d) => d[0] <= bd[0] && d[1] <= bd[1] && d[2] <= bd[2])
+    const volumeOk = totalVolume <= boxVolume(box) * BOX_FILL_FACTOR
+    const weightOk = box.max_weight_kg == null || totalWeight <= box.max_weight_kg
+    if (everyItemFits && volumeOk && weightOk) return { box, fits: true }
+  }
+
+  return { box: byVolume[byVolume.length - 1], fits: false }
+}
+
+// Lista de caixas da loja, com fallback para a caixa padrão única (legado)
+// enquanto a loja não cadastra a lista.
+export function resolveShippingBoxes(company: {
+  shipping_packages?: ShippingBox[] | null
+  shipping_package_length_cm?: number | null
+  shipping_package_width_cm?: number | null
+  shipping_package_height_cm?: number | null
+}): ShippingBox[] {
+  const list = Array.isArray(company.shipping_packages) ? company.shipping_packages : []
+  if (list.length > 0) return list
+  if (company.shipping_package_length_cm && company.shipping_package_width_cm && company.shipping_package_height_cm) {
+    return [
+      {
+        name: 'Caixa padrão',
+        length_cm: Number(company.shipping_package_length_cm),
+        width_cm: Number(company.shipping_package_width_cm),
+        height_cm: Number(company.shipping_package_height_cm),
+        max_weight_kg: null,
+      },
+    ]
+  }
+  return []
 }
 
 // Peso total do pedido (kg), somando quantidade de cada item, com o piso de

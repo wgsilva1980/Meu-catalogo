@@ -26,6 +26,16 @@ export type Product = {
   updated_at: string
 }
 
+// Caixa cadastrada pela loja para envios. O sistema escolhe a menor caixa
+// em que o pedido caiba antes de cotar/gerar a etiqueta.
+export type ShippingBox = {
+  name: string
+  length_cm: number
+  width_cm: number
+  height_cm: number
+  max_weight_kg: number | null
+}
+
 export type Company = {
   id: string
   name: string
@@ -49,9 +59,12 @@ export type Company = {
   shipping_origin_city: string | null
   shipping_origin_state: string | null
   shipping_origin_agency_id: number | null
+  // Legado: caixa padrão única. Superado por shipping_packages; ainda lido
+  // como fallback enquanto a loja não cadastra a lista de caixas.
   shipping_package_length_cm: number | null
   shipping_package_width_cm: number | null
   shipping_package_height_cm: number | null
+  shipping_packages: ShippingBox[] | null
   active: boolean
   created_at: string
 }

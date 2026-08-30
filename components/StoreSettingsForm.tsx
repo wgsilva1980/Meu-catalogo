@@ -13,6 +13,35 @@ type ViaCepResponse = {
   uf?: string
 }
 
+// Linha editável de caixa: números como string enquanto o usuário digita.
+type BoxRow = { name: string; length_cm: string; width_cm: string; height_cm: string; max_weight_kg: string }
+
+function initialBoxes(settings: Company): BoxRow[] {
+  const list = settings.shipping_packages ?? []
+  if (list.length > 0) {
+    return list.map((b) => ({
+      name: b.name ?? '',
+      length_cm: b.length_cm != null ? String(b.length_cm) : '',
+      width_cm: b.width_cm != null ? String(b.width_cm) : '',
+      height_cm: b.height_cm != null ? String(b.height_cm) : '',
+      max_weight_kg: b.max_weight_kg != null ? String(b.max_weight_kg) : '',
+    }))
+  }
+  // Migração: se só existe a caixa padrão antiga, começa a lista com ela.
+  if (settings.shipping_package_length_cm && settings.shipping_package_width_cm && settings.shipping_package_height_cm) {
+    return [
+      {
+        name: 'Caixa padrão',
+        length_cm: String(settings.shipping_package_length_cm),
+        width_cm: String(settings.shipping_package_width_cm),
+        height_cm: String(settings.shipping_package_height_cm),
+        max_weight_kg: '',
+      },
+    ]
+  }
+  return []
+}
+
 export default function StoreSettingsForm({ settings }: { settings: Company }) {
   const [logoUrl, setLogoUrl] = useState(settings.logo_url ?? '')
   const [uploading, setUploading] = useState(false)
@@ -24,6 +53,18 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
   const [originCity, setOriginCity] = useState(settings.shipping_origin_city ?? '')
   const [originState, setOriginState] = useState(settings.shipping_origin_state ?? '')
   const [originCepStatus, setOriginCepStatus] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
+
+  const [boxes, setBoxes] = useState<BoxRow[]>(() => initialBoxes(settings))
+
+  function updateBox(index: number, patch: Partial<BoxRow>) {
+    setBoxes((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)))
+  }
+  function addBox() {
+    setBoxes((rows) => [...rows, { name: '', length_cm: '', width_cm: '', height_cm: '', max_weight_kg: '' }])
+  }
+  function removeBox(index: number) {
+    setBoxes((rows) => rows.filter((_, i) => i !== index))
+  }
 
   async function handleOriginZipChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value
@@ -229,39 +270,78 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           agência — pode deixar em branco.
         </p>
 
-        <div className="grid grid-cols-3 gap-3">
-          <Field label="Comprimento da caixa (cm)">
-            <input
-              name="shipping_package_length_cm"
-              defaultValue={settings.shipping_package_length_cm ?? ''}
-              placeholder="Ex.: 20"
-              inputMode="decimal"
-              className="input"
-            />
-          </Field>
-          <Field label="Largura da caixa (cm)">
-            <input
-              name="shipping_package_width_cm"
-              defaultValue={settings.shipping_package_width_cm ?? ''}
-              placeholder="Ex.: 15"
-              inputMode="decimal"
-              className="input"
-            />
-          </Field>
-          <Field label="Altura da caixa (cm)">
-            <input
-              name="shipping_package_height_cm"
-              defaultValue={settings.shipping_package_height_cm ?? ''}
-              placeholder="Ex.: 10"
-              inputMode="decimal"
-              className="input"
-            />
-          </Field>
+        <div className="flex flex-col gap-3 border-t border-line pt-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-muted">Caixas de envio</h3>
+            <button type="button" onClick={addBox} className="text-xs font-semibold text-accent">
+              + Adicionar caixa
+            </button>
+          </div>
+          <input type="hidden" name="shipping_packages" value={JSON.stringify(boxes)} />
+
+          {boxes.length === 0 && (
+            <p className="text-xs text-muted">Nenhuma caixa cadastrada. Adicione ao menos uma para calcular frete e gerar etiquetas.</p>
+          )}
+
+          {boxes.map((box, i) => (
+            <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_4rem_4rem_4rem_5rem_2rem] gap-2 items-end">
+              <Field label={i === 0 ? 'Nome' : ''}>
+                <input
+                  value={box.name}
+                  onChange={(e) => updateBox(i, { name: e.target.value })}
+                  placeholder={`Caixa ${i + 1}`}
+                  className="input"
+                />
+              </Field>
+              <Field label={i === 0 ? 'C (cm)' : ''}>
+                <input
+                  value={box.length_cm}
+                  onChange={(e) => updateBox(i, { length_cm: e.target.value })}
+                  inputMode="decimal"
+                  className="input"
+                />
+              </Field>
+              <Field label={i === 0 ? 'L (cm)' : ''}>
+                <input
+                  value={box.width_cm}
+                  onChange={(e) => updateBox(i, { width_cm: e.target.value })}
+                  inputMode="decimal"
+                  className="input"
+                />
+              </Field>
+              <Field label={i === 0 ? 'A (cm)' : ''}>
+                <input
+                  value={box.height_cm}
+                  onChange={(e) => updateBox(i, { height_cm: e.target.value })}
+                  inputMode="decimal"
+                  className="input"
+                />
+              </Field>
+              <Field label={i === 0 ? 'Peso máx (kg)' : ''}>
+                <input
+                  value={box.max_weight_kg}
+                  onChange={(e) => updateBox(i, { max_weight_kg: e.target.value })}
+                  placeholder="—"
+                  inputMode="decimal"
+                  className="input"
+                />
+              </Field>
+              <button
+                type="button"
+                onClick={() => removeBox(i)}
+                aria-label="Remover caixa"
+                className="input flex items-center justify-center text-red-600 font-bold"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <p className="text-xs text-muted">
+            O sistema escolhe a menor caixa em que o pedido caiba e gera uma única etiqueta, com o peso
+            somado de todos os produtos. Peso máximo é opcional. Os produtos precisam ter peso e dimensões
+            cadastrados.
+          </p>
         </div>
-        <p className="-mt-2 text-xs text-muted">
-          Caixa padrão usada em todos os envios. O sistema gera uma única etiqueta por pedido, com o
-          peso somado de todos os produtos. Preencha antes de calcular frete ou gerar etiquetas.
-        </p>
       </section>
 
       {/* Notificações */}
