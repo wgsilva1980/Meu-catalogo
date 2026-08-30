@@ -38,6 +38,9 @@ export async function saveStoreSettings(formData: FormData) {
     shipping_origin_city: (formData.get('shipping_origin_city') as string) || null,
     shipping_origin_state: (formData.get('shipping_origin_state') as string) || null,
     shipping_origin_agency_id: parseAgencyId(formData.get('shipping_origin_agency_id') as string | null),
+    shipping_package_length_cm: parseDimension(formData.get('shipping_package_length_cm') as string | null),
+    shipping_package_width_cm: parseDimension(formData.get('shipping_package_width_cm') as string | null),
+    shipping_package_height_cm: parseDimension(formData.get('shipping_package_height_cm') as string | null),
   }
 
   const { error } = await supabase.from('companies').update(payloadWithShipping).eq('id', active.companyId)
@@ -54,4 +57,11 @@ export async function saveStoreSettings(formData: FormData) {
 function parseAgencyId(raw: string | null): number | null {
   const digits = (raw ?? '').replace(/\D/g, '')
   return digits ? Number(digits) : null
+}
+
+// Dimensão da caixa padrão em cm. Aceita decimal com vírgula ("2,5"); vazio
+// ou não-positivo vira null.
+function parseDimension(raw: string | null): number | null {
+  const n = Number((raw ?? '').replace(',', '.').trim())
+  return Number.isFinite(n) && n > 0 ? n : null
 }

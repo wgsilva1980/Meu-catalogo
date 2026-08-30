@@ -203,9 +203,6 @@ async function melhorEnvioRequest<T>({ companyId, method, path, body }: MelhorEn
 }
 
 export type ShippingQuoteItem = {
-  width_cm: number
-  height_cm: number
-  length_cm: number
   weight_kg: number
   quantity: number
   insurance_value: number
@@ -215,6 +212,25 @@ export type ShippingQuoteItem = {
   // responde 422 pedindo "products".
   name?: string
   unit_value?: number
+}
+
+// Caixa padrão da loja (cm). Todos os itens de um pedido viajam numa única
+// caixa com estas dimensões e o peso somado dos produtos, gerando uma
+// etiqueta só.
+export type ShippingPackage = {
+  length_cm: number
+  width_cm: number
+  height_cm: number
+}
+
+// Peso total do pedido (kg), somando quantidade de cada item, com o piso de
+// 0.01kg do Melhor Envio aplicado ao total.
+function totalWeightKg(items: ShippingQuoteItem[]) {
+  return clampPackageWeight(items.reduce((sum, item) => sum + item.weight_kg * item.quantity, 0))
+}
+
+function totalInsuranceValue(items: ShippingQuoteItem[]) {
+  return items.reduce((sum, item) => sum + item.insurance_value, 0)
 }
 
 export type ShippingQuoteOption = {
@@ -231,12 +247,16 @@ export async function calculateShipping({
   fromPostalCode,
   toPostalCode,
   items,
+  packageBox,
 }: {
   companyId: string
   fromPostalCode: string
   toPostalCode: string
   items: ShippingQuoteItem[]
+  packageBox: ShippingPackage
 }) {
+  // Uma caixa só: dimensões da caixa padrão, peso e seguro somados do pedido.
+  // O cálculo precisa bater com o que a compra vai enviar em /api/v2/me/cart.
   const options = await melhorEnvioRequest<ShippingQuoteOption[]>({
     companyId,
     method: 'POST',
@@ -244,15 +264,17 @@ export async function calculateShipping({
     body: {
       from: { postal_code: onlyDigits(fromPostalCode) },
       to: { postal_code: onlyDigits(toPostalCode) },
-      products: items.map((item, i) => ({
-        id: `item-${i}`,
-        width: item.width_cm,
-        height: item.height_cm,
-        length: item.length_cm,
-        weight: clampPackageWeight(item.weight_kg),
-        insurance_value: item.insurance_value,
-        quantity: item.quantity,
-      })),
+      products: [
+        {
+          id: 'order',
+          width: packageBox.width_cm,
+          height: packageBox.height_cm,
+          length: packageBox.length_cm,
+          weight: totalWeightKg(items),
+          insurance_value: totalInsuranceValue(items),
+          quantity: 1,
+        },
+      ],
     },
   })
   // a API retorna também as opções sem cotação (ex: agência não atende a
@@ -290,6 +312,7 @@ export async function purchaseAndGenerateLabel({
   from,
   to,
   items,
+  packageBox,
 }: {
   companyId: string
   serviceId: number
@@ -298,6 +321,7 @@ export async function purchaseAndGenerateLabel({
   from: ShippingAddress
   to: ShippingAddress
   items: ShippingQuoteItem[]
+  packageBox: ShippingPackage
 }) {
   if (carrierCompanyId != null && AGENCY_REQUIRED_CARRIERS.has(carrierCompanyId) && !agencyId) {
     throw new Error(
@@ -325,18 +349,23 @@ export async function purchaseAndGenerateLabel({
       ...(agencyId ? { agency: agencyId } : {}),
       from: sanitizeAddress(from),
       to: sanitizeAddress(to),
-      volumes: items.map((item) => ({
-        height: item.height_cm,
-        width: item.width_cm,
-        length: item.length_cm,
-        weight: clampPackageWeight(item.weight_kg),
-      })),
+      // Uma etiqueta por pedido: um único volume (a caixa padrão da loja) com
+      // o peso somado de todos os produtos. `products` continua listando cada
+      // item para a declaração de conteúdo exigida pela API.
+      volumes: [
+        {
+          height: packageBox.height_cm,
+          width: packageBox.width_cm,
+          length: packageBox.length_cm,
+          weight: totalWeightKg(items),
+        },
+      ],
       products: items.map((item, i) => ({
         name: item.name || `Item ${i + 1}`,
         quantity: item.quantity,
         unitary_value: item.unit_value ?? 0,
       })),
-      options: { insurance_value: items.reduce((sum, i) => sum + i.insurance_value, 0), receipt: false, own_hand: false },
+      options: { insurance_value: totalInsuranceValue(items), receipt: false, own_hand: false },
     },
   })
 
