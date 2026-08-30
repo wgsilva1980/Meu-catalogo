@@ -89,8 +89,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const from: ShippingAddress = {
     name: company.shipping_origin_name || company.name,
-    phone: company.shipping_origin_phone,
-    email: company.shipping_origin_email,
+    phone: company.phone,
+    email: company.email,
     document: company.shipping_origin_document,
     address: company.shipping_origin_street || '',
     number: company.shipping_origin_number || 'S/N',

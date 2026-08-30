@@ -46,16 +46,16 @@ export async function submitPublicCustomer(formData: FormData) {
   })
 
   // Notificação por e-mail: melhor esforço, nunca deve impedir o cadastro
-  // em si (mesmo que a coluna notification_email ainda não exista).
+  // em si (mesmo que a coluna email ainda não exista).
   try {
     const { data: companySettings } = await supabase
       .from('companies')
-      .select('notification_email')
+      .select('email')
       .eq('id', company.id)
       .single()
-    if (companySettings?.notification_email) {
+    if (companySettings?.email) {
       await sendNotificationEmail({
-        to: companySettings.notification_email,
+        to: companySettings.email,
         subject: `Novo cliente cadastrado — ${company.name}`,
         html: `<p><strong>Novo cliente cadastrado</strong></p><p>Nome: ${name}<br/>Telefone: ${phone ?? '—'}</p>`,
       })

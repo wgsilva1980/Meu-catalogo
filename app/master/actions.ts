@@ -110,10 +110,9 @@ export async function updateCompany(formData: FormData) {
   const payload = {
     name: (formData.get('name') as string) || 'Empresa',
     phone: (formData.get('phone') as string) || null,
-    whatsapp: (formData.get('whatsapp') as string) || null,
+    email: (formData.get('email') as string) || null,
     instagram: (formData.get('instagram') as string) || null,
     website: (formData.get('website') as string) || null,
-    address: (formData.get('address') as string) || null,
   }
 
   const supabase = await createClient()

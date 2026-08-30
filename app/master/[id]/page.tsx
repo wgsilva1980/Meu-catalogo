@@ -65,11 +65,11 @@ export default async function EditarEmpresaPage({
           </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Telefone">
+            <Field label="Telefone / WhatsApp">
               <input name="phone" defaultValue={company.phone ?? ''} className="input" />
             </Field>
-            <Field label="WhatsApp">
-              <input name="whatsapp" defaultValue={company.whatsapp ?? ''} className="input" />
+            <Field label="E-mail da loja">
+              <input name="email" type="email" defaultValue={company.email ?? ''} className="input" />
             </Field>
           </div>
 
@@ -81,10 +81,6 @@ export default async function EditarEmpresaPage({
               <input name="website" defaultValue={company.website ?? ''} className="input" />
             </Field>
           </div>
-
-          <Field label="Endereço">
-            <textarea name="address" defaultValue={company.address ?? ''} className="input h-16" />
-          </Field>
 
           <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold mt-2">
             Salvar

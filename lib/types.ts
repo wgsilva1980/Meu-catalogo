@@ -41,16 +41,18 @@ export type Company = {
   name: string
   slug: string
   logo_url: string | null
+  // Telefone / WhatsApp da loja. Exibido no PDF e usado como telefone do
+  // remetente nas etiquetas do Melhor Envio.
   phone: string | null
-  whatsapp: string | null
+  // E-mail único da loja: recebe notificações de pedido/cadastro e vai como
+  // remetente nas etiquetas.
+  email: string | null
   instagram: string | null
   website: string | null
-  address: string | null
-  notification_email: string | null
+  // Endereço estruturado da loja — endereço único, usado para calcular frete
+  // e gerar etiquetas.
   shipping_origin_name: string | null
   shipping_origin_document: string | null
-  shipping_origin_phone: string | null
-  shipping_origin_email: string | null
   shipping_origin_zip_code: string | null
   shipping_origin_street: string | null
   shipping_origin_number: string | null

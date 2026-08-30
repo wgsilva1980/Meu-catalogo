@@ -46,10 +46,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     slug: companyId,
     logo_url: null,
     phone: null,
-    whatsapp: null,
+    email: null,
     instagram: null,
     website: null,
-    address: null,
     active: true,
     created_at: new Date().toISOString(),
   }
