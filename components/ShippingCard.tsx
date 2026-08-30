@@ -18,6 +18,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
   const [purchasing, setPurchasing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [printUrl, setPrintUrl] = useState<string | null>(shipment?.print_url ?? null)
+  const [generated, setGenerated] = useState(shipment?.status === 'gerado')
 
   async function handleCalculate() {
     setLoading(true)
@@ -61,6 +62,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
         return
       }
       setPrintUrl(data.printUrl)
+      setGenerated(true)
     } catch {
       setError('Falha ao gerar etiqueta.')
     } finally {
@@ -83,12 +85,14 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
     )
   }
 
-  if (shipment?.status === 'gerado' && printUrl) {
+  if (generated && printUrl) {
+    const serviceName = shipment?.service_name ?? selected?.name ?? ''
+    const price = shipment?.price ?? (selected ? Number(selected.price) : 0)
     return (
       <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
         <h2 className="text-sm font-bold">Frete</h2>
         <p className="text-sm">
-          Etiqueta gerada — {shipment.service_name} · R$ {Number(shipment.price ?? 0).toFixed(2).replace('.', ',')}
+          Etiqueta gerada — {serviceName} · R$ {Number(price ?? 0).toFixed(2).replace('.', ',')}
         </p>
         <a href={printUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-accent underline w-fit">
           Ver/imprimir etiqueta
