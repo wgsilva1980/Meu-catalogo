@@ -48,7 +48,12 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
       const res = await fetch(`/api/pedidos/${orderId}/frete/comprar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ service_id: selected.id, service_name: selected.name, price: Number(selected.price) }),
+        body: JSON.stringify({
+          service_id: selected.id,
+          service_name: selected.name,
+          price: Number(selected.price),
+          carrier_company_id: selected.company.id,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {

@@ -274,22 +274,36 @@ export type ShippingAddress = {
   state_abbr: string
 }
 
+// Transportadoras que exigem uma agência de postagem ao adicionar o envio ao
+// carrinho (Jadlog = 2, Azul Cargo = 3). Sem `agency` no corpo, o
+// /api/v2/me/cart responde 500 genérico. Correios (1) e demais não usam.
+const AGENCY_REQUIRED_CARRIERS = new Set([2, 3])
+
 // Fluxo completo de compra: carrinho -> checkout -> geração -> impressão.
 // Só é chamado a partir de uma ação explícita do admin (gasta saldo real da
 // carteira do Melhor Envio em produção).
 export async function purchaseAndGenerateLabel({
   companyId,
   serviceId,
+  carrierCompanyId,
+  agencyId,
   from,
   to,
   items,
 }: {
   companyId: string
   serviceId: number
+  carrierCompanyId?: number | null
+  agencyId?: number | null
   from: ShippingAddress
   to: ShippingAddress
   items: ShippingQuoteItem[]
 }) {
+  if (carrierCompanyId != null && AGENCY_REQUIRED_CARRIERS.has(carrierCompanyId) && !agencyId) {
+    throw new Error(
+      'Esta transportadora (Jadlog/Azul) exige uma agência de postagem. Configure o "ID da agência Jadlog/Azul" em Configurações → Endereço de origem para envios.'
+    )
+  }
   // document e phone precisam ir só com dígitos — mandar com pontuação
   // (ex.: "123.456.789-00" ou "(11) 91234-5678") faz a API do Melhor Envio
   // falhar ao salvar o pedido no carrinho com um 500 genérico, sem indicar
@@ -308,6 +322,7 @@ export async function purchaseAndGenerateLabel({
     path: '/api/v2/me/cart',
     body: {
       service: serviceId,
+      ...(agencyId ? { agency: agencyId } : {}),
       from: sanitizeAddress(from),
       to: sanitizeAddress(to),
       volumes: items.map((item) => ({

@@ -37,6 +37,7 @@ export async function saveStoreSettings(formData: FormData) {
     shipping_origin_neighborhood: (formData.get('shipping_origin_neighborhood') as string) || null,
     shipping_origin_city: (formData.get('shipping_origin_city') as string) || null,
     shipping_origin_state: (formData.get('shipping_origin_state') as string) || null,
+    shipping_origin_agency_id: parseAgencyId(formData.get('shipping_origin_agency_id') as string | null),
   }
 
   const { error } = await supabase.from('companies').update(payloadWithShipping).eq('id', active.companyId)
@@ -46,4 +47,11 @@ export async function saveStoreSettings(formData: FormData) {
   }
 
   revalidatePath('/admin/configuracoes')
+}
+
+// A agência do Melhor Envio é sempre um ID numérico. Guarda apenas os
+// dígitos; qualquer coisa vazia/inválida vira null (Correios não usa agência).
+function parseAgencyId(raw: string | null): number | null {
+  const digits = (raw ?? '').replace(/\D/g, '')
+  return digits ? Number(digits) : null
 }

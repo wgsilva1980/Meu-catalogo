@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!active.ok) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const { id } = await params
-  let body: { service_id?: number; service_name?: string; price?: number }
+  let body: { service_id?: number; service_name?: string; price?: number; carrier_company_id?: number }
   try {
     body = await request.json()
   } catch {
@@ -97,6 +97,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const result = await purchaseAndGenerateLabel({
       companyId: active.companyId,
       serviceId: body.service_id,
+      carrierCompanyId: body.carrier_company_id ?? null,
+      agencyId: company.shipping_origin_agency_id ?? null,
       from,
       to,
       items: quoteItems,

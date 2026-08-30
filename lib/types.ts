@@ -48,6 +48,7 @@ export type Company = {
   shipping_origin_neighborhood: string | null
   shipping_origin_city: string | null
   shipping_origin_state: string | null
+  shipping_origin_agency_id: number | null
   active: boolean
   created_at: string
 }
