@@ -38,9 +38,7 @@ export async function saveStoreSettings(formData: FormData) {
     shipping_origin_city: (formData.get('shipping_origin_city') as string) || null,
     shipping_origin_state: (formData.get('shipping_origin_state') as string) || null,
     shipping_origin_agency_id: parseAgencyId(formData.get('shipping_origin_agency_id') as string | null),
-    shipping_package_length_cm: parseDimension(formData.get('shipping_package_length_cm') as string | null),
-    shipping_package_width_cm: parseDimension(formData.get('shipping_package_width_cm') as string | null),
-    shipping_package_height_cm: parseDimension(formData.get('shipping_package_height_cm') as string | null),
+    shipping_packages: parsePackages(formData.get('shipping_packages') as string | null),
   }
 
   const { error } = await supabase.from('companies').update(payloadWithShipping).eq('id', active.companyId)
@@ -59,9 +57,42 @@ function parseAgencyId(raw: string | null): number | null {
   return digits ? Number(digits) : null
 }
 
-// Dimensão da caixa padrão em cm. Aceita decimal com vírgula ("2,5"); vazio
-// ou não-positivo vira null.
-function parseDimension(raw: string | null): number | null {
-  const n = Number((raw ?? '').replace(',', '.').trim())
+// Número em cm/kg vindo do formulário. Aceita decimal com vírgula ("2,5");
+// vazio ou não-positivo vira null.
+function parsePositiveNumber(raw: unknown): number | null {
+  const n = Number(String(raw ?? '').replace(',', '.').trim())
   return Number.isFinite(n) && n > 0 ? n : null
+}
+
+// Lista de caixas cadastradas (JSON vindo de um input hidden do formulário).
+// Descarta linhas sem as 3 dimensões; nome vazio recebe um rótulo padrão.
+function parsePackages(raw: string | null): Array<{
+  name: string
+  length_cm: number
+  width_cm: number
+  height_cm: number
+  max_weight_kg: number | null
+}> {
+  let arr: unknown
+  try {
+    arr = JSON.parse(raw ?? '[]')
+  } catch {
+    return []
+  }
+  if (!Array.isArray(arr)) return []
+  return arr
+    .map((row, i) => {
+      const r = (row ?? {}) as Record<string, unknown>
+      return {
+        name: String(r.name ?? '').trim() || `Caixa ${i + 1}`,
+        length_cm: parsePositiveNumber(r.length_cm),
+        width_cm: parsePositiveNumber(r.width_cm),
+        height_cm: parsePositiveNumber(r.height_cm),
+        max_weight_kg: parsePositiveNumber(r.max_weight_kg),
+      }
+    })
+    .filter(
+      (r): r is { name: string; length_cm: number; width_cm: number; height_cm: number; max_weight_kg: number | null } =>
+        r.length_cm != null && r.width_cm != null && r.height_cm != null
+    )
 }

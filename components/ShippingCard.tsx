@@ -19,12 +19,14 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
   const [error, setError] = useState<string | null>(null)
   const [printUrl, setPrintUrl] = useState<string | null>(shipment?.print_url ?? null)
   const [generated, setGenerated] = useState(shipment?.status === 'gerado')
+  const [box, setBox] = useState<{ name: string; fits: boolean } | null>(null)
 
   async function handleCalculate() {
     setLoading(true)
     setError(null)
     setOptions([])
     setSelected(null)
+    setBox(null)
     try {
       const res = await fetch(`/api/pedidos/${orderId}/frete/calcular`, { method: 'POST' })
       const data = await res.json()
@@ -33,6 +35,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
         return
       }
       setOptions(data.options ?? [])
+      setBox(data.box ?? null)
       if (!data.options || data.options.length === 0) setError('Nenhuma opção de frete disponível para este endereço.')
     } catch {
       setError('Falha ao calcular frete.')
@@ -116,6 +119,13 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
       </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
+
+      {box && (
+        <p className={`text-xs ${box.fits ? 'text-muted' : 'text-amber-600'}`}>
+          Caixa: {box.name}
+          {!box.fits && ' — os produtos podem não caber nesta caixa; confira antes de gerar a etiqueta.'}
+        </p>
+      )}
 
       {options.length > 0 && (
         <div className="flex flex-col gap-2">

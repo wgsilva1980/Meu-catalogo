@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveActiveCompany } from '@/lib/company'
-import { purchaseAndGenerateLabel, type ShippingAddress, type ShippingQuoteItem } from '@/lib/melhorEnvio'
+import {
+  pickShippingBox,
+  purchaseAndGenerateLabel,
+  resolveShippingBoxes,
+  type PackableItem,
+  type ShippingAddress,
+  type ShippingQuoteItem,
+} from '@/lib/melhorEnvio'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -41,21 +48,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!company?.shipping_origin_zip_code || !customer?.zip_code || !items || items.length === 0) {
     return NextResponse.json({ error: 'Dados incompletos para gerar a etiqueta. Calcule o frete novamente.' }, { status: 422 })
   }
-  if (!company.shipping_package_length_cm || !company.shipping_package_width_cm || !company.shipping_package_height_cm) {
+  const boxes = resolveShippingBoxes(company)
+  if (boxes.length === 0) {
     return NextResponse.json(
-      { error: 'Cadastre as dimensões da caixa padrão em Configurações → Endereço de origem para envios antes de gerar etiqueta.' },
+      { error: 'Cadastre ao menos uma caixa em Configurações → Endereço de origem para envios antes de gerar etiqueta.' },
       { status: 422 }
     )
   }
 
   const productIds = items.map((item) => item.product_id)
-  const { data: products } = await supabase.from('products').select('id, name, weight_kg').in('id', productIds)
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, name, weight_kg, length_cm, width_cm, height_cm')
+    .in('id', productIds)
 
   const quoteItems: ShippingQuoteItem[] = []
+  const packItems: PackableItem[] = []
   for (const item of items) {
     const product = (products ?? []).find((p) => p.id === item.product_id)
-    if (!product?.weight_kg) {
-      return NextResponse.json({ error: 'Um ou mais produtos deste pedido não têm peso cadastrado.' }, { status: 422 })
+    if (!product?.weight_kg || !product.length_cm || !product.width_cm || !product.height_cm) {
+      return NextResponse.json({ error: 'Um ou mais produtos deste pedido não têm peso/dimensões cadastrados.' }, { status: 422 })
     }
     quoteItems.push({
       weight_kg: Number(product.weight_kg),
@@ -64,7 +76,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       name: product.name,
       unit_value: Number(item.unit_price),
     })
+    packItems.push({
+      weight_kg: Number(product.weight_kg),
+      length_cm: Number(product.length_cm),
+      width_cm: Number(product.width_cm),
+      height_cm: Number(product.height_cm),
+      quantity: item.quantity,
+    })
   }
+
+  const picked = pickShippingBox(boxes, packItems)!
 
   const from: ShippingAddress = {
     name: company.shipping_origin_name || company.name,
@@ -103,9 +124,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       to,
       items: quoteItems,
       packageBox: {
-        length_cm: Number(company.shipping_package_length_cm),
-        width_cm: Number(company.shipping_package_width_cm),
-        height_cm: Number(company.shipping_package_height_cm),
+        length_cm: picked.box.length_cm,
+        width_cm: picked.box.width_cm,
+        height_cm: picked.box.height_cm,
       },
     })
 

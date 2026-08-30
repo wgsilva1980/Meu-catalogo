@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
-import { calculateShipping, type ShippingQuoteItem } from '@/lib/melhorEnvio'
+import {
+  calculateShipping,
+  pickShippingBox,
+  resolveShippingBoxes,
+  type PackableItem,
+  type ShippingQuoteItem,
+} from '@/lib/melhorEnvio'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -30,9 +36,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (!company?.shipping_origin_zip_code) {
     return NextResponse.json({ error: 'Cadastre o endereço de origem em Configurações antes de calcular frete.' }, { status: 422 })
   }
-  if (!company.shipping_package_length_cm || !company.shipping_package_width_cm || !company.shipping_package_height_cm) {
+  const boxes = resolveShippingBoxes(company)
+  if (boxes.length === 0) {
     return NextResponse.json(
-      { error: 'Cadastre as dimensões da caixa padrão em Configurações → Endereço de origem para envios antes de calcular frete.' },
+      { error: 'Cadastre ao menos uma caixa em Configurações → Endereço de origem para envios antes de calcular frete.' },
       { status: 422 }
     )
   }
@@ -44,14 +51,18 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   }
 
   const productIds = items.map((item) => item.product_id)
-  const { data: products } = await supabase.from('products').select('id, weight_kg').in('id', productIds)
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, weight_kg, length_cm, width_cm, height_cm')
+    .in('id', productIds)
 
-  const missingWeight: string[] = []
+  const missing: string[] = []
   const quoteItems: ShippingQuoteItem[] = []
+  const packItems: PackableItem[] = []
   for (const item of items) {
     const product = (products ?? []).find((p) => p.id === item.product_id)
-    if (!product?.weight_kg) {
-      missingWeight.push(item.product_id)
+    if (!product?.weight_kg || !product.length_cm || !product.width_cm || !product.height_cm) {
+      missing.push(item.product_id)
       continue
     }
     quoteItems.push({
@@ -59,14 +70,23 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       quantity: item.quantity,
       insurance_value: Number(item.unit_price) * item.quantity,
     })
+    packItems.push({
+      weight_kg: Number(product.weight_kg),
+      length_cm: Number(product.length_cm),
+      width_cm: Number(product.width_cm),
+      height_cm: Number(product.height_cm),
+      quantity: item.quantity,
+    })
   }
 
-  if (missingWeight.length > 0) {
+  if (missing.length > 0) {
     return NextResponse.json(
-      { error: 'Um ou mais produtos deste pedido não têm peso cadastrado. Preencha em Produtos antes de calcular frete.' },
+      { error: 'Um ou mais produtos deste pedido não têm peso/dimensões cadastrados. Preencha em Produtos antes de calcular frete.' },
       { status: 422 }
     )
   }
+
+  const picked = pickShippingBox(boxes, packItems)!
 
   try {
     const options = await calculateShipping({
@@ -75,12 +95,12 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       toPostalCode: customer.zip_code,
       items: quoteItems,
       packageBox: {
-        length_cm: Number(company.shipping_package_length_cm),
-        width_cm: Number(company.shipping_package_width_cm),
-        height_cm: Number(company.shipping_package_height_cm),
+        length_cm: picked.box.length_cm,
+        width_cm: picked.box.width_cm,
+        height_cm: picked.box.height_cm,
       },
     })
-    return NextResponse.json({ options })
+    return NextResponse.json({ options, box: { name: picked.box.name, fits: picked.fits } })
   } catch (err) {
     console.error('Falha ao calcular frete:', err)
     const message = err instanceof Error ? err.message : 'Falha ao calcular frete.'
