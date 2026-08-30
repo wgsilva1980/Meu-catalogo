@@ -213,6 +213,21 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
             />
           </Field>
         </div>
+
+        <Field label="ID da agência Jadlog/Azul">
+          <input
+            name="shipping_origin_agency_id"
+            defaultValue={settings.shipping_origin_agency_id ?? ''}
+            placeholder="Ex.: 25"
+            inputMode="numeric"
+            className="input max-w-[10rem]"
+          />
+        </Field>
+        <p className="-mt-2 text-xs text-muted">
+          Obrigatório para gerar etiquetas Jadlog e Azul (essas transportadoras exigem uma agência de
+          postagem). Pegue o ID no painel do Melhor Envio em Configurações → Agências. Correios não usa
+          agência — pode deixar em branco.
+        </p>
       </section>
 
       {/* Notificações */}
