@@ -49,6 +49,9 @@ export type Company = {
   shipping_origin_city: string | null
   shipping_origin_state: string | null
   shipping_origin_agency_id: number | null
+  shipping_package_length_cm: number | null
+  shipping_package_width_cm: number | null
+  shipping_package_height_cm: number | null
   active: boolean
   created_at: string
 }

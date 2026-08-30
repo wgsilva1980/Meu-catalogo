@@ -228,6 +228,40 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           postagem). Pegue o ID no painel do Melhor Envio em Configurações → Agências. Correios não usa
           agência — pode deixar em branco.
         </p>
+
+        <div className="grid grid-cols-3 gap-3">
+          <Field label="Comprimento da caixa (cm)">
+            <input
+              name="shipping_package_length_cm"
+              defaultValue={settings.shipping_package_length_cm ?? ''}
+              placeholder="Ex.: 20"
+              inputMode="decimal"
+              className="input"
+            />
+          </Field>
+          <Field label="Largura da caixa (cm)">
+            <input
+              name="shipping_package_width_cm"
+              defaultValue={settings.shipping_package_width_cm ?? ''}
+              placeholder="Ex.: 15"
+              inputMode="decimal"
+              className="input"
+            />
+          </Field>
+          <Field label="Altura da caixa (cm)">
+            <input
+              name="shipping_package_height_cm"
+              defaultValue={settings.shipping_package_height_cm ?? ''}
+              placeholder="Ex.: 10"
+              inputMode="decimal"
+              className="input"
+            />
+          </Field>
+        </div>
+        <p className="-mt-2 text-xs text-muted">
+          Caixa padrão usada em todos os envios. O sistema gera uma única etiqueta por pedido, com o
+          peso somado de todos os produtos. Preencha antes de calcular frete ou gerar etiquetas.
+        </p>
       </section>
 
       {/* Notificações */}
