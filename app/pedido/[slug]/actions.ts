@@ -7,7 +7,7 @@ import { sendNotificationEmail } from '@/lib/email'
 import { buildOrderNotificationEmail } from '@/lib/emailTemplates'
 
 // Cópia fixa enviada em todo pedido, para validar que o envio de e-mail
-// está funcionando (independe de a empresa ter configurado notification_email).
+// está funcionando (independe de a empresa ter configurado o e-mail da loja).
 const VALIDATION_COPY_EMAIL = 'wagnergarnizet@gmail.com'
 
 export async function submitPublicOrder(formData: FormData) {
@@ -115,16 +115,16 @@ export async function submitPublicOrder(formData: FormData) {
 
   // Notificação por e-mail: melhor esforço, isolada em try/catch própria
   // para nunca impedir a confirmação do pedido (mesmo que a coluna
-  // notification_email ainda não exista, por falta de migration).
+  // email ainda não exista, por falta de migration).
   try {
     const { data: companySettings } = await supabase
       .from('companies')
-      .select('notification_email')
+      .select('email')
       .eq('id', company.id)
       .single()
 
     const recipients = new Set([VALIDATION_COPY_EMAIL])
-    if (companySettings?.notification_email) recipients.add(companySettings.notification_email)
+    if (companySettings?.email) recipients.add(companySettings.email)
 
     const { data: customer } = await supabase
       .from('customers')

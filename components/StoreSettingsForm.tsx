@@ -153,13 +153,16 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Telefone">
+          <Field label="Telefone / WhatsApp">
             <input name="phone" defaultValue={settings.phone ?? ''} placeholder="(00) 00000-0000" className="input" />
           </Field>
-          <Field label="WhatsApp">
-            <input name="whatsapp" defaultValue={settings.whatsapp ?? ''} placeholder="(00) 00000-0000" className="input" />
+          <Field label="E-mail da loja">
+            <input name="email" type="email" defaultValue={settings.email ?? ''} placeholder="voce@exemplo.com" className="input" />
           </Field>
         </div>
+        <p className="-mt-2 text-xs text-muted">
+          Recebe os avisos de novos cadastros e pedidos, e é o remetente das etiquetas do Melhor Envio.
+        </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Instagram">
@@ -169,17 +172,15 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
             <input name="website" defaultValue={settings.website ?? ''} placeholder="https://..." className="input" />
           </Field>
         </div>
-
-        <Field label="Endereço">
-          <textarea name="address" defaultValue={settings.address ?? ''} placeholder="Rua, número, bairro, cidade" className="input h-16" />
-        </Field>
       </section>
 
-      {/* Endereço de origem para frete */}
+      {/* Endereço da loja */}
       <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
         <div>
-          <h2 className="text-sm font-bold">Endereço de origem para envios</h2>
-          <p className="text-xs text-muted">Usado para calcular frete e gerar etiquetas no Melhor Envio.</p>
+          <h2 className="text-sm font-bold">Endereço da loja</h2>
+          <p className="text-xs text-muted">
+            Endereço de origem usado para calcular frete e gerar etiquetas no Melhor Envio.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -188,15 +189,6 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           </Field>
           <Field label="CPF/CNPJ do remetente">
             <input name="shipping_origin_document" defaultValue={settings.shipping_origin_document ?? ''} className="input" />
-          </Field>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Telefone">
-            <input name="shipping_origin_phone" defaultValue={settings.shipping_origin_phone ?? ''} placeholder="(00) 00000-0000" className="input" />
-          </Field>
-          <Field label="E-mail">
-            <input name="shipping_origin_email" type="email" defaultValue={settings.shipping_origin_email ?? ''} className="input" />
           </Field>
         </div>
 
@@ -342,23 +334,6 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
             cadastrados.
           </p>
         </div>
-      </section>
-
-      {/* Notificações */}
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
-        <h2 className="text-sm font-bold">Notificações por e-mail</h2>
-        <p className="text-xs text-muted">
-          Receba um e-mail sempre que um cliente se cadastrar ou enviar um pedido pelo link público.
-        </p>
-        <Field label="E-mail para receber notificações">
-          <input
-            name="notification_email"
-            type="email"
-            defaultValue={settings.notification_email ?? ''}
-            placeholder="voce@exemplo.com"
-            className="input max-w-xs"
-          />
-        </Field>
       </section>
 
       <div className="flex flex-wrap items-center gap-3 justify-end">
