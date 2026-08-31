@@ -17,6 +17,16 @@ export function melhorEnvioEnvironment(): MelhorEnvioEnvironment {
   return process.env.MELHOR_ENVIO_ENVIRONMENT === 'production' ? 'production' : 'sandbox'
 }
 
+// redirect_uri do OAuth. O Melhor Envio exige que bata EXATAMENTE com a URL
+// cadastrada no app — e as URLs de deploy da Vercel variam (domínio de
+// produção vs. aliases vs. previews), então derivar do header Host quebra a
+// conexão. Quando MELHOR_ENVIO_REDIRECT_URI está definida, ela manda; o
+// fallback pelo origin só serve para desenvolvimento local.
+export function melhorEnvioRedirectUri(fallbackOrigin: string): string {
+  const configured = process.env.MELHOR_ENVIO_REDIRECT_URI?.trim()
+  return configured || `${fallbackOrigin}/admin/configuracoes/melhor-envio/callback`
+}
+
 function baseUrl(environment: MelhorEnvioEnvironment) {
   return BASE_URL[environment]
 }

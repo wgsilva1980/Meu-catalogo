@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers, cookies } from 'next/headers'
 import { resolveActiveCompany } from '@/lib/company'
-import { connectAccount, OAUTH_STATE_COOKIE } from '@/lib/melhorEnvio'
+import { connectAccount, melhorEnvioRedirectUri, OAUTH_STATE_COOKIE } from '@/lib/melhorEnvio'
 
 export async function GET(request: NextRequest) {
   const requestHeaders = await headers()
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     await connectAccount({
       companyId: active.companyId,
       code,
-      redirectUri: `${origin}/admin/configuracoes/melhor-envio/callback`,
+      redirectUri: melhorEnvioRedirectUri(origin),
     })
   } catch (err) {
     console.error('Falha ao conectar conta do Melhor Envio:', err)

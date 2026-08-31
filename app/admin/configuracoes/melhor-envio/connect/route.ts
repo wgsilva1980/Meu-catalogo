@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { headers, cookies } from 'next/headers'
 import { randomUUID } from 'crypto'
 import { resolveActiveCompany } from '@/lib/company'
-import { getAuthorizeUrl, OAUTH_STATE_COOKIE } from '@/lib/melhorEnvio'
+import { getAuthorizeUrl, melhorEnvioRedirectUri, OAUTH_STATE_COOKIE } from '@/lib/melhorEnvio'
 
 export async function GET() {
   const requestHeaders = await headers()
@@ -13,7 +13,7 @@ export async function GET() {
   const active = await resolveActiveCompany()
   if (!active.ok) return NextResponse.redirect(new URL('/login', origin))
 
-  const redirectUri = `${origin}/admin/configuracoes/melhor-envio/callback`
+  const redirectUri = melhorEnvioRedirectUri(origin)
 
   // state: nonce aleatório (anti-CSRF) guardado num cookie httpOnly de curta
   // duração — o callback confere que bate antes de aceitar o código.
