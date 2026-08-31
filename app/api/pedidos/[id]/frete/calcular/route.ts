@@ -106,6 +106,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       options,
       box: { name: picked.box.name, fits: picked.fits },
       preferredCarrierId,
+      originAgencyId: company.shipping_origin_agency_id ?? null,
     })
   } catch (err) {
     console.error('Falha ao calcular frete:', err)

@@ -11,6 +11,10 @@ type QuoteOption = {
   company: { id: number; name: string; picture: string }
 }
 
+// Jadlog (2) e Azul Cargo (3) exigem uma agência de postagem no envio ao
+// carrinho do Melhor Envio; Correios e demais não usam.
+const AGENCY_REQUIRED_CARRIERS = new Set([2, 3])
+
 export default function ShippingCard({ orderId, connected, shipment }: { orderId: string; connected: boolean; shipment: Shipment | null }) {
   const [options, setOptions] = useState<QuoteOption[]>([])
   const [selected, setSelected] = useState<QuoteOption | null>(null)
@@ -21,6 +25,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
   const [generated, setGenerated] = useState(shipment?.status === 'gerado')
   const [box, setBox] = useState<{ name: string; fits: boolean } | null>(null)
   const [preferredMissing, setPreferredMissing] = useState(false)
+  const [originAgencyId, setOriginAgencyId] = useState<number | null>(null)
 
   async function handleCalculate() {
     setLoading(true)
@@ -29,6 +34,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
     setSelected(null)
     setBox(null)
     setPreferredMissing(false)
+    setOriginAgencyId(null)
     try {
       const res = await fetch(`/api/pedidos/${orderId}/frete/calcular`, { method: 'POST' })
       const data = await res.json()
@@ -39,6 +45,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
       const opts: QuoteOption[] = data.options ?? []
       setOptions(opts)
       setBox(data.box ?? null)
+      setOriginAgencyId(data.originAgencyId ?? null)
       if (opts.length === 0) {
         setError('Nenhuma opção de frete disponível para este endereço.')
       } else if (data.preferredCarrierId != null) {
@@ -98,6 +105,9 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
       </section>
     )
   }
+
+  const needsAgency =
+    selected != null && AGENCY_REQUIRED_CARRIERS.has(selected.company.id) && originAgencyId == null
 
   if (generated && printUrl) {
     const serviceName = shipment?.service_name ?? selected?.name ?? ''
@@ -164,10 +174,18 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
             </label>
           ))}
 
+          {needsAgency && (
+            <p className="text-xs text-red-600">
+              A opção selecionada ({selected?.company.name}) exige uma agência de postagem. Em Configurações → Endereço
+              da loja, escolha a transportadora {selected?.company.name} e selecione a agência, depois calcule o frete
+              de novo.
+            </p>
+          )}
+
           <button
             type="button"
             onClick={handlePurchase}
-            disabled={!selected || purchasing}
+            disabled={!selected || purchasing || needsAgency}
             className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-50 w-fit mt-1"
           >
             {purchasing ? 'Gerando etiqueta...' : 'Comprar e gerar etiqueta'}
