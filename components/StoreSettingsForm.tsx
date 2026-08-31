@@ -13,6 +13,14 @@ type ViaCepResponse = {
   uf?: string
 }
 
+// Fallback usado enquanto a lista de transportadoras do Melhor Envio não
+// carrega (ex.: conta ainda não conectada).
+const CARRIER_FALLBACK = [
+  { id: 1, name: 'Correios' },
+  { id: 2, name: 'Jadlog' },
+  { id: 3, name: 'Azul Cargo' },
+]
+
 // Linha editável de caixa: números como string enquanto o usuário digita.
 type BoxRow = { name: string; length_cm: string; width_cm: string; height_cm: string; max_weight_kg: string }
 
@@ -54,12 +62,27 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
   const [originState, setOriginState] = useState(settings.shipping_origin_state ?? '')
   const [originCepStatus, setOriginCepStatus] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
 
-  const [agencyCarrier, setAgencyCarrier] = useState<'2' | '3'>('2')
+  const [carriers, setCarriers] = useState<{ id: number; name: string }[]>(CARRIER_FALLBACK)
+  const [agencyCarrier, setAgencyCarrier] = useState('2')
   const [agencyId, setAgencyId] = useState(
     settings.shipping_origin_agency_id != null ? String(settings.shipping_origin_agency_id) : ''
   )
   const [agencies, setAgencies] = useState<{ id: number; name: string; city: string }[]>([])
   const [agencyStatus, setAgencyStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  useEffect(() => {
+    const ac = new AbortController()
+    fetch('/api/melhor-envio/agencias', { signal: ac.signal })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.carriers) && d.carriers.length > 0) {
+          setCarriers(d.carriers)
+          setAgencyCarrier((cur) => (d.carriers.some((c: { id: number }) => String(c.id) === cur) ? cur : String(d.carriers[0].id)))
+        }
+      })
+      .catch(() => {})
+    return () => ac.abort()
+  }, [])
 
   useEffect(() => {
     const uf = originState.trim().toUpperCase()
@@ -285,9 +308,12 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-3">
           <Field label="Transportadora">
-            <select value={agencyCarrier} onChange={(e) => setAgencyCarrier(e.target.value as '2' | '3')} className="input">
-              <option value="2">Jadlog</option>
-              <option value="3">Azul Cargo</option>
+            <select value={agencyCarrier} onChange={(e) => setAgencyCarrier(e.target.value)} className="input">
+              {carriers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Agência de postagem">
