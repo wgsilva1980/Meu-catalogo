@@ -20,6 +20,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
   const [printUrl, setPrintUrl] = useState<string | null>(shipment?.print_url ?? null)
   const [generated, setGenerated] = useState(shipment?.status === 'gerado')
   const [box, setBox] = useState<{ name: string; fits: boolean } | null>(null)
+  const [preferredMissing, setPreferredMissing] = useState(false)
 
   async function handleCalculate() {
     setLoading(true)
@@ -27,6 +28,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
     setOptions([])
     setSelected(null)
     setBox(null)
+    setPreferredMissing(false)
     try {
       const res = await fetch(`/api/pedidos/${orderId}/frete/calcular`, { method: 'POST' })
       const data = await res.json()
@@ -34,14 +36,17 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
         setError(data.error ?? 'Falha ao calcular frete.')
         return
       }
-      setOptions(data.options ?? [])
+      const opts: QuoteOption[] = data.options ?? []
+      setOptions(opts)
       setBox(data.box ?? null)
-      if (!data.options || data.options.length === 0) {
-        setError(
-          data.carrierFiltered
-            ? 'A transportadora padrão configurada não retornou cotação para este endereço/pacote. Ajuste a transportadora em Configurações ou revise o CEP do cliente.'
-            : 'Nenhuma opção de frete disponível para este endereço.'
-        )
+      if (opts.length === 0) {
+        setError('Nenhuma opção de frete disponível para este endereço.')
+      } else if (data.preferredCarrierId != null) {
+        const preferred = opts.find((o) => o.company.id === data.preferredCarrierId)
+        setSelected(preferred ?? opts[0])
+        setPreferredMissing(!preferred)
+      } else {
+        setSelected(opts[0])
       }
     } catch {
       setError('Falha ao calcular frete.')
@@ -130,6 +135,12 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
         <p className={`text-xs ${box.fits ? 'text-muted' : 'text-amber-600'}`}>
           Caixa: {box.name}
           {!box.fits && ' — os produtos podem não caber nesta caixa; confira antes de gerar a etiqueta.'}
+        </p>
+      )}
+
+      {preferredMissing && (
+        <p className="text-xs text-amber-600">
+          A transportadora padrão não cotou este trajeto. As opções abaixo são alternativas — confira antes de gerar a etiqueta.
         </p>
       )}
 
