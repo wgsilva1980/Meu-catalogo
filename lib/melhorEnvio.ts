@@ -217,18 +217,23 @@ export async function listShippingCarriers({ companyId }: { companyId: string })
 
 export type ShippingAgency = { id: number; name: string; city: string }
 
-// Agências de postagem de uma transportadora (Jadlog = 2, Azul Cargo = 3)
-// numa UF, para popular o combo de "Agência de postagem" nas Configurações.
+// Agências de postagem de uma transportadora para o combo de "Agência de
+// postagem" nas Configurações. Filtra por CEP (mais preciso, retorna as
+// mais próximas) e/ou UF.
 export async function listShippingAgencies({
   companyId,
   carrierCompanyId,
   state,
+  postalCode,
 }: {
   companyId: string
   carrierCompanyId: number
-  state: string
+  state?: string
+  postalCode?: string
 }): Promise<ShippingAgency[]> {
-  const query = new URLSearchParams({ company: String(carrierCompanyId), country: 'BR', state })
+  const query = new URLSearchParams({ company: String(carrierCompanyId), country: 'BR' })
+  if (postalCode) query.set('postal_code', postalCode)
+  if (state) query.set('state', state)
   const agencies = await melhorEnvioRequest<
     Array<{ id: number; name: string; address?: { city?: { city?: string } } }>
   >({
