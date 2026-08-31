@@ -364,12 +364,16 @@ export async function calculateShipping({
   toPostalCode,
   items,
   packageBox,
+  carrierCompanyId,
 }: {
   companyId: string
   fromPostalCode: string
   toPostalCode: string
   items: ShippingQuoteItem[]
   packageBox: ShippingPackage
+  // Quando definido, só devolve cotações desta transportadora (o `company.id`
+  // do Melhor Envio). É a transportadora padrão configurada pela loja.
+  carrierCompanyId?: number | null
 }) {
   // Uma caixa só: dimensões da caixa padrão, peso e seguro somados do pedido.
   // O cálculo precisa bater com o que a compra vai enviar em /api/v2/me/cart.
@@ -395,7 +399,9 @@ export async function calculateShipping({
   })
   // a API retorna também as opções sem cotação (ex: agência não atende a
   // região) com um campo "error" — só interessam as que têm preço.
-  return options.filter((option) => !option.error && option.price)
+  const priced = options.filter((option) => !option.error && option.price)
+  if (carrierCompanyId == null) return priced
+  return priced.filter((option) => option.company?.id === carrierCompanyId)
 }
 
 export type ShippingAddress = {
