@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveActiveCompany } from '@/lib/company'
+import { validateImageUpload } from '@/lib/upload'
 
 export async function POST(request: NextRequest) {
   const active = await resolveActiveCompany()
@@ -15,12 +16,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Nenhum arquivo enviado' }, { status: 400 })
   }
 
+  const validated = await validateImageUpload(file)
+  if (!validated.ok) {
+    return NextResponse.json({ error: validated.error }, { status: validated.status })
+  }
+
   const admin = createAdminClient()
-  const path = `${active.companyId}/${crypto.randomUUID()}-${file.name}`
-  const { error } = await admin.storage.from('produtos').upload(path, file, { upsert: true })
+  const path = `${active.companyId}/${crypto.randomUUID()}.${validated.value.ext}`
+  const { error } = await admin.storage.from('produtos').upload(path, validated.value.buffer, {
+    upsert: true,
+    contentType: validated.value.contentType,
+  })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Falha ao salvar o arquivo.' }, { status: 500 })
   }
 
   const { data } = admin.storage.from('produtos').getPublicUrl(path)

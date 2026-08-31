@@ -34,6 +34,12 @@ export default function PublicOrderForm({
   return (
     <form action={submitPublicOrder} className="flex flex-col gap-4">
       <input type="hidden" name="slug" value={slug} />
+      <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+        <label>
+          Não preencha este campo
+          <input type="text" name="company_website" tabIndex={-1} autoComplete="off" defaultValue="" />
+        </label>
+      </div>
 
       <section className="flex flex-col gap-4">
         {groups.map(({ category, items }) => (

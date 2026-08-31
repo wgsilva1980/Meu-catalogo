@@ -3,11 +3,17 @@
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendNotificationEmail } from '@/lib/email'
+import { escapeHtml, isBot, readField } from '@/lib/publicForm'
 
 export async function submitPublicCustomer(formData: FormData) {
   const slug = formData.get('slug') as string
-  const name = (formData.get('name') as string)?.trim()
-  const phone = (formData.get('phone') as string)?.trim() || null
+  if (isBot(formData)) {
+    if (slug) redirect(`/cadastro/${slug}?sucesso=1`)
+    return
+  }
+
+  const name = readField(formData, 'name')
+  const phone = readField(formData, 'phone')
   if (!slug || !name) return
 
   const supabase = createAdminClient()
@@ -34,15 +40,15 @@ export async function submitPublicCustomer(formData: FormData) {
     company_id: company.id,
     name,
     phone,
-    email: (formData.get('email') as string) || null,
-    document: (formData.get('document') as string) || null,
-    zip_code: (formData.get('zip_code') as string) || null,
-    street: (formData.get('street') as string) || null,
-    number: (formData.get('number') as string) || null,
-    complement: (formData.get('complement') as string) || null,
-    neighborhood: (formData.get('neighborhood') as string) || null,
-    city: (formData.get('city') as string) || null,
-    state: (formData.get('state') as string) || null,
+    email: readField(formData, 'email'),
+    document: readField(formData, 'document'),
+    zip_code: readField(formData, 'zip_code'),
+    street: readField(formData, 'street'),
+    number: readField(formData, 'number'),
+    complement: readField(formData, 'complement'),
+    neighborhood: readField(formData, 'neighborhood'),
+    city: readField(formData, 'city'),
+    state: readField(formData, 'state'),
   })
 
   // Notificação por e-mail: melhor esforço, nunca deve impedir o cadastro
@@ -57,7 +63,9 @@ export async function submitPublicCustomer(formData: FormData) {
       await sendNotificationEmail({
         to: companySettings.email,
         subject: `Novo cliente cadastrado — ${company.name}`,
-        html: `<p><strong>Novo cliente cadastrado</strong></p><p>Nome: ${name}<br/>Telefone: ${phone ?? '—'}</p>`,
+        html: `<p><strong>Novo cliente cadastrado</strong></p><p>Nome: ${escapeHtml(name)}<br/>Telefone: ${
+          phone ? escapeHtml(phone) : '—'
+        }</p>`,
       })
     }
   } catch (err) {

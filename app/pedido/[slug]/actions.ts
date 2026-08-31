@@ -5,14 +5,25 @@ import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendNotificationEmail } from '@/lib/email'
 import { buildOrderNotificationEmail } from '@/lib/emailTemplates'
+import { isBot, readField } from '@/lib/publicForm'
 
-// Cópia fixa enviada em todo pedido, para validar que o envio de e-mail
-// está funcionando (independe de a empresa ter configurado o e-mail da loja).
-const VALIDATION_COPY_EMAIL = 'wagnergarnizet@gmail.com'
+// Cópia opcional enviada em todo pedido (monitoramento do envio de e-mail).
+// Configurável por ambiente — não expor um endereço pessoal fixo no código.
+const ORDER_NOTIFICATION_BCC = process.env.ORDER_NOTIFICATION_BCC?.trim() || null
+
+const MAX_QUANTITY = 100_000
+const MAX_LINE_ITEMS = 200
+
+function parseQuantity(raw: unknown): number {
+  const n = Math.floor(Number(raw))
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return Math.min(n, MAX_QUANTITY)
+}
 
 export async function submitPublicOrder(formData: FormData) {
   const slug = formData.get('slug') as string
   if (!slug) return
+  if (isBot(formData)) return
 
   const supabase = createAdminClient()
   const { data: company } = await supabase
@@ -23,8 +34,8 @@ export async function submitPublicOrder(formData: FormData) {
     .single()
   if (!company) return
 
-  const productIds = formData.getAll('product_id') as string[]
-  const quantities = formData.getAll('quantity').map((q) => Number(q))
+  const productIds = (formData.getAll('product_id') as string[]).slice(0, MAX_LINE_ITEMS)
+  const quantities = formData.getAll('quantity').map(parseQuantity)
 
   const { data: products } = productIds.length
     ? await supabase
@@ -70,10 +81,10 @@ export async function submitPublicOrder(formData: FormData) {
   }
 
   if (!customerId) {
-    const name = (formData.get('name') as string)?.trim()
-    const phone = (formData.get('phone') as string)?.trim()
+    const name = readField(formData, 'name')
+    const phone = readField(formData, 'phone')
     if (!name || !phone) return
-    const document = (formData.get('document') as string)?.trim() || null
+    const document = readField(formData, 'document')
 
     const { data: existingByPhone } = await supabase
       .from('customers')
@@ -91,7 +102,7 @@ export async function submitPublicOrder(formData: FormData) {
           company_id: company.id,
           name,
           phone,
-          email: (formData.get('email') as string) || null,
+          email: readField(formData, 'email'),
           document,
         })
         .select('id')
@@ -102,7 +113,7 @@ export async function submitPublicOrder(formData: FormData) {
   }
 
   const total = items.reduce((sum, item) => sum + item.subtotal, 0)
-  const notes = (formData.get('notes') as string) || null
+  const notes = readField(formData, 'notes')
 
   const { data: order } = await supabase
     .from('sales_orders')
@@ -123,8 +134,10 @@ export async function submitPublicOrder(formData: FormData) {
       .eq('id', company.id)
       .single()
 
-    const recipients = new Set([VALIDATION_COPY_EMAIL])
+    const recipients = new Set<string>()
     if (companySettings?.email) recipients.add(companySettings.email)
+    if (ORDER_NOTIFICATION_BCC) recipients.add(ORDER_NOTIFICATION_BCC)
+    if (recipients.size === 0) throw new Error('nenhum destinatário de notificação configurado')
 
     const { data: customer } = await supabase
       .from('customers')

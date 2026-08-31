@@ -6,6 +6,24 @@ function formatPrice(value: number) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
+// O HTML é renderizado por um navegador headless para gerar o PDF, então todo
+// texto dinâmico precisa ser escapado antes de entrar no markup.
+function esc(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Só deixa passar URLs http(s) para dentro de atributos src=, bloqueando
+// esquemas como javascript: / data: em imagens vindas do cadastro.
+function safeUrl(value: unknown) {
+  const raw = String(value ?? '').trim()
+  return /^https?:\/\//i.test(raw) ? esc(raw) : ''
+}
+
 // Estimativas em mm usadas para decidir quantos itens cabem em uma página
 // (não há medição real do DOM neste ponto, então os valores são conservadores).
 const PAGE_CONTENT_BUDGET_MM = 225
@@ -76,17 +94,17 @@ export function buildCatalogHtml({
     <section class="page cover">
       <div class="cover-band"><span class="eyebrow">Catálogo de Produtos</span></div>
       <div class="cover-body">
-        ${company.logo_url ? `<img class="cover-logo" src="${company.logo_url}" alt="${company.name}" />` : ''}
-        <h1 class="brand">${company.name}</h1>
+        ${company.logo_url ? `<img class="cover-logo" src="${safeUrl(company.logo_url)}" alt="${esc(company.name)}" />` : ''}
+        <h1 class="brand">${esc(company.name)}</h1>
         <div class="cover-title">
           <div class="title">Catálogo</div>
-          <div class="edition">Edição ${edition}</div>
+          <div class="edition">Edição ${esc(edition)}</div>
         </div>
       </div>
       <div class="cover-contact">
-        ${company.phone ? `<div><strong>Contato</strong>${company.phone}</div>` : ''}
-        ${company.instagram ? `<div><strong>Instagram</strong>${company.instagram}</div>` : ''}
-        ${company.website ? `<div><strong>Site</strong>${company.website}</div>` : ''}
+        ${company.phone ? `<div><strong>Contato</strong>${esc(company.phone)}</div>` : ''}
+        ${company.instagram ? `<div><strong>Instagram</strong>${esc(company.instagram)}</div>` : ''}
+        ${company.website ? `<div><strong>Site</strong>${esc(company.website)}</div>` : ''}
       </div>
     </section>`
 
@@ -103,8 +121,8 @@ export function buildCatalogHtml({
       <div class="cat-block">
         <div class="cat-header">
           <div>
-            <div class="cat-eyebrow">${num} · Categoria${isContinuation ? ' (continuação)' : ''}</div>
-            <h2 class="cat-name">${c.name}</h2>
+            <div class="cat-eyebrow">${esc(num)} · Categoria${isContinuation ? ' (continuação)' : ''}</div>
+            <h2 class="cat-name">${esc(c.name)}</h2>
           </div>
           <div class="cat-count">${c.products.length} ${c.products.length === 1 ? 'item' : 'itens'}</div>
         </div>
@@ -113,12 +131,12 @@ export function buildCatalogHtml({
             .map(
               (p) => `
             <div class="prod-row">
-              <div class="prod-img">${p.image_url ? `<img src="${p.image_url}" />` : ''}</div>
+              <div class="prod-img">${p.image_url ? `<img src="${safeUrl(p.image_url)}" />` : ''}</div>
               <div class="prod-main">
-                <div class="prod-name">${p.name}</div>
-                <div class="prod-brand">${p.brand}</div>
-                <div class="prod-desc">${p.short_description}</div>
-                ${p.promo_note ? `<span class="prod-promo">${p.promo_note}</span>` : ''}
+                <div class="prod-name">${esc(p.name)}</div>
+                <div class="prod-brand">${esc(p.brand)}</div>
+                <div class="prod-desc">${esc(p.short_description)}</div>
+                ${p.promo_note ? `<span class="prod-promo">${esc(p.promo_note)}</span>` : ''}
               </div>
               <div class="prod-price">${formatPrice(p.price)}</div>
             </div>`
@@ -133,8 +151,8 @@ export function buildCatalogHtml({
     <section class="page catpage">
       <div class="catpage-body">${blocks}</div>
       <div class="catpage-footer">
-        ${company.logo_url ? `<img class="footer-logo" src="${company.logo_url}" alt="" />` : ''}
-        <span>${company.name}${company.phone ? ' · ' + company.phone : ''}</span>
+        ${company.logo_url ? `<img class="footer-logo" src="${safeUrl(company.logo_url)}" alt="" />` : ''}
+        <span>${esc(company.name)}${company.phone ? ' · ' + esc(company.phone) : ''}</span>
       </div>
     </section>`
     })

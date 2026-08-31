@@ -46,6 +46,7 @@ export default async function CadastroPublicoPage({
             submitLabel="Enviar cadastro"
             cancelHref={null}
             requirePhone
+            honeypot
           />
         )}
       </div>

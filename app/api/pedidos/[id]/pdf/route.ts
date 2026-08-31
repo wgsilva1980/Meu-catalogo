@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveActiveCompany } from '@/lib/company'
 import { buildOrderHtml } from '@/lib/pdf/orderTemplate'
-import { launchBrowser } from '@/lib/pdf/browser'
+import { renderHtmlToPdf } from '@/lib/pdf/browser'
 import type { Company } from '@/lib/types'
 
 export const runtime = 'nodejs'
@@ -55,14 +55,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const html = buildOrderHtml({ company, customer, order, items: items ?? [] })
 
-  let browser
   try {
-    browser = await launchBrowser()
-    const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'load' })
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true })
-    await browser.close()
-    browser = undefined
+    const pdfBuffer = await renderHtmlToPdf(html)
 
     const admin = createAdminClient()
     const path = `${companyId}/pedido-${order.number}-${Date.now()}.pdf`
@@ -79,11 +73,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ url: signed?.signedUrl })
   } catch (err) {
-    if (browser) await browser.close().catch(() => {})
     console.error('[pedidos/pdf]', err)
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Erro ao gerar o PDF.' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erro ao gerar o PDF.' }, { status: 500 })
   }
 }
