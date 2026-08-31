@@ -202,6 +202,19 @@ async function melhorEnvioRequest<T>({ companyId, method, path, body }: MelhorEn
   return data as T
 }
 
+export type ShippingCarrier = { id: number; name: string }
+
+// Transportadoras disponíveis na conta do Melhor Envio da empresa, para o
+// seletor de transportadora do combo de agências nas Configurações.
+export async function listShippingCarriers({ companyId }: { companyId: string }): Promise<ShippingCarrier[]> {
+  const carriers = await melhorEnvioRequest<Array<{ id: number; name: string }>>({
+    companyId,
+    method: 'GET',
+    path: '/api/v2/me/shipment/companies',
+  })
+  return (carriers ?? []).map((c) => ({ id: c.id, name: c.name }))
+}
+
 export type ShippingAgency = { id: number; name: string; city: string }
 
 // Agências de postagem de uma transportadora (Jadlog = 2, Azul Cargo = 3)
