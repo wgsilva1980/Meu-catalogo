@@ -21,6 +21,7 @@ export default function CustomerForm({
   submitLabel = 'Salvar cliente',
   cancelHref = '/admin/clientes',
   requirePhone = false,
+  honeypot = false,
 }: {
   customer?: Customer
   action?: (formData: FormData) => void | Promise<void>
@@ -28,6 +29,7 @@ export default function CustomerForm({
   submitLabel?: string
   cancelHref?: string | null
   requirePhone?: boolean
+  honeypot?: boolean
 }) {
   const [zipCode, setZipCode] = useState(customer?.zip_code ?? '')
   const [street, setStreet] = useState(customer?.street ?? '')
@@ -71,6 +73,14 @@ export default function CustomerForm({
       {customer && <input type="hidden" name="id" value={customer.id} />}
       {hiddenFields &&
         Object.entries(hiddenFields).map(([key, value]) => <input key={key} type="hidden" name={key} value={value} />)}
+      {honeypot && (
+        <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+          <label>
+            Não preencha este campo
+            <input type="text" name="company_website" tabIndex={-1} autoComplete="off" defaultValue="" />
+          </label>
+        </div>
+      )}
 
       <Field label="Nome">
         <input name="name" defaultValue={customer?.name} required className="input" />

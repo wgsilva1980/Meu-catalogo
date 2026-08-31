@@ -10,6 +10,18 @@ function formatPrice(value: number) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
+// Parte destes campos (nome/telefone/e-mail do cliente, observações) vem de
+// formulários públicos sem autenticação e é renderizada por um navegador
+// headless ao gerar o PDF — precisa ser escapada para não injetar HTML/script.
+function esc(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export function buildOrderHtml({
   company,
   customer,
@@ -33,20 +45,20 @@ export function buildOrderHtml({
   <section class="page">
     <header class="head">
       <div>
-        <div class="brand">${company.name}</div>
-        ${company.phone ? `<div class="muted">${company.phone}</div>` : ''}
+        <div class="brand">${esc(company.name)}</div>
+        ${company.phone ? `<div class="muted">${esc(company.phone)}</div>` : ''}
       </div>
       <div class="order-meta">
-        <div class="order-num">Pedido #${order.number}</div>
-        <div class="muted">${date}</div>
-        <div class="status">${statusLabel[order.status] ?? order.status}</div>
+        <div class="order-num">Pedido #${esc(order.number)}</div>
+        <div class="muted">${esc(date)}</div>
+        <div class="status">${esc(statusLabel[order.status] ?? order.status)}</div>
       </div>
     </header>
 
     <section class="customer">
       <div class="label">Cliente</div>
-      <div class="cust-name">${customer.name}</div>
-      <div class="muted">${[customer.phone, customer.email].filter(Boolean).join(' · ')}</div>
+      <div class="cust-name">${esc(customer.name)}</div>
+      <div class="muted">${[customer.phone, customer.email].filter(Boolean).map(esc).join(' · ')}</div>
     </section>
 
     <table class="items">
@@ -63,8 +75,8 @@ export function buildOrderHtml({
           .map(
             (item) => `
         <tr>
-          <td>${item.product_name}</td>
-          <td class="num">${item.quantity}</td>
+          <td>${esc(item.product_name)}</td>
+          <td class="num">${esc(item.quantity)}</td>
           <td class="num">${formatPrice(item.unit_price)}</td>
           <td class="num">${formatPrice(item.subtotal)}</td>
         </tr>`
@@ -79,7 +91,7 @@ export function buildOrderHtml({
       </tfoot>
     </table>
 
-    ${order.notes ? `<section class="notes"><div class="label">Observações</div><p>${order.notes}</p></section>` : ''}
+    ${order.notes ? `<section class="notes"><div class="label">Observações</div><p>${esc(order.notes)}</p></section>` : ''}
   </section>
 </body>
 </html>`

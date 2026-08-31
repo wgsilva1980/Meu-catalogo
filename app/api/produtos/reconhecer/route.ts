@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic, { APIError } from '@anthropic-ai/sdk'
-import { createClient } from '@/lib/supabase/server'
+import { resolveActiveCompany } from '@/lib/company'
 
 type RecognizedProduct = {
   name: string
@@ -11,11 +11,8 @@ type RecognizedProduct = {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
+  const active = await resolveActiveCompany()
+  if (!active.ok) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
@@ -30,7 +27,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY não configurada' }, { status: 500 })
   }
 
-  const categories: { id: string; name: string }[] = categoriesRaw ? JSON.parse(categoriesRaw) : []
+  let categories: { id: string; name: string }[] = []
+  if (categoriesRaw) {
+    try {
+      const raw = JSON.parse(categoriesRaw)
+      if (Array.isArray(raw)) {
+        categories = raw.filter(
+          (c): c is { id: string; name: string } =>
+            c && typeof c.id === 'string' && typeof c.name === 'string'
+        )
+      }
+    } catch {
+      return NextResponse.json({ error: 'Lista de categorias inválida' }, { status: 400 })
+    }
+  }
   const categoryNames = categories.map((c) => c.name)
 
   const bytes = Buffer.from(await file.arrayBuffer())

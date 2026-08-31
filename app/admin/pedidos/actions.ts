@@ -4,6 +4,20 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
+import type { OrderStatus } from '@/lib/types'
+
+const ORDER_STATUSES: OrderStatus[] = ['rascunho', 'confirmado', 'cancelado']
+const MAX_QUANTITY = 100_000
+
+function parseStatus(raw: unknown): OrderStatus {
+  return ORDER_STATUSES.includes(raw as OrderStatus) ? (raw as OrderStatus) : 'rascunho'
+}
+
+function parseQuantity(raw: unknown): number {
+  const n = Math.floor(Number(raw))
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return Math.min(n, MAX_QUANTITY)
+}
 
 export async function saveOrder(formData: FormData) {
   const active = await resolveActiveCompany()
@@ -13,11 +27,19 @@ export async function saveOrder(formData: FormData) {
   const id = formData.get('id') as string | null
 
   const customer_id = formData.get('customer_id') as string
-  const status = (formData.get('status') as string) || 'rascunho'
+  const status = parseStatus(formData.get('status'))
   const notes = (formData.get('notes') as string) || null
 
+  const { data: customer } = await supabase
+    .from('customers')
+    .select('id')
+    .eq('id', customer_id)
+    .eq('company_id', active.companyId)
+    .maybeSingle()
+  if (!customer) return
+
   const productIds = formData.getAll('product_id') as string[]
-  const quantities = formData.getAll('quantity').map((q) => Number(q))
+  const quantities = formData.getAll('quantity').map(parseQuantity)
 
   const { data: products } = productIds.length
     ? await supabase
@@ -75,7 +97,7 @@ export async function updateOrderStatus(formData: FormData) {
 
   const supabase = await createClient()
   const id = formData.get('id') as string
-  const status = formData.get('status') as string
+  const status = parseStatus(formData.get('status'))
   await supabase.from('sales_orders').update({ status }).eq('id', id).eq('company_id', active.companyId)
   revalidatePath('/admin/pedidos')
 }

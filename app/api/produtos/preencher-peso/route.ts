@@ -23,7 +23,22 @@ const weightSchema = {
   additionalProperties: false,
 }
 
+// image_url é um campo livre do cadastro de produto; sem esta checagem o fetch
+// abaixo seria um SSRF (o servidor buscaria qualquer URL, inclusive endereços
+// internos). Só permitimos imagens hospedadas no próprio storage do Supabase.
+function isAllowedImageUrl(raw: string): boolean {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!base) return false
+  try {
+    const url = new URL(raw)
+    return url.protocol === 'https:' && url.host === new URL(base).host
+  } catch {
+    return false
+  }
+}
+
 async function extractWeightKg(client: Anthropic, imageUrl: string): Promise<number | null> {
+  if (!isAllowedImageUrl(imageUrl)) return null
   const imgRes = await fetch(imageUrl)
   if (!imgRes.ok) return null
   const buf = Buffer.from(await imgRes.arrayBuffer())

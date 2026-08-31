@@ -3,11 +3,23 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveActiveCompany } from '@/lib/company'
 import { buildCatalogHtml } from '@/lib/pdf/template'
-import { launchBrowser } from '@/lib/pdf/browser'
+import { renderHtmlToPdf } from '@/lib/pdf/browser'
 import type { CatalogScope, Company } from '@/lib/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+
+function parseScope(raw: unknown): CatalogScope | null {
+  if (!raw || typeof raw !== 'object') return null
+  const type = (raw as { type?: unknown }).type
+  if (type === 'all') return { type: 'all' }
+  if (type === 'selection') {
+    const ids = (raw as { categoryIds?: unknown }).categoryIds
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) return null
+    return { type: 'selection', categoryIds: (ids as string[]).slice(0, 200) }
+  }
+  return null
+}
 
 export async function POST(request: Request) {
   const active = await resolveActiveCompany()
@@ -16,13 +28,17 @@ export async function POST(request: Request) {
 
   const supabase = await createClient()
 
-  let body: { scope: CatalogScope }
+  let body: unknown
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Corpo da requisição inválido.' }, { status: 400 })
   }
-  const scope: CatalogScope = body.scope
+
+  const scope = parseScope((body as { scope?: unknown } | null)?.scope)
+  if (!scope) {
+    return NextResponse.json({ error: 'Escopo inválido.' }, { status: 400 })
+  }
 
   const { data: companyRow } = await supabase.from('companies').select('*').eq('id', companyId).single()
   const company: Company = companyRow ?? {
@@ -63,14 +79,8 @@ export async function POST(request: Request) {
 
   const html = buildCatalogHtml({ company, categories: categoriesWithProducts })
 
-  let browser
   try {
-    browser = await launchBrowser()
-    const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'load' })
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true })
-    await browser.close()
-    browser = undefined
+    const pdfBuffer = await renderHtmlToPdf(html)
 
     const admin = createAdminClient()
     const path = `${companyId}/catalogo-${Date.now()}.pdf`
@@ -92,11 +102,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: signed?.signedUrl })
   } catch (err) {
-    if (browser) await browser.close().catch(() => {})
     console.error('[catalogo/gerar]', err)
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Erro ao gerar o PDF.' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erro ao gerar o PDF.' }, { status: 500 })
   }
 }
