@@ -21,7 +21,7 @@ export async function saveStoreSettings(formData: FormData) {
   // Colunas novas que podem ainda não existir (migrations de envio / e-mail
   // unificado) — mesma proteção usada em produtos: salvar o resto das
   // configurações não pode depender da migration já ter rodado.
-  const payloadWithShipping = {
+  const shippingPayload = {
     ...corePayload,
     email: (formData.get('email') as string) || null,
     shipping_origin_name: (formData.get('shipping_origin_name') as string) || null,
@@ -33,11 +33,23 @@ export async function saveStoreSettings(formData: FormData) {
     shipping_origin_neighborhood: (formData.get('shipping_origin_neighborhood') as string) || null,
     shipping_origin_city: (formData.get('shipping_origin_city') as string) || null,
     shipping_origin_state: (formData.get('shipping_origin_state') as string) || null,
-    shipping_origin_agency_id: parseAgencyId(formData.get('shipping_origin_agency_id') as string | null),
+    shipping_origin_agency_id: parseNumericId(formData.get('shipping_origin_agency_id') as string | null),
     shipping_packages: parsePackages(formData.get('shipping_packages') as string | null),
   }
 
-  const { error } = await supabase.from('companies').update(payloadWithShipping).eq('id', active.companyId)
+  // shipping_origin_carrier_id é a coluna mais nova — se a migration ainda não
+  // rodou, o update inteiro falha. Tenta com ela; se der erro, tenta sem ela
+  // (endereço/agência/caixas ainda persistem); só então cai para o core.
+  const carrierPayload = {
+    ...shippingPayload,
+    shipping_origin_carrier_id: parseNumericId(formData.get('shipping_origin_carrier_id') as string | null),
+  }
+
+  let { error } = await supabase.from('companies').update(carrierPayload).eq('id', active.companyId)
+  if (error) {
+    console.error('Falha ao salvar com transportadora de origem, tentando sem ela:', error)
+    ;({ error } = await supabase.from('companies').update(shippingPayload).eq('id', active.companyId))
+  }
   if (error) {
     console.error('Falha ao salvar configurações com endereço de origem, tentando sem ele:', error)
     await supabase.from('companies').update(corePayload).eq('id', active.companyId)
@@ -46,9 +58,9 @@ export async function saveStoreSettings(formData: FormData) {
   revalidatePath('/admin/configuracoes')
 }
 
-// A agência do Melhor Envio é sempre um ID numérico. Guarda apenas os
-// dígitos; qualquer coisa vazia/inválida vira null (Correios não usa agência).
-function parseAgencyId(raw: string | null): number | null {
+// IDs do Melhor Envio (agência, transportadora) são sempre numéricos. Guarda
+// apenas os dígitos; vazio/inválido vira null.
+function parseNumericId(raw: string | null): number | null {
   const digits = (raw ?? '').replace(/\D/g, '')
   return digits ? Number(digits) : null
 }

@@ -60,6 +60,9 @@ export type Company = {
   shipping_origin_neighborhood: string | null
   shipping_origin_city: string | null
   shipping_origin_state: string | null
+  // `company` id da transportadora do Melhor Envio (Correios=1, Jadlog=2,
+  // Azul Cargo=3, ...). Define a transportadora padrão e a lista de agências.
+  shipping_origin_carrier_id: number | null
   shipping_origin_agency_id: number | null
   // Legado: caixa padrão única. Superado por shipping_packages; ainda lido
   // como fallback enquanto a loja não cadastra a lista de caixas.

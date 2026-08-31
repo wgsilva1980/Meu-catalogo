@@ -63,7 +63,9 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
   const [originCepStatus, setOriginCepStatus] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
 
   const [carriers, setCarriers] = useState<{ id: number; name: string }[]>(CARRIER_FALLBACK)
-  const [agencyCarrier, setAgencyCarrier] = useState('2')
+  const [agencyCarrier, setAgencyCarrier] = useState(
+    settings.shipping_origin_carrier_id != null ? String(settings.shipping_origin_carrier_id) : '2'
+  )
   const [agencyId, setAgencyId] = useState(
     settings.shipping_origin_agency_id != null ? String(settings.shipping_origin_agency_id) : ''
   )
@@ -77,7 +79,13 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       .then((d) => {
         if (Array.isArray(d.carriers) && d.carriers.length > 0) {
           setCarriers(d.carriers)
-          setAgencyCarrier((cur) => (d.carriers.some((c: { id: number }) => String(c.id) === cur) ? cur : String(d.carriers[0].id)))
+          // Só troca automaticamente se não houver transportadora salva e a
+          // atual não estiver na lista — nunca sobrescreve a escolha salva.
+          if (settings.shipping_origin_carrier_id == null) {
+            setAgencyCarrier((cur) =>
+              d.carriers.some((c: { id: number }) => String(c.id) === cur) ? cur : String(d.carriers[0].id)
+            )
+          }
         }
       })
       .catch(() => {})
@@ -312,7 +320,17 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-3">
           <Field label="Transportadora">
-            <select value={agencyCarrier} onChange={(e) => setAgencyCarrier(e.target.value)} className="input">
+            <select
+              name="shipping_origin_carrier_id"
+              value={agencyCarrier}
+              onChange={(e) => {
+                setAgencyCarrier(e.target.value)
+                // A agência pertence a uma transportadora específica; ao trocar
+                // a transportadora, a agência anterior deixa de valer.
+                setAgencyId('')
+              }}
+              className="input"
+            >
               {carriers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
