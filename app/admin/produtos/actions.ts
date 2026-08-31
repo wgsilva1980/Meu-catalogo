@@ -18,6 +18,9 @@ export async function saveProduct(formData: FormData) {
     return raw ? Number(raw) : null
   }
 
+  const lowStockThreshold = Math.max(0, Math.floor(Number(formData.get('low_stock_threshold'))) || 0)
+  const initialStock = Math.max(0, Math.floor(Number(formData.get('initial_stock'))) || 0)
+
   const corePayload: Record<string, unknown> = {
     name: formData.get('name'),
     brand: formData.get('brand'),
@@ -35,6 +38,7 @@ export async function saveProduct(formData: FormData) {
   // depender da migration já ter rodado.
   const payloadWithShipping = {
     ...corePayload,
+    low_stock_threshold: lowStockThreshold,
     weight_kg: numberOrNull('weight_kg'),
     length_cm: numberOrNull('length_cm'),
     width_cm: numberOrNull('width_cm'),
@@ -48,14 +52,38 @@ export async function saveProduct(formData: FormData) {
       await supabase.from('products').update(corePayload).eq('id', id).eq('company_id', active.companyId)
     }
   } else {
-    const { error } = await supabase.from('products').insert({ ...payloadWithShipping, company_id: active.companyId })
-    if (error) {
-      console.error('Falha ao criar produto com campos de frete, tentando sem eles:', error)
-      await supabase.from('products').insert({ ...corePayload, company_id: active.companyId })
+    let created = await supabase
+      .from('products')
+      .insert({ ...payloadWithShipping, company_id: active.companyId })
+      .select('id')
+      .single()
+    if (created.error) {
+      console.error('Falha ao criar produto com campos de frete, tentando sem eles:', created.error)
+      created = await supabase
+        .from('products')
+        .insert({ ...corePayload, company_id: active.companyId })
+        .select('id')
+        .single()
+    }
+
+    // Saldo inicial de estoque: registra uma entrada no livro-razão para que
+    // o saldo do produto e o histórico já nasçam consistentes.
+    if (created.data?.id && initialStock > 0) {
+      const { error } = await supabase.rpc('apply_stock_movement', {
+        p_company_id: active.companyId,
+        p_product_id: created.data.id,
+        p_type: 'entrada',
+        p_delta: initialStock,
+        p_note: 'Saldo inicial',
+        p_order_id: null,
+        p_allow_negative: true,
+      })
+      if (error) console.error('Falha ao registrar saldo inicial de estoque:', error)
     }
   }
 
   revalidatePath('/admin/produtos')
+  revalidatePath('/admin/estoque')
   redirect('/admin/produtos')
 }
 

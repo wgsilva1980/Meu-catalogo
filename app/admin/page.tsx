@@ -17,6 +17,7 @@ export default async function PainelPage() {
     { count: totalPromo },
     { count: catalogosMes },
     { data: recentes },
+    { data: estoqueRows },
   ] = await Promise.all([
     supabase
       .from('products')
@@ -40,7 +41,13 @@ export default async function PainelPage() {
       .eq('company_id', active.companyId)
       .order('updated_at', { ascending: false })
       .limit(5),
+    supabase.from('products').select('stock_quantity, low_stock_threshold').eq('company_id', active.companyId),
   ])
+
+  const semEstoque = (estoqueRows ?? []).filter((p: any) => (p.stock_quantity ?? 0) <= 0).length
+  const estoqueBaixo = (estoqueRows ?? []).filter(
+    (p: any) => (p.stock_quantity ?? 0) > 0 && p.low_stock_threshold > 0 && p.stock_quantity <= p.low_stock_threshold
+  ).length
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,11 +56,13 @@ export default async function PainelPage() {
         <p className="text-sm text-muted">Visão geral do catálogo</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <StatCard num={totalProdutos ?? 0} label="Produtos disponíveis" />
         <StatCard num={totalCategorias ?? 0} label="Categorias" />
         <StatCard num={totalPromo ?? 0} label="Em promoção" />
         <StatCard num={catalogosMes ?? 0} label="Catálogos este mês" />
+        <StatCard num={semEstoque} label="Sem estoque" tone={semEstoque > 0 ? 'red' : undefined} />
+        <StatCard num={estoqueBaixo} label="Estoque baixo" tone={estoqueBaixo > 0 ? 'amber' : undefined} />
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -81,10 +90,11 @@ export default async function PainelPage() {
   )
 }
 
-function StatCard({ num, label }: { num: number; label: string }) {
+function StatCard({ num, label, tone }: { num: number; label: string; tone?: 'red' | 'amber' }) {
+  const toneClass = tone === 'red' ? 'text-red-600' : tone === 'amber' ? 'text-amber-600' : ''
   return (
     <div className="border border-line rounded-lg p-3 bg-white">
-      <div className="text-2xl font-bold tabular-nums">{num}</div>
+      <div className={`text-2xl font-bold tabular-nums ${toneClass}`}>{num}</div>
       <div className="text-xs text-muted">{label}</div>
     </div>
   )

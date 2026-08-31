@@ -7,6 +7,7 @@ import SignOutButton from '@/components/SignOutButton'
 const items = [
   { href: '/admin', label: 'Painel' },
   { href: '/admin/produtos', label: 'Produtos' },
+  { href: '/admin/estoque', label: 'Estoque' },
   { href: '/admin/categorias', label: 'Categorias' },
   { href: '/admin/clientes', label: 'Clientes' },
   { href: '/admin/pedidos', label: 'Pedidos' },

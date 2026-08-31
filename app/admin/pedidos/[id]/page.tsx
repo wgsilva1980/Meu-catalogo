@@ -5,11 +5,18 @@ import OrderForm from '@/components/OrderForm'
 import OrderPdfButton from '@/components/OrderPdfButton'
 import ShippingCard from '@/components/ShippingCard'
 
-export default async function EditarPedidoPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditarPedidoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ erro?: string; faltam?: string }>
+}) {
   const active = await resolveActiveCompany()
   if (!active.ok) return null
 
   const { id } = await params
+  const { erro, faltam } = await searchParams
   const supabase = await createClient()
 
   const { data: order } = await supabase
@@ -38,6 +45,11 @@ export default async function EditarPedidoPage({ params }: { params: Promise<{ i
         </div>
         <OrderPdfButton orderId={order.id} />
       </div>
+      {erro === 'estoque' && (
+        <p className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
+          Estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Dê entrada no estoque ou reduza a quantidade antes de confirmar.
+        </p>
+      )}
       <OrderForm order={order} items={items ?? []} customers={customers ?? []} products={products ?? []} />
       <ShippingCard orderId={order.id} connected={!!melhorEnvioAccount} shipment={shipment ?? null} />
     </div>

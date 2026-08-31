@@ -20,12 +20,12 @@ const statusClass: Record<OrderStatus, string> = {
 export default async function PedidosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>
+  searchParams: Promise<{ q?: string; status?: string; erro?: string; pedido?: string; faltam?: string }>
 }) {
   const active = await resolveActiveCompany()
   if (!active.ok) return null
 
-  const { q, status } = await searchParams
+  const { q, status, erro, pedido, faltam } = await searchParams
   const supabase = await createClient()
 
   let query = supabase
@@ -51,6 +51,13 @@ export default async function PedidosPage({
           + Novo pedido
         </Link>
       </div>
+
+      {erro === 'estoque' && (
+        <p className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
+          {pedido ? `Pedido #${pedido}: ` : ''}
+          estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Dê entrada no estoque antes de confirmar.
+        </p>
+      )}
 
       <form className="flex flex-col sm:flex-row gap-3 max-w-lg">
         <input
