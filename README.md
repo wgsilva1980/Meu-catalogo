@@ -16,9 +16,10 @@ Plataforma multi-tenant para cadastrar produtos e gerar catálogos em PDF: cada 
 2. Vá em **SQL Editor** e cole todo o conteúdo de [`supabase/schema.sql`](supabase/schema.sql). Rode o script — ele cria as tabelas, políticas de segurança (RLS), os buckets de imagens/PDFs e já semeia as 7 categorias fixas (Whey, Creatina, Pré-treino, Vitaminas, Barras, Acessórios, Outras). *(Se o projeto já existia antes da versão multi-empresa, esse script já foi rodado — pule para o próximo passo.)*
 3. Ainda no **SQL Editor**, rode primeiro o bloco de "DIAGNÓSTICO" no topo de [`supabase/migration_multitenant.sql`](supabase/migration_multitenant.sql) (só leitura) para confirmar o e-mail da sua conta em `auth.users`. Edite o placeholder `TROQUE_PELO_SEU_EMAIL@exemplo.com` no script com esse e-mail — essa conta vira dona da empresa "BN Suplementos" **e** super-admin da plataforma. Cole o restante do script e rode uma única vez. Ele cria as tabelas `companies`/`profiles`, migra os dados atuais (produtos, categorias, configurações) para a empresa "BN Suplementos", e atualiza a RLS para isolar cada empresa. *(Só rode isso uma vez — não é idempotente.)*
 4. Depois, rode [`supabase/migration_customers.sql`](supabase/migration_customers.sql) — cria a tabela `customers` (cadastro de clientes), escopada por empresa da mesma forma que produtos/categorias.
-5. Em **Authentication → Providers**, deixe apenas E-mail/Senha habilitado. **Desative "Enable email confirmations"** para simplificar (não há cadastro público — cada login é criado manualmente pelo super-admin em `/master`).
-6. Em **Authentication → Users**, confirme que a conta usada no passo 3 já existe (crie-a com "Add user" antes, se ainda não existir). É essa conta que vai logar em `/login`.
-7. Em **Project Settings → API**, copie:
+5. Rode as demais migrations em ordem (todas idempotentes): `migration_sales_orders.sql` (pedidos de venda) e, por último, [`supabase/migration_stock.sql`](supabase/migration_stock.sql) — controle de estoque (`stock_movements`, saldo por produto e as funções que baixam/estornam estoque nos pedidos).
+6. Em **Authentication → Providers**, deixe apenas E-mail/Senha habilitado. **Desative "Enable email confirmations"** para simplificar (não há cadastro público — cada login é criado manualmente pelo super-admin em `/master`).
+7. Em **Authentication → Users**, confirme que a conta usada no passo 3 já existe (crie-a com "Add user" antes, se ainda não existir). É essa conta que vai logar em `/login`.
+8. Em **Project Settings → API**, copie:
    - `Project URL`
    - `anon public key`
    - `service_role key` (mantenha em segredo — nunca no frontend)
@@ -66,6 +67,8 @@ Logado em `/admin` (como dono de uma empresa, ou impersonando via `/master`):
 2. Vá em **Produtos → Novo produto** e arraste a foto da embalagem para o quadro de imagem. O fundo é removido, a foto é recortada em formato quadrado com fundo branco, e — se `ANTHROPIC_API_KEY` estiver configurada — os campos de nome, marca, categoria e descrição curta são preenchidos automaticamente a partir da foto (revise antes de salvar). Complete os demais campos (preço, promoção, disponibilidade) e cadastre alguns itens reais da loja.
 3. Vá em **Gerar catálogo**, escolha "Catálogo completo" ou categorias específicas, e clique em **Gerar PDF**. O link de download aparece na hora (válido por 7 dias, arquivo fica salvo no bucket `catalogos`, isolado por empresa).
 4. Vá em **Clientes** para cadastrar a base de clientes da loja. Ao digitar um CEP de 8 dígitos, o endereço (rua, bairro, cidade, UF) é preenchido automaticamente via [ViaCEP](https://viacep.com.br) (API pública, sem custo e sem chave) — complemento e número seguem editáveis manualmente.
+5. Vá em **Estoque** para operar o saldo dos produtos. Cada produto tem um saldo (produtos já cadastrados começam em 0 — faça a **entrada** inicial aqui, ou informe o "estoque inicial" ao cadastrar um produto novo). Na tela de um produto dá para registrar **entrada** (recebimento), **baixa** (perda/quebra) e **ajuste** (contagem de inventário), e ver o histórico completo de movimentações. Defina um "estoque mínimo" por produto para os alertas de estoque baixo no painel.
+6. Em **Pedidos**, confirmar um pedido **baixa o estoque** dos itens automaticamente (movimento de saída ligado ao pedido); cancelar ou reabrir um pedido confirmado **estorna** a baixa. Um pedido não pode ser confirmado se faltar saldo para algum item — a tela mostra quais produtos precisam de entrada.
 
 ## 7. Deploy (Vercel, plano Hobby — gratuito)
 
@@ -116,4 +119,6 @@ proxy.ts                      → protege /admin, /master e as rotas de API
 supabase/schema.sql               → schema original (single-tenant, histórico)
 supabase/migration_multitenant.sql → migração para multi-empresa (companies, profiles, RLS por empresa)
 supabase/migration_customers.sql   → tabela customers (cadastro de clientes por empresa)
+supabase/migration_sales_orders.sql → pedidos de venda (sales_orders / sales_order_items)
+supabase/migration_stock.sql       → controle de estoque (stock_movements, saldo por produto, funções de baixa/estorno)
 ```

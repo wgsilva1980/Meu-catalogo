@@ -47,6 +47,10 @@ export default function OrderForm({
     return products.find((p) => p.id === productId)?.price ?? 0
   }
 
+  function stockOf(productId: string) {
+    return products.find((p) => p.id === productId)?.stock_quantity ?? 0
+  }
+
   const total = lines.reduce((sum, l) => sum + priceOf(l.product_id) * (l.quantity || 0), 0)
 
   return (
@@ -100,11 +104,16 @@ export default function OrderForm({
                   </option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} — {formatPrice(p.price)}
+                      {p.name} — {formatPrice(p.price)} — {p.stock_quantity} un.
                     </option>
                   ))}
                 </select>
               </Field>
+              {line.product_id && line.quantity > stockOf(line.product_id) && (
+                <p className="text-xs text-amber-600 font-semibold">
+                  Só há {stockOf(line.product_id)} un. em estoque — não será possível confirmar o pedido assim.
+                </p>
+              )}
               <div className="flex items-end gap-2">
                 <div className="w-20 shrink-0">
                   <Field label="Qtd">

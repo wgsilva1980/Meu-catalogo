@@ -18,6 +18,10 @@ export type Product = {
   promo_note: string | null
   available: boolean
   image_url: string | null
+  // Saldo em estoque (denormalizado — mantido pelas funções de estoque no
+  // Postgres) e o piso para o alerta de "estoque baixo".
+  stock_quantity: number
+  low_stock_threshold: number
   weight_kg: number | null
   length_cm: number | null
   width_cm: number | null
@@ -101,6 +105,22 @@ export type Customer = {
   updated_at: string
 }
 
+export type StockMovementType = 'entrada' | 'saida' | 'ajuste'
+
+export type StockMovement = {
+  id: string
+  company_id: string
+  product_id: string
+  type: StockMovementType
+  quantity: number
+  delta: number
+  balance_after: number
+  note: string | null
+  order_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
 export type OrderStatus = 'rascunho' | 'confirmado' | 'cancelado'
 
 export type SalesOrderItem = {
@@ -123,6 +143,9 @@ export type SalesOrder = {
   notes: string | null
   total: number
   pdf_path: string | null
+  // O pedido já baixou o estoque? Vira true quando confirmado, false ao
+  // cancelar/reabrir. Usado para reconciliar entradas/saídas.
+  stock_committed: boolean
   created_at: string
   updated_at: string
 }

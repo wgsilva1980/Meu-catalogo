@@ -347,6 +347,49 @@ export default function ProductForm({ categories, product }: { categories: Categ
 
         <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
           <div>
+            <h2 className="text-sm font-bold">Estoque</h2>
+            <p className="text-xs text-muted">
+              {product
+                ? 'O saldo é movimentado na tela de Estoque (entradas, baixas e ajustes).'
+                : 'Quantidade em mãos ao cadastrar. Você pode deixar 0 e dar entrada depois.'}
+            </p>
+          </div>
+          {product ? (
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <span className="text-xs font-semibold text-muted">Saldo atual</span>
+                <p className="text-2xl font-bold tabular-nums">{product.stock_quantity ?? 0}</p>
+              </div>
+              <div className="w-40">
+                <Field label="Estoque mínimo (alerta)">
+                  <input
+                    name="low_stock_threshold"
+                    type="number"
+                    min="0"
+                    step="1"
+                    defaultValue={product.low_stock_threshold ?? 0}
+                    className="input"
+                  />
+                </Field>
+              </div>
+              <a href={`/admin/estoque/${product.id}`} className="text-xs font-semibold text-accent pb-2">
+                Movimentar / ver histórico →
+              </a>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <Field label="Estoque inicial">
+                <input name="initial_stock" type="number" min="0" step="1" defaultValue={0} className="input" />
+              </Field>
+              <Field label="Estoque mínimo (alerta)">
+                <input name="low_stock_threshold" type="number" min="0" step="1" defaultValue={0} className="input" />
+              </Field>
+            </div>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+          <div>
             <h2 className="text-sm font-bold">Envio</h2>
             <p className="text-xs text-muted">Usado no futuro para calcular o frete. Deixe em branco se ainda não souber.</p>
           </div>
