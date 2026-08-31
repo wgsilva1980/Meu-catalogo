@@ -364,16 +364,18 @@ export async function calculateShipping({
   toPostalCode,
   items,
   packageBox,
-  carrierCompanyId,
+  preferredCarrierCompanyId,
 }: {
   companyId: string
   fromPostalCode: string
   toPostalCode: string
   items: ShippingQuoteItem[]
   packageBox: ShippingPackage
-  // Quando definido, só devolve cotações desta transportadora (o `company.id`
-  // do Melhor Envio). É a transportadora padrão configurada pela loja.
-  carrierCompanyId?: number | null
+  // Transportadora padrão da loja (o `company.id` do Melhor Envio). Não filtra
+  // as cotações — apenas ordena as dessa transportadora primeiro, para virarem
+  // a opção pré-selecionada. Se ela não cotar o trajeto, as demais continuam
+  // aparecendo (evita ficar sem nenhuma opção).
+  preferredCarrierCompanyId?: number | null
 }) {
   // Uma caixa só: dimensões da caixa padrão, peso e seguro somados do pedido.
   // O cálculo precisa bater com o que a compra vai enviar em /api/v2/me/cart.
@@ -400,8 +402,14 @@ export async function calculateShipping({
   // a API retorna também as opções sem cotação (ex: agência não atende a
   // região) com um campo "error" — só interessam as que têm preço.
   const priced = options.filter((option) => !option.error && option.price)
-  if (carrierCompanyId == null) return priced
-  return priced.filter((option) => option.company?.id === carrierCompanyId)
+  if (preferredCarrierCompanyId == null) return priced
+  // sort estável: mantém a ordem do Melhor Envio (mais barato primeiro) dentro
+  // de cada grupo, só puxa a transportadora padrão para o topo.
+  return [...priced].sort((a, b) => {
+    const aPref = a.company?.id === preferredCarrierCompanyId ? 0 : 1
+    const bPref = b.company?.id === preferredCarrierCompanyId ? 0 : 1
+    return aPref - bPref
+  })
 }
 
 export type ShippingAddress = {
