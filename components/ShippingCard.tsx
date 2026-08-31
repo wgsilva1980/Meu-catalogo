@@ -36,7 +36,13 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
       }
       setOptions(data.options ?? [])
       setBox(data.box ?? null)
-      if (!data.options || data.options.length === 0) setError('Nenhuma opção de frete disponível para este endereço.')
+      if (!data.options || data.options.length === 0) {
+        setError(
+          data.carrierFiltered
+            ? 'A transportadora padrão configurada não retornou cotação para este endereço/pacote. Ajuste a transportadora em Configurações ou revise o CEP do cliente.'
+            : 'Nenhuma opção de frete disponível para este endereço.'
+        )
+      }
     } catch {
       setError('Falha ao calcular frete.')
     } finally {

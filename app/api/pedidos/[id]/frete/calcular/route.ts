@@ -89,6 +89,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const picked = pickShippingBox(boxes, packItems)!
 
   try {
+    const carrierCompanyId: number | null = company.shipping_origin_carrier_id ?? null
     const options = await calculateShipping({
       companyId: active.companyId,
       fromPostalCode: company.shipping_origin_zip_code,
@@ -99,8 +100,13 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
         width_cm: picked.box.width_cm,
         height_cm: picked.box.height_cm,
       },
+      carrierCompanyId,
     })
-    return NextResponse.json({ options, box: { name: picked.box.name, fits: picked.fits } })
+    return NextResponse.json({
+      options,
+      box: { name: picked.box.name, fits: picked.fits },
+      carrierFiltered: carrierCompanyId != null,
+    })
   } catch (err) {
     console.error('Falha ao calcular frete:', err)
     const message = err instanceof Error ? err.message : 'Falha ao calcular frete.'
