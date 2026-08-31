@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { saveStoreSettings } from '@/app/admin/configuracoes/actions'
 import type { Company } from '@/lib/types'
@@ -53,6 +53,42 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
   const [originCity, setOriginCity] = useState(settings.shipping_origin_city ?? '')
   const [originState, setOriginState] = useState(settings.shipping_origin_state ?? '')
   const [originCepStatus, setOriginCepStatus] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
+
+  const [agencyCarrier, setAgencyCarrier] = useState<'2' | '3'>('2')
+  const [agencyId, setAgencyId] = useState(
+    settings.shipping_origin_agency_id != null ? String(settings.shipping_origin_agency_id) : ''
+  )
+  const [agencies, setAgencies] = useState<{ id: number; name: string; city: string }[]>([])
+  const [agencyStatus, setAgencyStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  useEffect(() => {
+    const uf = originState.trim().toUpperCase()
+    if (uf.length !== 2) {
+      setAgencies([])
+      setAgencyStatus('idle')
+      return
+    }
+    const ac = new AbortController()
+    setAgencyStatus('loading')
+    fetch(`/api/melhor-envio/agencias?company=${agencyCarrier}&state=${uf}`, { signal: ac.signal })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.agencies)) {
+          setAgencies(d.agencies)
+          setAgencyStatus('idle')
+        } else {
+          setAgencies([])
+          setAgencyStatus('error')
+        }
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          setAgencies([])
+          setAgencyStatus('error')
+        }
+      })
+    return () => ac.abort()
+  }, [agencyCarrier, originState])
 
   const [boxes, setBoxes] = useState<BoxRow[]>(() => initialBoxes(settings))
 
@@ -247,19 +283,39 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           </Field>
         </div>
 
-        <Field label="ID da agência Jadlog/Azul">
-          <input
-            name="shipping_origin_agency_id"
-            defaultValue={settings.shipping_origin_agency_id ?? ''}
-            placeholder="Ex.: 25"
-            inputMode="numeric"
-            className="input max-w-[10rem]"
-          />
-        </Field>
+        <div className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-3">
+          <Field label="Transportadora">
+            <select value={agencyCarrier} onChange={(e) => setAgencyCarrier(e.target.value as '2' | '3')} className="input">
+              <option value="2">Jadlog</option>
+              <option value="3">Azul Cargo</option>
+            </select>
+          </Field>
+          <Field label="Agência de postagem">
+            <select
+              name="shipping_origin_agency_id"
+              value={agencyId}
+              onChange={(e) => setAgencyId(e.target.value)}
+              className="input"
+            >
+              <option value="">— Nenhuma —</option>
+              {agencyId && !agencies.some((a) => String(a.id) === agencyId) && (
+                <option value={agencyId}>Agência {agencyId} (salva)</option>
+              )}
+              {agencies.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                  {a.city ? ` — ${a.city}` : ''} (#{a.id})
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
         <p className="-mt-2 text-xs text-muted">
-          Obrigatório para gerar etiquetas Jadlog e Azul (essas transportadoras exigem uma agência de
-          postagem). Pegue o ID no painel do Melhor Envio em Configurações → Agências. Correios não usa
-          agência — pode deixar em branco.
+          {agencyStatus === 'loading' && 'Carregando agências do Melhor Envio…'}
+          {agencyStatus === 'error' &&
+            'Não foi possível carregar as agências. Conecte o Melhor Envio e confira a UF acima.'}
+          {agencyStatus === 'idle' &&
+            'Obrigatório para Jadlog e Azul. A lista vem do Melhor Envio conforme a UF do endereço acima. Correios não usa agência — deixe em “Nenhuma”.'}
         </p>
 
         <div className="flex flex-col gap-3 border-t border-line pt-3">

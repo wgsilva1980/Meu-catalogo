@@ -202,6 +202,30 @@ async function melhorEnvioRequest<T>({ companyId, method, path, body }: MelhorEn
   return data as T
 }
 
+export type ShippingAgency = { id: number; name: string; city: string }
+
+// Agências de postagem de uma transportadora (Jadlog = 2, Azul Cargo = 3)
+// numa UF, para popular o combo de "Agência de postagem" nas Configurações.
+export async function listShippingAgencies({
+  companyId,
+  carrierCompanyId,
+  state,
+}: {
+  companyId: string
+  carrierCompanyId: number
+  state: string
+}): Promise<ShippingAgency[]> {
+  const query = new URLSearchParams({ company: String(carrierCompanyId), country: 'BR', state })
+  const agencies = await melhorEnvioRequest<
+    Array<{ id: number; name: string; address?: { city?: { city?: string } } }>
+  >({
+    companyId,
+    method: 'GET',
+    path: `/api/v2/me/shipment/agencies?${query.toString()}`,
+  })
+  return (agencies ?? []).map((a) => ({ id: a.id, name: a.name, city: a.address?.city?.city ?? '' }))
+}
+
 export type ShippingQuoteItem = {
   weight_kg: number
   quantity: number
