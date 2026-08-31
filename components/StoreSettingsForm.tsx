@@ -85,15 +85,19 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
   }, [])
 
   useEffect(() => {
+    const cep = originZip.replace(/\D/g, '')
     const uf = originState.trim().toUpperCase()
-    if (uf.length !== 2) {
+    if (cep.length !== 8 && uf.length !== 2) {
       setAgencies([])
       setAgencyStatus('idle')
       return
     }
+    const params = new URLSearchParams({ company: agencyCarrier })
+    if (cep.length === 8) params.set('postal_code', cep)
+    if (uf.length === 2) params.set('state', uf)
     const ac = new AbortController()
     setAgencyStatus('loading')
-    fetch(`/api/melhor-envio/agencias?company=${agencyCarrier}&state=${uf}`, { signal: ac.signal })
+    fetch(`/api/melhor-envio/agencias?${params.toString()}`, { signal: ac.signal })
       .then((r) => r.json())
       .then((d) => {
         if (Array.isArray(d.agencies)) {
@@ -111,7 +115,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
         }
       })
     return () => ac.abort()
-  }, [agencyCarrier, originState])
+  }, [agencyCarrier, originZip, originState])
 
   const [boxes, setBoxes] = useState<BoxRow[]>(() => initialBoxes(settings))
 
@@ -339,9 +343,9 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
         <p className="-mt-2 text-xs text-muted">
           {agencyStatus === 'loading' && 'Carregando agências do Melhor Envio…'}
           {agencyStatus === 'error' &&
-            'Não foi possível carregar as agências. Conecte o Melhor Envio e confira a UF acima.'}
+            'Não foi possível carregar as agências. Conecte o Melhor Envio e confira o CEP/UF acima.'}
           {agencyStatus === 'idle' &&
-            'Obrigatório para Jadlog e Azul. A lista vem do Melhor Envio conforme a UF do endereço acima. Correios não usa agência — deixe em “Nenhuma”.'}
+            'Obrigatório para Jadlog e Azul. A lista vem do Melhor Envio pelo CEP do endereço acima (as mais próximas primeiro). Correios não usa agência — deixe em “Nenhuma”.'}
         </p>
 
         <div className="flex flex-col gap-3 border-t border-line pt-3">
