@@ -55,6 +55,18 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
   const [uploading, setUploading] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  // Controlados + ressincronizados quando `settings` muda (após salvar +
+  // revalidação), para o combo refletir o que está de fato no banco em vez de
+  // "grudar" na escolha anterior. Se a migration_lalamove.sql ainda não rodou,
+  // a coluna vem como undefined e mostramos um aviso.
+  const lalamoveColumnMissing = (settings as { lalamove_enabled?: boolean }).lalamove_enabled === undefined
+  const [lalamoveEnabled, setLalamoveEnabled] = useState(settings.lalamove_enabled ? 'on' : 'off')
+  const [lalamoveServiceType, setLalamoveServiceType] = useState(settings.lalamove_service_type || 'MOTORCYCLE')
+  useEffect(() => {
+    setLalamoveEnabled(settings.lalamove_enabled ? 'on' : 'off')
+    setLalamoveServiceType(settings.lalamove_service_type || 'MOTORCYCLE')
+  }, [settings.lalamove_enabled, settings.lalamove_service_type])
+
   const [originZip, setOriginZip] = useState(settings.shipping_origin_zip_code ?? '')
   const [originStreet, setOriginStreet] = useState(settings.shipping_origin_street ?? '')
   const [originNeighborhood, setOriginNeighborhood] = useState(settings.shipping_origin_neighborhood ?? '')
@@ -450,9 +462,20 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
             configuradas pela plataforma (variáveis de ambiente <code>LALAMOVE_*</code>).
           </p>
         </div>
+        {lalamoveColumnMissing && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Esta opção ainda não pode ser salva neste ambiente: rode a migration
+            <code> supabase/migration_lalamove.sql</code> no Supabase.
+          </p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Oferecer motoboy no link de pedido">
-            <select name="lalamove_enabled" defaultValue={settings.lalamove_enabled ? 'on' : 'off'} className="input">
+            <select
+              name="lalamove_enabled"
+              value={lalamoveEnabled}
+              onChange={(e) => setLalamoveEnabled(e.target.value)}
+              className="input"
+            >
               <option value="off">Não</option>
               <option value="on">Sim</option>
             </select>
@@ -460,7 +483,8 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           <Field label="Tipo de veículo">
             <select
               name="lalamove_service_type"
-              defaultValue={settings.lalamove_service_type || 'MOTORCYCLE'}
+              value={lalamoveServiceType}
+              onChange={(e) => setLalamoveServiceType(e.target.value)}
               className="input"
             >
               <option value="MOTORCYCLE">Moto (motoboy)</option>
