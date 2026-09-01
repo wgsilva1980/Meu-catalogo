@@ -16,7 +16,7 @@ export default async function PedidoPublicoPage({
   const supabase = createAdminClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name, logo_url')
+    .select('id, name, logo_url, lalamove_enabled')
     .eq('slug', slug)
     .eq('active', true)
     .single()
@@ -29,12 +29,30 @@ export default async function PedidoPublicoPage({
     .eq('company_id', company.id)
     .order('sort_order')
 
-  const { data: products } = await supabase
-    .from('products')
-    .select('*')
-    .eq('company_id', company.id)
-    .eq('available', true)
-    .order('name')
+  // Só produtos disponíveis E com saldo em estoque. `.gt('stock_quantity', 0)`
+  // depende da migration de estoque; se ela ainda não rodou, o erro faz cair
+  // para o filtro só de disponibilidade.
+  let products: any[] | null = null
+  {
+    const withStock = await supabase
+      .from('products')
+      .select('*')
+      .eq('company_id', company.id)
+      .eq('available', true)
+      .gt('stock_quantity', 0)
+      .order('name')
+    if (withStock.error) {
+      const fallback = await supabase
+        .from('products')
+        .select('*')
+        .eq('company_id', company.id)
+        .eq('available', true)
+        .order('name')
+      products = fallback.data
+    } else {
+      products = withStock.data
+    }
+  }
 
   // Etapa de identificação: só avança para o carrinho depois que o cliente
   // informou o CPF (para tentar recuperar um cadastro existente) ou optou
@@ -77,6 +95,7 @@ export default async function PedidoPublicoPage({
             products={products ?? []}
             foundCustomer={foundCustomer}
             typedDocument={digits || null}
+            motoboyEnabled={Boolean(company.lalamove_enabled)}
           />
         )}
       </div>

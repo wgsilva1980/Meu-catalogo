@@ -68,6 +68,14 @@ export type Company = {
   // Azul Cargo=3, ...). Define a transportadora padrão e a lista de agências.
   shipping_origin_carrier_id: number | null
   shipping_origin_agency_id: number | null
+  // Coordenadas do CEP de origem (cache da geocodificação), usadas na
+  // cotação de motoboy da Lalamove.
+  shipping_origin_lat: number | null
+  shipping_origin_lng: number | null
+  // Cotação de motoboy (Lalamove) no link público de pedido. Credenciais são
+  // da plataforma (env LALAMOVE_*); aqui só liga/desliga e escolhe o veículo.
+  lalamove_enabled: boolean
+  lalamove_service_type: string
   // Legado: caixa padrão única. Superado por shipping_packages; ainda lido
   // como fallback enquanto a loja não cadastra a lista de caixas.
   shipping_package_length_cm: number | null
@@ -123,6 +131,31 @@ export type StockMovement = {
 
 export type OrderStatus = 'rascunho' | 'confirmado' | 'cancelado'
 
+export type DeliveryMethod = 'retirada' | 'motoboy' | 'a_combinar'
+
+export type DeliveryAddress = {
+  zip_code: string | null
+  street: string | null
+  number: string | null
+  complement: string | null
+  neighborhood: string | null
+  city: string | null
+  state: string | null
+  lat: number | null
+  lng: number | null
+}
+
+export type LalamoveQuote = {
+  provider: 'lalamove'
+  quotationId: string
+  serviceType: string
+  distance_m: number | null
+  currency: string
+  total: number
+  expiresAt: string | null
+  quotedAt: string
+}
+
 export type SalesOrderItem = {
   id: string
   order_id: string
@@ -146,6 +179,11 @@ export type SalesOrder = {
   // O pedido já baixou o estoque? Vira true quando confirmado, false ao
   // cancelar/reabrir. Usado para reconciliar entradas/saídas.
   stock_committed: boolean
+  // Entrega escolhida no pedido. `total` já inclui `delivery_fee`.
+  delivery_method: DeliveryMethod
+  delivery_fee: number
+  delivery_address: DeliveryAddress | null
+  delivery_quote: LalamoveQuote | null
   created_at: string
   updated_at: string
 }

@@ -24,6 +24,12 @@ export async function saveStoreSettings(formData: FormData) {
   const shippingPayload = {
     ...corePayload,
     email: (formData.get('email') as string) || null,
+    lalamove_enabled: formData.get('lalamove_enabled') === 'on',
+    lalamove_service_type: (formData.get('lalamove_service_type') as string) || 'MOTORCYCLE',
+    // Endereço de origem pode ter mudado: zera o cache de coordenadas para a
+    // próxima cotação de motoboy geocodificar de novo.
+    shipping_origin_lat: null,
+    shipping_origin_lng: null,
     shipping_origin_name: (formData.get('shipping_origin_name') as string) || null,
     shipping_origin_document: (formData.get('shipping_origin_document') as string) || null,
     shipping_origin_zip_code: (formData.get('shipping_origin_zip_code') as string) || null,

@@ -440,6 +440,38 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
         </div>
       </section>
 
+      {/* Motoboy (Lalamove) */}
+      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+        <div>
+          <h2 className="text-sm font-bold">Entrega por motoboy (Lalamove)</h2>
+          <p className="text-xs text-muted">
+            Quando ligado, o link público de pedido oferece "Motoboy" como forma de entrega e cota o
+            valor pela API da Lalamove usando o endereço da loja acima. As credenciais são
+            configuradas pela plataforma (variáveis de ambiente <code>LALAMOVE_*</code>).
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Oferecer motoboy no link de pedido">
+            <select name="lalamove_enabled" defaultValue={settings.lalamove_enabled ? 'on' : 'off'} className="input">
+              <option value="off">Não</option>
+              <option value="on">Sim</option>
+            </select>
+          </Field>
+          <Field label="Tipo de veículo">
+            <select
+              name="lalamove_service_type"
+              defaultValue={settings.lalamove_service_type || 'MOTORCYCLE'}
+              className="input"
+            >
+              <option value="MOTORCYCLE">Moto (motoboy)</option>
+              <option value="CAR">Carro</option>
+              <option value="SEDAN">Sedã</option>
+              <option value="VAN">Van</option>
+            </select>
+          </Field>
+        </div>
+      </section>
+
       <div className="flex flex-wrap items-center gap-3 justify-end">
         {saved && <span className="text-xs text-green-600 font-semibold">Salvo com sucesso!</span>}
         <button type="submit" className="bg-accent text-white rounded-lg px-5 py-2 text-sm font-bold">

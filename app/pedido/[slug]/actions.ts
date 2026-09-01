@@ -6,6 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendNotificationEmail } from '@/lib/email'
 import { buildOrderNotificationEmail } from '@/lib/emailTemplates'
 import { isBot, readField } from '@/lib/publicForm'
+import { resolveMotoQuote } from '@/lib/lalamove'
+import type { DeliveryMethod } from '@/lib/types'
 
 // Cópia opcional enviada em todo pedido (monitoramento do envio de e-mail).
 // Configurável por ambiente — não expor um endereço pessoal fixo no código.
@@ -28,7 +30,7 @@ export async function submitPublicOrder(formData: FormData) {
   const supabase = createAdminClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name')
+    .select('*')
     .eq('slug', slug)
     .eq('active', true)
     .single()
@@ -64,6 +66,56 @@ export async function submitPublicOrder(formData: FormData) {
     .filter((item): item is NonNullable<typeof item> => item !== null)
 
   if (items.length === 0) return
+
+  // Entrega. Só 'motoboy' mexe em valor — e o valor NUNCA vem do client: é
+  // recotado aqui no servidor. Se a recotação falhar, o pedido segue como
+  // 'a_combinar' sem taxa (a loja acerta a entrega por fora).
+  const rawMethod = (formData.get('delivery_method') as string) || 'a_combinar'
+  let deliveryMethod: DeliveryMethod = (['retirada', 'motoboy', 'a_combinar'] as const).includes(rawMethod as DeliveryMethod)
+    ? (rawMethod as DeliveryMethod)
+    : 'a_combinar'
+  let deliveryFee = 0
+  let deliveryAddress: Record<string, unknown> | null = null
+  let deliveryQuote: Record<string, unknown> | null = null
+  let deliveryNote: string | null = null
+
+  if (deliveryMethod === 'motoboy') {
+    const dest = {
+      zip_code: readField(formData, 'zip_code'),
+      street: readField(formData, 'street'),
+      number: readField(formData, 'number'),
+      complement: readField(formData, 'complement'),
+      neighborhood: readField(formData, 'neighborhood'),
+      city: readField(formData, 'city'),
+      state: readField(formData, 'state'),
+    }
+    const result = company.lalamove_enabled ? await resolveMotoQuote({ company, destination: dest }) : null
+    if (result && result.ok) {
+      deliveryFee = result.quote.total
+      deliveryAddress = { ...dest, lat: result.destGeo.lat, lng: result.destGeo.lng }
+      deliveryQuote = {
+        provider: 'lalamove',
+        quotationId: result.quote.quotationId,
+        serviceType: result.quote.serviceType,
+        distance_m: result.quote.distanceMeters,
+        currency: result.quote.currency,
+        total: result.quote.total,
+        expiresAt: result.quote.expiresAt,
+        quotedAt: new Date().toISOString(),
+      }
+      if (!result.originGeoWasCached) {
+        await supabase
+          .from('companies')
+          .update({ shipping_origin_lat: result.originGeo.lat, shipping_origin_lng: result.originGeo.lng })
+          .eq('id', company.id)
+      }
+    } else {
+      // não deu para cotar: não trava o pedido, cai para "a combinar"
+      deliveryMethod = 'a_combinar'
+      deliveryAddress = dest.zip_code ? { ...dest, lat: null, lng: null } : null
+      deliveryNote = 'Cliente pediu entrega por motoboy — cotação automática indisponível, combinar valor.'
+    }
+  }
 
   let customerId: string | null = null
 
@@ -112,17 +164,57 @@ export async function submitPublicOrder(formData: FormData) {
     }
   }
 
-  const total = items.reduce((sum, item) => sum + item.subtotal, 0)
-  const notes = readField(formData, 'notes')
+  const itemsTotal = items.reduce((sum, item) => sum + item.subtotal, 0)
+  const total = itemsTotal + deliveryFee
+  const notes = [readField(formData, 'notes'), deliveryNote].filter(Boolean).join('\n') || null
 
-  const { data: order } = await supabase
+  const baseOrder = { company_id: company.id, customer_id: customerId, status: 'rascunho', notes, total }
+  const deliveryCols = {
+    delivery_method: deliveryMethod,
+    delivery_fee: deliveryFee,
+    delivery_address: deliveryAddress,
+    delivery_quote: deliveryQuote,
+  }
+
+  // Colunas de entrega dependem de migration_lalamove.sql. Se ela ainda não
+  // rodou, o insert com elas falha — tenta sem elas para não perder o pedido.
+  let created = await supabase
     .from('sales_orders')
-    .insert({ company_id: company.id, customer_id: customerId, status: 'rascunho', notes, total })
+    .insert({ ...baseOrder, ...deliveryCols })
     .select('id, number, status, created_at')
     .single()
+  if (created.error) {
+    console.error('Falha ao criar pedido com campos de entrega, tentando sem eles:', created.error)
+    created = await supabase
+      .from('sales_orders')
+      .insert(baseOrder)
+      .select('id, number, status, created_at')
+      .single()
+  }
+  const order = created.data
   if (!order) return
 
   await supabase.from('sales_order_items').insert(items.map((item) => ({ ...item, order_id: order.id })))
+
+  // Melhor esforço: se o cliente informou endereço de entrega e o cadastro
+  // dele ainda não tem CEP, guarda o endereço no cadastro.
+  if (deliveryAddress?.zip_code && customerId) {
+    const { data: existing } = await supabase.from('customers').select('zip_code').eq('id', customerId).maybeSingle()
+    if (!existing?.zip_code) {
+      await supabase
+        .from('customers')
+        .update({
+          zip_code: deliveryAddress.zip_code,
+          street: deliveryAddress.street ?? null,
+          number: deliveryAddress.number ?? null,
+          complement: deliveryAddress.complement ?? null,
+          neighborhood: deliveryAddress.neighborhood ?? null,
+          city: deliveryAddress.city ?? null,
+          state: deliveryAddress.state ?? null,
+        })
+        .eq('id', customerId)
+    }
+  }
 
   // Notificação por e-mail: melhor esforço, isolada em try/catch própria
   // para nunca impedir a confirmação do pedido (mesmo que a coluna
@@ -159,6 +251,25 @@ export async function submitPublicOrder(formData: FormData) {
         document: customer?.document ?? null,
       },
       items,
+      delivery:
+        deliveryMethod === 'retirada'
+          ? { method: 'retirada', fee: 0 }
+          : deliveryAddress || deliveryFee > 0 || deliveryMethod === 'a_combinar'
+          ? {
+              method: deliveryMethod,
+              fee: deliveryFee,
+              address: deliveryAddress
+                ? [
+                    [deliveryAddress.street, deliveryAddress.number].filter(Boolean).join(', '),
+                    deliveryAddress.neighborhood,
+                    [deliveryAddress.city, deliveryAddress.state].filter(Boolean).join(' - '),
+                    deliveryAddress.zip_code ? `CEP ${deliveryAddress.zip_code}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : null,
+            }
+          : null,
       panelUrl,
     })
 

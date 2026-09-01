@@ -16,7 +16,7 @@ Plataforma multi-tenant para cadastrar produtos e gerar catálogos em PDF: cada 
 2. Vá em **SQL Editor** e cole todo o conteúdo de [`supabase/schema.sql`](supabase/schema.sql). Rode o script — ele cria as tabelas, políticas de segurança (RLS), os buckets de imagens/PDFs e já semeia as 7 categorias fixas (Whey, Creatina, Pré-treino, Vitaminas, Barras, Acessórios, Outras). *(Se o projeto já existia antes da versão multi-empresa, esse script já foi rodado — pule para o próximo passo.)*
 3. Ainda no **SQL Editor**, rode primeiro o bloco de "DIAGNÓSTICO" no topo de [`supabase/migration_multitenant.sql`](supabase/migration_multitenant.sql) (só leitura) para confirmar o e-mail da sua conta em `auth.users`. Edite o placeholder `TROQUE_PELO_SEU_EMAIL@exemplo.com` no script com esse e-mail — essa conta vira dona da empresa "BN Suplementos" **e** super-admin da plataforma. Cole o restante do script e rode uma única vez. Ele cria as tabelas `companies`/`profiles`, migra os dados atuais (produtos, categorias, configurações) para a empresa "BN Suplementos", e atualiza a RLS para isolar cada empresa. *(Só rode isso uma vez — não é idempotente.)*
 4. Depois, rode [`supabase/migration_customers.sql`](supabase/migration_customers.sql) — cria a tabela `customers` (cadastro de clientes), escopada por empresa da mesma forma que produtos/categorias.
-5. Rode as demais migrations em ordem (todas idempotentes): `migration_sales_orders.sql` (pedidos de venda) e, por último, [`supabase/migration_stock.sql`](supabase/migration_stock.sql) — controle de estoque (`stock_movements`, saldo por produto e as funções que baixam/estornam estoque nos pedidos).
+5. Rode as demais migrations em ordem (todas idempotentes): `migration_sales_orders.sql` (pedidos de venda), [`supabase/migration_stock.sql`](supabase/migration_stock.sql) — controle de estoque (`stock_movements`, saldo por produto e as funções que baixam/estornam estoque nos pedidos) — e [`supabase/migration_lalamove.sql`](supabase/migration_lalamove.sql) — cotação de motoboy (Lalamove) no link de pedido (`sales_orders.delivery_*`, config por empresa).
 6. Em **Authentication → Providers**, deixe apenas E-mail/Senha habilitado. **Desative "Enable email confirmations"** para simplificar (não há cadastro público — cada login é criado manualmente pelo super-admin em `/master`).
 7. Em **Authentication → Users**, confirme que a conta usada no passo 3 já existe (crie-a com "Add user" antes, se ainda não existir). É essa conta que vai logar em `/login`.
 8. Em **Project Settings → API**, copie:
@@ -40,6 +40,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 `ANTHROPIC_API_KEY` é opcional: sem ela, o upload de imagem (remoção de fundo + recorte quadrado) continua funcionando normalmente, mas o preenchimento automático de nome/marca/categoria/descrição a partir da foto fica desabilitado e os campos precisam ser preenchidos manualmente. Gere a chave em [console.anthropic.com](https://console.anthropic.com).
+
+`LALAMOVE_API_KEY` / `LALAMOVE_API_SECRET` / `LALAMOVE_ENVIRONMENT` são opcionais: habilitam a cotação de entrega por **motoboy** no link público de pedido. Cadastre um app em [developers.lalamove.com](https://developers.lalamove.com) (mercado BR) — o sandbox usa chaves `pk_test`/`sk_test`, a produção `pk_prod`/`sk_prod`. É um app único da plataforma (igual ao do Melhor Envio); cada empresa só liga a opção em **Configurações → Entrega por motoboy**. `GOOGLE_MAPS_API_KEY` é opcional e só melhora a precisão da geocodificação do endereço (sem ela, usa o centróide do CEP via [AwesomeAPI](https://cep.awesomeapi.com.br), grátis).
 
 ## 4. Rodar localmente
 
@@ -69,6 +71,7 @@ Logado em `/admin` (como dono de uma empresa, ou impersonando via `/master`):
 4. Vá em **Clientes** para cadastrar a base de clientes da loja. Ao digitar um CEP de 8 dígitos, o endereço (rua, bairro, cidade, UF) é preenchido automaticamente via [ViaCEP](https://viacep.com.br) (API pública, sem custo e sem chave) — complemento e número seguem editáveis manualmente.
 5. Vá em **Estoque** para operar o saldo dos produtos. Cada produto tem um saldo (produtos já cadastrados começam em 0 — faça a **entrada** inicial aqui, ou informe o "estoque inicial" ao cadastrar um produto novo). Na tela de um produto dá para registrar **entrada** (recebimento), **baixa** (perda/quebra) e **ajuste** (contagem de inventário), e ver o histórico completo de movimentações. Defina um "estoque mínimo" por produto para os alertas de estoque baixo no painel.
 6. Em **Pedidos**, confirmar um pedido **baixa o estoque** dos itens automaticamente (movimento de saída ligado ao pedido); cancelar ou reabrir um pedido confirmado **estorna** a baixa. Um pedido não pode ser confirmado se faltar saldo para algum item — a tela mostra quais produtos precisam de entrada.
+7. O **link público de pedido** só mostra produtos com saldo em estoque. Se você ligar **Configurações → Entrega por motoboy** (e as chaves `LALAMOVE_*` estiverem configuradas no ambiente), o cliente escolhe entre "Retirar na loja", "Motoboy" (com valor cotado na hora pela Lalamove a partir do CEP dele) e "Combinar depois"; o valor do motoboy entra no total do pedido. No painel do pedido dá para recotar usando o endereço cadastrado do cliente. Cobertura de motoboy é limitada às capitais atendidas pela Lalamove.
 
 ## 7. Deploy (Vercel, plano Hobby — gratuito)
 
@@ -121,4 +124,5 @@ supabase/migration_multitenant.sql → migração para multi-empresa (companies,
 supabase/migration_customers.sql   → tabela customers (cadastro de clientes por empresa)
 supabase/migration_sales_orders.sql → pedidos de venda (sales_orders / sales_order_items)
 supabase/migration_stock.sql       → controle de estoque (stock_movements, saldo por produto, funções de baixa/estorno)
+supabase/migration_lalamove.sql    → cotação de motoboy (Lalamove): sales_orders.delivery_*, config por empresa
 ```
