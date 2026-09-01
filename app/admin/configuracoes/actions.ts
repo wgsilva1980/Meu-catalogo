@@ -18,18 +18,14 @@ export async function saveStoreSettings(formData: FormData) {
     website: (formData.get('website') as string) || null,
   }
 
-  // Colunas novas que podem ainda não existir (migrations de envio / e-mail
-  // unificado) — mesma proteção usada em produtos: salvar o resto das
-  // configurações não pode depender da migration já ter rodado.
-  const shippingPayload = {
+  // Colunas adicionadas por migrations que podem ainda não ter rodado neste
+  // ambiente. Em vez de um update só (que falharia inteiro por causa de uma
+  // coluna faltando), montamos payloads do mais completo ao mais enxuto e
+  // aplicamos o primeiro que o banco aceitar — assim uma coluna nova ausente
+  // nunca impede de salvar o resto.
+  const addressPayload = {
     ...corePayload,
     email: (formData.get('email') as string) || null,
-    lalamove_enabled: formData.get('lalamove_enabled') === 'on',
-    lalamove_service_type: (formData.get('lalamove_service_type') as string) || 'MOTORCYCLE',
-    // Endereço de origem pode ter mudado: zera o cache de coordenadas para a
-    // próxima cotação de motoboy geocodificar de novo.
-    shipping_origin_lat: null,
-    shipping_origin_lng: null,
     shipping_origin_name: (formData.get('shipping_origin_name') as string) || null,
     shipping_origin_document: (formData.get('shipping_origin_document') as string) || null,
     shipping_origin_zip_code: (formData.get('shipping_origin_zip_code') as string) || null,
@@ -43,23 +39,33 @@ export async function saveStoreSettings(formData: FormData) {
     shipping_packages: parsePackages(formData.get('shipping_packages') as string | null),
   }
 
-  // shipping_origin_carrier_id é a coluna mais nova — se a migration ainda não
-  // rodou, o update inteiro falha. Tenta com ela; se der erro, tenta sem ela
-  // (endereço/agência/caixas ainda persistem); só então cai para o core.
   const carrierPayload = {
-    ...shippingPayload,
+    ...addressPayload,
     shipping_origin_carrier_id: parseNumericId(formData.get('shipping_origin_carrier_id') as string | null),
   }
 
-  let { error } = await supabase.from('companies').update(carrierPayload).eq('id', active.companyId)
-  if (error) {
-    console.error('Falha ao salvar com transportadora de origem, tentando sem ela:', error)
-    ;({ error } = await supabase.from('companies').update(shippingPayload).eq('id', active.companyId))
+  // migration_lalamove.sql — se ainda não rodou, este tier falha e caímos
+  // para o carrierPayload (endereço/transportadora ainda salvam).
+  const lalamovePayload = {
+    ...carrierPayload,
+    lalamove_enabled: formData.get('lalamove_enabled') === 'on',
+    lalamove_service_type: (formData.get('lalamove_service_type') as string) || 'MOTORCYCLE',
+    // Endereço de origem pode ter mudado: zera o cache de coordenadas para a
+    // próxima cotação de motoboy geocodificar de novo.
+    shipping_origin_lat: null,
+    shipping_origin_lng: null,
   }
-  if (error) {
-    console.error('Falha ao salvar configurações com endereço de origem, tentando sem ele:', error)
-    await supabase.from('companies').update(corePayload).eq('id', active.companyId)
+
+  let persisted = false
+  for (const payload of [lalamovePayload, carrierPayload, addressPayload, corePayload]) {
+    const { error } = await supabase.from('companies').update(payload).eq('id', active.companyId)
+    if (!error) {
+      persisted = true
+      break
+    }
+    console.error('Falha ao salvar configurações; tentando com menos campos:', error)
   }
+  if (!persisted) console.error('Não foi possível salvar nenhuma parte das configurações.')
 
   revalidatePath('/admin/configuracoes')
 }
