@@ -115,7 +115,16 @@ export async function saveOrder(formData: FormData) {
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
 
-  const total = items.reduce((sum, item) => sum + item.subtotal, 0)
+  // Entrega: método + taxa (manual ou vinda da cotação de motoboy). A taxa
+  // entra no total do pedido.
+  const rawMethod = (formData.get('delivery_method') as string) || 'a_combinar'
+  const delivery_method = (['retirada', 'motoboy', 'a_combinar'] as const).includes(rawMethod as never)
+    ? rawMethod
+    : 'a_combinar'
+  const rawFee = Number(String(formData.get('delivery_fee') ?? '').replace(',', '.'))
+  const delivery_fee = Number.isFinite(rawFee) && rawFee > 0 ? Math.round(rawFee * 100) / 100 : 0
+
+  const total = items.reduce((sum, item) => sum + item.subtotal, 0) + delivery_fee
 
   // Pedido confirmado só passa se houver saldo — checagem antes de gravar
   // qualquer coisa.
@@ -128,6 +137,9 @@ export async function saveOrder(formData: FormData) {
   }
 
   const orderPayload = { customer_id, status, notes, total }
+  // delivery_* dependem de migration_lalamove.sql; se não rodou, faz o
+  // update/insert sem esses campos.
+  const withDelivery = { ...orderPayload, delivery_method, delivery_fee }
 
   let orderId = id
   let wasCommitted = false
@@ -140,15 +152,27 @@ export async function saveOrder(formData: FormData) {
       .maybeSingle()
     wasCommitted = existing?.stock_committed ?? false
 
-    await supabase.from('sales_orders').update(orderPayload).eq('id', id).eq('company_id', active.companyId)
+    const { error } = await supabase.from('sales_orders').update(withDelivery).eq('id', id).eq('company_id', active.companyId)
+    if (error) {
+      console.error('Falha ao salvar pedido com campos de entrega, tentando sem eles:', error)
+      await supabase.from('sales_orders').update(orderPayload).eq('id', id).eq('company_id', active.companyId)
+    }
     await supabase.from('sales_order_items').delete().eq('order_id', id).eq('company_id', active.companyId)
   } else {
-    const { data: created } = await supabase
+    let created = await supabase
       .from('sales_orders')
-      .insert({ ...orderPayload, company_id: active.companyId })
+      .insert({ ...withDelivery, company_id: active.companyId })
       .select('id')
       .single()
-    orderId = created?.id ?? null
+    if (created.error) {
+      console.error('Falha ao criar pedido com campos de entrega, tentando sem eles:', created.error)
+      created = await supabase
+        .from('sales_orders')
+        .insert({ ...orderPayload, company_id: active.companyId })
+        .select('id')
+        .single()
+    }
+    orderId = created.data?.id ?? null
   }
 
   if (orderId && items.length > 0) {

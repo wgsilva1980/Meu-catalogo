@@ -3,7 +3,13 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { saveOrder } from '@/app/admin/pedidos/actions'
-import type { Customer, OrderStatus, Product, SalesOrder, SalesOrderItem } from '@/lib/types'
+import type { Customer, DeliveryMethod, OrderStatus, Product, SalesOrder, SalesOrderItem } from '@/lib/types'
+
+const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
+  retirada: 'Retirar na loja',
+  motoboy: 'Motoboy',
+  a_combinar: 'A combinar',
+}
 
 type Line = { key: number; product_id: string; quantity: number }
 
@@ -51,7 +57,35 @@ export default function OrderForm({
     return products.find((p) => p.id === productId)?.stock_quantity ?? 0
   }
 
-  const total = lines.reduce((sum, l) => sum + priceOf(l.product_id) * (l.quantity || 0), 0)
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>(order?.delivery_method ?? 'a_combinar')
+  const [deliveryFee, setDeliveryFee] = useState<number | string>(order?.delivery_fee ? order.delivery_fee : '')
+  const [motoStatus, setMotoStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [motoError, setMotoError] = useState<string | null>(null)
+
+  const feeNumber = Number(String(deliveryFee).replace(',', '.')) || 0
+  const itemsTotal = lines.reduce((sum, l) => sum + priceOf(l.product_id) * (l.quantity || 0), 0)
+  const total = itemsTotal + feeNumber
+
+  async function recalcMotoboy() {
+    if (!order) return
+    setMotoStatus('loading')
+    setMotoError(null)
+    try {
+      const res = await fetch(`/api/pedidos/${order.id}/entrega/motoboy`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setMotoStatus('error')
+        setMotoError(data.error ?? 'Falha ao cotar motoboy.')
+        return
+      }
+      setDeliveryMethod('motoboy')
+      setDeliveryFee(data.fee)
+      setMotoStatus('idle')
+    } catch {
+      setMotoStatus('error')
+      setMotoError('Falha ao cotar motoboy.')
+    }
+  }
 
   return (
     <form action={saveOrder} className="flex flex-col gap-3 max-w-2xl">
@@ -144,7 +178,66 @@ export default function OrderForm({
           ))}
         </div>
 
-        <div className="flex justify-end border-t border-line pt-3 text-sm font-bold">Total: {formatPrice(total)}</div>
+        <div className="flex flex-col gap-1 border-t border-line pt-3 text-sm">
+          <div className="flex justify-between text-muted">
+            <span>Itens</span>
+            <span>{formatPrice(itemsTotal)}</span>
+          </div>
+          {feeNumber > 0 && (
+            <div className="flex justify-between text-muted">
+              <span>Entrega ({DELIVERY_LABELS[deliveryMethod]})</span>
+              <span>{formatPrice(feeNumber)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold">
+            <span>Total</span>
+            <span>{formatPrice(total)}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+        <h2 className="text-sm font-bold">Entrega</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Método">
+            <select
+              name="delivery_method"
+              value={deliveryMethod}
+              onChange={(e) => setDeliveryMethod(e.target.value as DeliveryMethod)}
+              className="input"
+            >
+              <option value="a_combinar">A combinar</option>
+              <option value="retirada">Retirar na loja</option>
+              <option value="motoboy">Motoboy</option>
+            </select>
+          </Field>
+          <Field label="Valor da entrega (R$)">
+            <input
+              name="delivery_fee"
+              type="number"
+              step="0.01"
+              min="0"
+              value={deliveryFee}
+              onChange={(e) => setDeliveryFee(e.target.value)}
+              placeholder="0,00"
+              className="input"
+            />
+          </Field>
+        </div>
+        {order && (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={recalcMotoboy}
+              disabled={motoStatus === 'loading'}
+              className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+            >
+              {motoStatus === 'loading' ? 'Cotando...' : 'Cotar motoboy (Lalamove)'}
+            </button>
+            <span className="text-xs text-muted">Usa o endereço cadastrado do cliente.</span>
+          </div>
+        )}
+        {motoError && <p className="text-xs text-red-600">{motoError}</p>}
       </section>
 
       <Field label="Observações">

@@ -873,6 +873,30 @@ $$;
 commit;
 
 
+-- ###################################################################
+-- 14) migration_lalamove.sql
+-- ###################################################################
+
+-- Cotação de entrega por motoboy (Lalamove) no link público de pedido.
+-- Credenciais são da plataforma (env LALAMOVE_*); cada empresa só liga a
+-- opção e escolhe o veículo. sales_orders.total passa a incluir delivery_fee.
+
+begin;
+
+alter table companies add column if not exists lalamove_enabled      boolean not null default false;
+alter table companies add column if not exists lalamove_service_type text    not null default 'MOTORCYCLE';
+alter table companies add column if not exists shipping_origin_lat    numeric(10,7);
+alter table companies add column if not exists shipping_origin_lng    numeric(10,7);
+
+alter table sales_orders add column if not exists delivery_method text not null default 'a_combinar'
+  check (delivery_method in ('retirada', 'motoboy', 'a_combinar'));
+alter table sales_orders add column if not exists delivery_fee numeric(10,2) not null default 0;
+alter table sales_orders add column if not exists delivery_address jsonb;
+alter table sales_orders add column if not exists delivery_quote jsonb;
+
+commit;
+
+
 -- #####################################################################
 -- PÓS-INSTALAÇÃO  (rode depois de criar seu usuário no ambiente novo)
 -- #####################################################################

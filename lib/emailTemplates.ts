@@ -8,6 +8,12 @@ const statusLabel: Record<string, string> = {
   cancelado: 'Cancelado',
 }
 
+const deliveryLabel: Record<string, string> = {
+  retirada: 'Retirar na loja',
+  motoboy: 'Motoboy',
+  a_combinar: 'A combinar',
+}
+
 function formatPrice(value: number) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
@@ -27,12 +33,14 @@ export function buildOrderNotificationEmail({
   order,
   customer,
   items,
+  delivery,
   panelUrl,
 }: {
   companyName: string
   order: { number: number; status: string; total: number; notes: string | null; createdAt: string }
   customer: { name: string; phone: string | null; email: string | null; document: string | null }
   items: { product_name: string; quantity: number; unit_price: number; subtotal: number }[]
+  delivery?: { method: string; fee: number; address?: string | null } | null
   panelUrl?: string | null
 }) {
   const date = new Date(order.createdAt).toLocaleDateString('pt-BR', {
@@ -67,6 +75,17 @@ export function buildOrderNotificationEmail({
     <tr><td style="padding:16px 32px 4px;">
       <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#5B6472;font-weight:700;margin-bottom:6px;">Observações</div>
       <div style="font-size:13px;color:#5B6472;background:#F4F5F1;border:1px solid #DEDCD4;border-radius:10px;padding:12px 14px;white-space:pre-wrap;">${escapeHtml(order.notes)}</div>
+    </td></tr>`
+    : ''
+
+  const deliveryHtml = delivery
+    ? `
+    <tr><td style="padding:16px 32px 0;">
+      <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#5B6472;font-weight:700;margin-bottom:6px;">Entrega</div>
+      <div style="font-size:13px;color:#12182A;">${escapeHtml(deliveryLabel[delivery.method] ?? delivery.method)}${
+        delivery.fee > 0 ? ` — ${formatPrice(delivery.fee)}` : ''
+      }</div>
+      ${delivery.address ? `<div style="font-size:13px;color:#5B6472;margin-top:4px;">${escapeHtml(delivery.address)}</div>` : ''}
     </td></tr>`
     : ''
 
@@ -113,6 +132,7 @@ export function buildOrderNotificationEmail({
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsHtml}</table>
   </td></tr>
   ${notesHtml}
+  ${deliveryHtml}
 
   <tr><td style="padding:24px 32px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FF5A36;border-radius:12px;"><tr>

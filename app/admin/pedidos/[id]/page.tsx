@@ -4,6 +4,7 @@ import { resolveActiveCompany } from '@/lib/company'
 import OrderForm from '@/components/OrderForm'
 import OrderPdfButton from '@/components/OrderPdfButton'
 import ShippingCard from '@/components/ShippingCard'
+import DeliveryCard from '@/components/DeliveryCard'
 
 export default async function EditarPedidoPage({
   params,
@@ -51,6 +52,12 @@ export default async function EditarPedidoPage({
         </p>
       )}
       <OrderForm order={order} items={items ?? []} customers={customers ?? []} products={products ?? []} />
+      <DeliveryCard
+        method={order.delivery_method ?? 'a_combinar'}
+        fee={Number(order.delivery_fee ?? 0)}
+        address={order.delivery_address ?? null}
+        quote={order.delivery_quote ?? null}
+      />
       <ShippingCard orderId={order.id} connected={!!melhorEnvioAccount} shipment={shipment ?? null} />
     </div>
   )

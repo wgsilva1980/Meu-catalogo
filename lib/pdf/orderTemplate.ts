@@ -6,6 +6,12 @@ const statusLabel: Record<string, string> = {
   cancelado: 'Cancelado',
 }
 
+const deliveryLabel: Record<string, string> = {
+  retirada: 'Retirar na loja',
+  motoboy: 'Motoboy',
+  a_combinar: 'A combinar',
+}
+
 function formatPrice(value: number) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
@@ -34,6 +40,23 @@ export function buildOrderHtml({
   items: SalesOrderItem[]
 }) {
   const date = new Date(order.created_at).toLocaleDateString('pt-BR')
+
+  const deliveryFee = Number(order.delivery_fee ?? 0)
+  const deliveryMethod = order.delivery_method ?? 'a_combinar'
+  const showDelivery = deliveryMethod !== 'a_combinar' || deliveryFee > 0
+  const itemsSubtotal = items.reduce((sum, i) => sum + Number(i.subtotal), 0)
+  const addr = order.delivery_address
+  const deliveryAddressLine = addr
+    ? [
+        [addr.street, addr.number].filter(Boolean).join(', '),
+        addr.complement,
+        addr.neighborhood,
+        [addr.city, addr.state].filter(Boolean).join(' - '),
+        addr.zip_code ? `CEP ${addr.zip_code}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : null
 
   return `<!doctype html>
 <html>
@@ -84,6 +107,18 @@ export function buildOrderHtml({
           .join('')}
       </tbody>
       <tfoot>
+        ${
+          showDelivery
+            ? `<tr>
+          <td colspan="3" class="num">Subtotal dos itens</td>
+          <td class="num">${formatPrice(itemsSubtotal)}</td>
+        </tr>
+        <tr>
+          <td colspan="3" class="num">Entrega (${esc(deliveryLabel[deliveryMethod] ?? deliveryMethod)})</td>
+          <td class="num">${formatPrice(deliveryFee)}</td>
+        </tr>`
+            : ''
+        }
         <tr>
           <td colspan="3" class="num total-label">Total</td>
           <td class="num total-value">${formatPrice(order.total)}</td>
@@ -91,6 +126,11 @@ export function buildOrderHtml({
       </tfoot>
     </table>
 
+    ${
+      showDelivery && deliveryAddressLine
+        ? `<section class="notes"><div class="label">Endereço de entrega</div><p>${esc(deliveryAddressLine)}</p></section>`
+        : ''
+    }
     ${order.notes ? `<section class="notes"><div class="label">Observações</div><p>${esc(order.notes)}</p></section>` : ''}
   </section>
 </body>
