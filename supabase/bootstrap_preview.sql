@@ -968,6 +968,20 @@ alter table sales_orders add column if not exists discount_value numeric(10,2) n
 commit;
 
 
+-- ###################################################################
+-- 17) migration_order_public_token.sql
+-- ###################################################################
+
+-- Token público por pedido: /acompanhar/<token> (cliente acompanha sem login).
+
+begin;
+
+alter table sales_orders add column if not exists public_token uuid not null default gen_random_uuid();
+create unique index if not exists sales_orders_public_token_key on sales_orders (public_token);
+
+commit;
+
+
 -- #####################################################################
 -- PÓS-INSTALAÇÃO  (rode depois de criar seu usuário no ambiente novo)
 -- #####################################################################

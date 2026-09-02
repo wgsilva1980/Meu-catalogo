@@ -1,9 +1,11 @@
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import OrderForm from '@/components/OrderForm'
 import OrderPdfButton from '@/components/OrderPdfButton'
 import DeliveryCard from '@/components/DeliveryCard'
+import CopyLinkField from '@/components/CopyLinkField'
 
 export default async function EditarPedidoPage({
   params,
@@ -37,6 +39,10 @@ export default async function EditarPedidoPage({
       supabase.from('shipments').select('*').eq('order_id', id).eq('company_id', active.companyId).maybeSingle(),
       supabase.from('payment_methods').select('*').eq('company_id', active.companyId).order('sort_order'),
     ])
+
+  const host = (await headers()).get('host')
+  const protocol = host?.startsWith('localhost') ? 'http' : 'https'
+  const trackingUrl = order.public_token && host ? `${protocol}://${host}/acompanhar/${order.public_token}` : null
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -73,6 +79,15 @@ export default async function EditarPedidoPage({
           address={order.delivery_address ?? null}
           quote={order.delivery_quote ?? null}
         />
+      )}
+      {trackingUrl && (
+        <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+          <h2 className="text-sm font-bold">Link de acompanhamento do cliente</h2>
+          <p className="text-xs text-muted">
+            Envie para o cliente acompanhar o status do pedido e o rastreio da entrega, sem login.
+          </p>
+          <CopyLinkField url={trackingUrl} />
+        </section>
       )}
     </div>
   )
