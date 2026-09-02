@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getShipmentTracking } from '@/lib/melhorEnvio'
 import { orderDiscountAmount } from '@/lib/orderTotals'
 import TrackingTimeline from '@/components/TrackingTimeline'
+import PayButton from '@/components/PayButton'
 import type { DeliveryMethod, DiscountType } from '@/lib/types'
 
 export const runtime = 'nodejs'
@@ -29,8 +30,15 @@ function formatPrice(value: number) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
-export default async function AcompanharPedidoPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function AcompanharPedidoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>
+  searchParams: Promise<{ status?: string; collection_status?: string }>
+}) {
   const { token } = await params
+  const { status: mpStatus, collection_status: mpCollectionStatus } = await searchParams
   if (!UUID_RE.test(token)) notFound()
 
   const supabase = createAdminClient()
@@ -41,14 +49,21 @@ export default async function AcompanharPedidoPage({ params }: { params: Promise
     .maybeSingle()
   if (!order) notFound()
 
-  const [{ data: company }, { data: items }, { data: shipment }, { data: paymentMethod }] = await Promise.all([
-    supabase.from('companies').select('name, logo_url').eq('id', order.company_id).single(),
-    supabase.from('sales_order_items').select('product_name, quantity, unit_price, subtotal').eq('order_id', order.id),
-    supabase.from('shipments').select('melhor_envio_id, tracking_code, service_name').eq('order_id', order.id).maybeSingle(),
-    order.payment_method_id
-      ? supabase.from('payment_methods').select('name').eq('id', order.payment_method_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ])
+  const [{ data: company }, { data: items }, { data: shipment }, { data: paymentMethod }, { data: payment }, { data: mpAccount }] =
+    await Promise.all([
+      supabase.from('companies').select('name, logo_url').eq('id', order.company_id).single(),
+      supabase.from('sales_order_items').select('product_name, quantity, unit_price, subtotal').eq('order_id', order.id),
+      supabase
+        .from('shipments')
+        .select('melhor_envio_id, tracking_code, service_name')
+        .eq('order_id', order.id)
+        .maybeSingle(),
+      order.payment_method_id
+        ? supabase.from('payment_methods').select('name').eq('id', order.payment_method_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase.from('payments').select('status').eq('order_id', order.id).maybeSingle(),
+      supabase.from('mercado_pago_accounts').select('company_id').eq('company_id', order.company_id).maybeSingle(),
+    ])
 
   const itemsSubtotal = (items ?? []).reduce((sum, i) => sum + Number(i.subtotal), 0)
   const discount = orderDiscountAmount(
@@ -134,8 +149,33 @@ export default async function AcompanharPedidoPage({ params }: { params: Promise
         <section className="flex flex-col gap-1 text-sm">
           <h2 className="text-sm font-bold">Entrega e pagamento</h2>
           <div className="text-muted">Entrega: {DELIVERY_LABEL[deliveryMethod] ?? deliveryMethod}</div>
-          {paymentMethod?.name && <div className="text-muted">Pagamento: {paymentMethod.name}</div>}
+          {paymentMethod?.name && <div className="text-muted">Forma de pagamento: {paymentMethod.name}</div>}
         </section>
+
+        {Number(order.total) > 0 && (Boolean(order.paid_at) || Boolean(mpAccount) || Boolean(payment)) && (
+          <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+            <h2 className="text-sm font-bold">Pagamento</h2>
+            {order.paid_at ? (
+              <p className="text-sm text-green-700 font-semibold">
+                Pagamento confirmado em {new Date(order.paid_at).toLocaleDateString('pt-BR')}.
+              </p>
+            ) : mpStatus === 'approved' || mpCollectionStatus === 'approved' ? (
+              <p className="text-sm text-muted">
+                Recebemos seu pagamento e estamos confirmando com o Mercado Pago. Atualize esta página em instantes.
+              </p>
+            ) : mpAccount ? (
+              <>
+                <p className="text-sm text-muted">Total a pagar: {formatPrice(Number(order.total))}</p>
+                <PayButton
+                  token={token}
+                  label={payment?.status === 'pending' ? 'Continuar pagamento' : 'Pagar agora'}
+                />
+              </>
+            ) : (
+              <p className="text-sm text-muted">Combine o pagamento diretamente com a loja.</p>
+            )}
+          </section>
+        )}
 
         {(shipment?.melhor_envio_id || tracking.code) && (
           <section className="flex flex-col gap-2 border border-line rounded-xl p-4">

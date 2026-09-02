@@ -48,7 +48,12 @@ export default async function EditarPedidoPage({
     <div className="flex flex-col gap-6 max-w-2xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl">Pedido #{order.number}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-2xl">Pedido #{order.number}</h1>
+            {order.paid_at && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Pago</span>
+            )}
+          </div>
           <p className="text-sm text-muted">Editar pedido</p>
         </div>
         <OrderPdfButton orderId={order.id} />

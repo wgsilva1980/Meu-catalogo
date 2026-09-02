@@ -4,17 +4,23 @@ import { resolveActiveCompany } from '@/lib/company'
 import StoreSettingsForm from '@/components/StoreSettingsForm'
 import CopyLinkField from '@/components/CopyLinkField'
 import MelhorEnvioCard from '@/components/MelhorEnvioCard'
+import MercadoPagoCard from '@/components/MercadoPagoCard'
 import type { Company } from '@/lib/types'
 
 export default async function ConfiguracoesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ melhor_envio_erro?: string; melhor_envio_conectado?: string }>
+  searchParams: Promise<{
+    melhor_envio_erro?: string
+    melhor_envio_conectado?: string
+    mercado_pago_erro?: string
+    mercado_pago_conectado?: string
+  }>
 }) {
   const active = await resolveActiveCompany()
   if (!active.ok) return null
 
-  const { melhor_envio_erro, melhor_envio_conectado } = await searchParams
+  const { melhor_envio_erro, melhor_envio_conectado, mercado_pago_erro, mercado_pago_conectado } = await searchParams
 
   const supabase = await createClient()
   const { data } = await supabase.from('companies').select('*').eq('id', active.companyId).single()
@@ -25,6 +31,12 @@ export default async function ConfiguracoesPage({
   const { data: melhorEnvioAccount } = await supabase
     .from('melhor_envio_accounts')
     .select('*')
+    .eq('company_id', active.companyId)
+    .maybeSingle()
+
+  const { data: mercadoPagoAccount } = await supabase
+    .from('mercado_pago_accounts')
+    .select('live_mode, connected_at')
     .eq('company_id', active.companyId)
     .maybeSingle()
 
@@ -74,6 +86,11 @@ export default async function ConfiguracoesPage({
       )}
 
       <MelhorEnvioCard account={melhorEnvioAccount ?? null} error={melhor_envio_erro} justConnected={melhor_envio_conectado === '1'} />
+      <MercadoPagoCard
+        account={mercadoPagoAccount ?? null}
+        error={mercado_pago_erro}
+        justConnected={mercado_pago_conectado === '1'}
+      />
     </div>
   )
 }

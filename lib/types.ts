@@ -193,6 +193,8 @@ export type SalesOrder = {
   discount_value: number
   // Token do link público de acompanhamento: /acompanhar/<public_token>
   public_token: string
+  // Preenchido quando o pagamento do pedido é aprovado (Mercado Pago).
+  paid_at: string | null
   pdf_path: string | null
   // O pedido já baixou o estoque? Vira true quando confirmado, false ao
   // cancelar/reabrir. Usado para reconciliar entradas/saídas.
@@ -202,6 +204,35 @@ export type SalesOrder = {
   delivery_fee: number
   delivery_address: DeliveryAddress | null
   delivery_quote: LalamoveQuote | null
+  created_at: string
+  updated_at: string
+}
+
+export type MercadoPagoAccount = {
+  company_id: string
+  mp_user_id: string
+  access_token: string
+  refresh_token: string
+  public_key: string | null
+  live_mode: boolean
+  expires_at: string
+  connected_at: string
+  updated_at: string
+}
+
+export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'refunded'
+
+export type Payment = {
+  id: string
+  company_id: string
+  order_id: string
+  provider: string
+  mp_preference_id: string | null
+  mp_payment_id: string | null
+  status: PaymentStatus
+  amount: number | null
+  paid_at: string | null
+  raw: unknown
   created_at: string
   updated_at: string
 }

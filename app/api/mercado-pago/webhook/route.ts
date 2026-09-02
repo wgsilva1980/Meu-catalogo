@@ -1,0 +1,83 @@
+import { NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getConnectedCompanyId, getPayment, normalizePaymentStatus, verifyWebhookSignature } from '@/lib/mercadoPago'
+
+export const runtime = 'nodejs'
+export const maxDuration = 30
+
+// Webhook do Mercado Pago. Recebe notificações de pagamento, confirma na API
+// e atualiza `payments` + `sales_orders.paid_at`. Idempotente.
+export async function POST(request: Request) {
+  const url = new URL(request.url)
+  let body: Record<string, unknown> = {}
+  try {
+    body = (await request.json()) as Record<string, unknown>
+  } catch {
+    // algumas notificações vêm só com query string
+  }
+
+  const type = (body.type as string) || url.searchParams.get('type') || url.searchParams.get('topic')
+  const dataId =
+    ((body.data as { id?: unknown } | undefined)?.id as string | undefined) ||
+    url.searchParams.get('data.id') ||
+    url.searchParams.get('id')
+
+  // Só tratamos notificações de pagamento.
+  if (type !== 'payment' || !dataId) {
+    return NextResponse.json({ ok: true, ignored: true })
+  }
+
+  const valid = verifyWebhookSignature({
+    dataId: String(dataId),
+    requestId: request.headers.get('x-request-id'),
+    signatureHeader: request.headers.get('x-signature'),
+  })
+  if (!valid) {
+    console.warn('Webhook do Mercado Pago com assinatura inválida.')
+    return NextResponse.json({ error: 'assinatura inválida' }, { status: 401 })
+  }
+
+  const mpUserId = body.user_id != null ? String(body.user_id) : url.searchParams.get('user_id')
+  if (!mpUserId) {
+    console.error('Webhook do Mercado Pago sem user_id — não dá para resolver a loja.', body)
+    return NextResponse.json({ ok: true })
+  }
+
+  const companyId = await getConnectedCompanyId(mpUserId)
+  if (!companyId) {
+    console.error('Webhook do Mercado Pago: nenhuma loja conectada para user_id', mpUserId)
+    return NextResponse.json({ ok: true })
+  }
+
+  const payment = await getPayment({ companyId, paymentId: String(dataId) })
+  if (!payment || !payment.external_reference) {
+    console.error('Webhook do Mercado Pago: pagamento não encontrado ou sem external_reference', dataId)
+    return NextResponse.json({ ok: true })
+  }
+
+  const status = normalizePaymentStatus(payment.status)
+  const paidAt = status === 'approved' ? payment.date_approved || new Date().toISOString() : null
+
+  const admin = createAdminClient()
+  await admin.from('payments').upsert(
+    {
+      company_id: companyId,
+      order_id: payment.external_reference,
+      provider: 'mercado_pago',
+      mp_payment_id: payment.id,
+      status,
+      amount: payment.transaction_amount,
+      paid_at: paidAt,
+      raw: payment as unknown as Record<string, unknown>,
+    },
+    { onConflict: 'order_id' }
+  )
+
+  await admin
+    .from('sales_orders')
+    .update({ paid_at: paidAt })
+    .eq('id', payment.external_reference)
+    .eq('company_id', companyId)
+
+  return NextResponse.json({ ok: true })
+}
