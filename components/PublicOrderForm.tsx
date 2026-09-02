@@ -26,6 +26,7 @@ export default function PublicOrderForm({
   foundCustomer,
   typedDocument,
   motoboyEnabled = false,
+  paymentMethods = [],
 }: {
   slug: string
   categories: Category[]
@@ -33,6 +34,7 @@ export default function PublicOrderForm({
   foundCustomer: Customer | null
   typedDocument: string | null
   motoboyEnabled?: boolean
+  paymentMethods?: { id: string; name: string }[]
 }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({})
 
@@ -283,6 +285,22 @@ export default function PublicOrderForm({
           </div>
         )}
       </section>
+
+      {paymentMethods.length > 0 && (
+        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+          <h2 className="text-sm font-bold">Forma de pagamento</h2>
+          <Field label="Como você prefere pagar?">
+            <select name="payment_method_id" defaultValue="" className="input">
+              <option value="">Combinar com a loja</option>
+              {paymentMethods.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </section>
+      )}
 
       <div className="flex flex-col gap-1 border-t border-line pt-3 text-sm">
         <div className="flex justify-between text-muted">

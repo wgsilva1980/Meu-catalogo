@@ -53,7 +53,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     created_at: new Date().toISOString(),
   }
 
-  const html = buildOrderHtml({ company, customer, order, items: items ?? [] })
+  let paymentMethodName: string | null = null
+  if (order.payment_method_id) {
+    const { data: pm } = await supabase
+      .from('payment_methods')
+      .select('name')
+      .eq('id', order.payment_method_id)
+      .eq('company_id', companyId)
+      .maybeSingle()
+    paymentMethodName = pm?.name ?? null
+  }
+
+  const html = buildOrderHtml({ company, customer, order, items: items ?? [], paymentMethodName })
 
   try {
     const pdfBuffer = await renderHtmlToPdf(html)

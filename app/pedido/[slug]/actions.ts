@@ -166,34 +166,51 @@ export async function submitPublicOrder(formData: FormData) {
     }
   }
 
+  // Forma de pagamento escolhida pelo cliente — precisa ser uma forma ativa
+  // da própria loja.
+  const rawPaymentId = (formData.get('payment_method_id') as string) || ''
+  let paymentMethodId: string | null = null
+  if (rawPaymentId) {
+    const { data: pm } = await supabase
+      .from('payment_methods')
+      .select('id')
+      .eq('id', rawPaymentId)
+      .eq('company_id', company.id)
+      .eq('active', true)
+      .maybeSingle()
+    paymentMethodId = pm?.id ?? null
+  }
+
   const itemsTotal = items.reduce((sum, item) => sum + item.subtotal, 0)
   const total = itemsTotal + deliveryFee
   const notes = [readField(formData, 'notes'), deliveryNote].filter(Boolean).join('\n') || null
 
   const baseOrder = { company_id: company.id, customer_id: customerId, status: 'rascunho', notes, total }
-  const deliveryCols = {
+  const withDelivery = {
+    ...baseOrder,
     delivery_method: deliveryMethod,
     delivery_fee: deliveryFee,
     delivery_address: deliveryAddress,
     delivery_quote: deliveryQuote,
   }
+  const withPayment = { ...withDelivery, payment_method_id: paymentMethodId }
 
-  // Colunas de entrega dependem de migration_lalamove.sql. Se ela ainda não
-  // rodou, o insert com elas falha — tenta sem elas para não perder o pedido.
-  let created = await supabase
-    .from('sales_orders')
-    .insert({ ...baseOrder, ...deliveryCols })
-    .select('id, number, status, created_at')
-    .single()
-  if (created.error) {
-    console.error('Falha ao criar pedido com campos de entrega, tentando sem eles:', created.error)
-    created = await supabase
+  // Colunas de entrega/pagamento dependem de migrations que podem não ter
+  // rodado. Tenta o insert mais completo e vai afunilando para não perder o
+  // pedido.
+  let order: { id: string; number: number; status: string; created_at: string } | null = null
+  for (const payload of [withPayment, withDelivery, baseOrder]) {
+    const created = await supabase
       .from('sales_orders')
-      .insert(baseOrder)
+      .insert(payload)
       .select('id, number, status, created_at')
       .single()
+    if (!created.error) {
+      order = created.data
+      break
+    }
+    console.error('Falha ao criar pedido, tentando com menos campos:', created.error)
   }
-  const order = created.data
   if (!order) return
 
   await supabase.from('sales_order_items').insert(items.map((item) => ({ ...item, order_id: order.id })))
@@ -239,6 +256,12 @@ export async function submitPublicOrder(formData: FormData) {
       .eq('id', customerId)
       .single()
 
+    let paymentMethodName: string | null = null
+    if (paymentMethodId) {
+      const { data: pm } = await supabase.from('payment_methods').select('name').eq('id', paymentMethodId).maybeSingle()
+      paymentMethodName = pm?.name ?? null
+    }
+
     const host = (await headers()).get('host')
     const protocol = host?.startsWith('localhost') ? 'http' : 'https'
     const panelUrl = host ? `${protocol}://${host}/admin/pedidos/${order.id}` : null
@@ -272,6 +295,7 @@ export async function submitPublicOrder(formData: FormData) {
                 : null,
             }
           : null,
+      paymentMethod: paymentMethodName,
       panelUrl,
     })
 

@@ -4,7 +4,18 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { saveOrder } from '@/app/admin/pedidos/actions'
 import ShippingCard from '@/components/ShippingCard'
-import type { Customer, DeliveryMethod, OrderStatus, Product, SalesOrder, SalesOrderItem, Shipment } from '@/lib/types'
+import { orderTotal } from '@/lib/orderTotals'
+import type {
+  Customer,
+  DeliveryMethod,
+  DiscountType,
+  OrderStatus,
+  PaymentMethod,
+  Product,
+  SalesOrder,
+  SalesOrderItem,
+  Shipment,
+} from '@/lib/types'
 
 const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
   retirada: 'Retirar na loja',
@@ -26,6 +37,7 @@ export default function OrderForm({
   products,
   melhorEnvioConnected = false,
   shipment = null,
+  paymentMethods = [],
 }: {
   order?: SalesOrder
   items?: SalesOrderItem[]
@@ -33,6 +45,7 @@ export default function OrderForm({
   products: Product[]
   melhorEnvioConnected?: boolean
   shipment?: Shipment | null
+  paymentMethods?: PaymentMethod[]
 }) {
   const [lines, setLines] = useState<Line[]>(() => {
     if (items && items.length > 0) {
@@ -68,9 +81,24 @@ export default function OrderForm({
   const [motoStatus, setMotoStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [motoError, setMotoError] = useState<string | null>(null)
 
+  const [paymentMethodId, setPaymentMethodId] = useState(order?.payment_method_id ?? '')
+  const [discountType, setDiscountType] = useState<'' | DiscountType>(order?.discount_type ?? '')
+  const [discountValue, setDiscountValue] = useState<number | string>(
+    order?.discount_value ? order.discount_value : ''
+  )
+
+  // Formas ativas + a forma já gravada no pedido (mesmo que tenha sido
+  // desativada depois), para não sumir da tela ao editar um pedido antigo.
+  const paymentOptions = paymentMethods.filter((m) => m.active || m.id === order?.payment_method_id)
+
   const feeNumber = Number(String(deliveryFee).replace(',', '.')) || 0
   const itemsTotal = lines.reduce((sum, l) => sum + priceOf(l.product_id) * (l.quantity || 0), 0)
-  const total = itemsTotal + feeNumber
+  const { discount, total } = orderTotal({
+    itemsSubtotal: itemsTotal,
+    discountType: discountType || null,
+    discountValue: Number(String(discountValue).replace(',', '.')) || 0,
+    deliveryFee: feeNumber,
+  })
 
   async function recalcMotoboy() {
     if (!order) return
@@ -189,6 +217,12 @@ export default function OrderForm({
             <span>Itens</span>
             <span>{formatPrice(itemsTotal)}</span>
           </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-muted">
+              <span>Desconto{discountType === 'percent' ? ` (${Number(String(discountValue).replace(',', '.')) || 0}%)` : ''}</span>
+              <span>- {formatPrice(discount)}</span>
+            </div>
+          )}
           {feeNumber > 0 && (
             <div className="flex justify-between text-muted">
               <span>Entrega ({DELIVERY_LABELS[deliveryMethod]})</span>
@@ -200,6 +234,62 @@ export default function OrderForm({
             <span>{formatPrice(total)}</span>
           </div>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+        <h2 className="text-sm font-bold">Pagamento e desconto</h2>
+        <Field label="Forma de pagamento">
+          <select
+            name="payment_method_id"
+            value={paymentMethodId}
+            onChange={(e) => setPaymentMethodId(e.target.value)}
+            className="input"
+          >
+            <option value="">— Não informada —</option>
+            {paymentOptions.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+                {!m.active ? ' (inativa)' : ''}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Desconto">
+            <select
+              name="discount_type"
+              value={discountType}
+              onChange={(e) => setDiscountType(e.target.value as '' | DiscountType)}
+              className="input"
+            >
+              <option value="">Sem desconto</option>
+              <option value="percent">Porcentagem (%)</option>
+              <option value="amount">Valor (R$)</option>
+            </select>
+          </Field>
+          <Field label={discountType === 'percent' ? 'Percentual (%)' : 'Valor do desconto (R$)'}>
+            <input
+              name="discount_value"
+              type="number"
+              step="0.01"
+              min="0"
+              value={discountValue}
+              onChange={(e) => setDiscountValue(e.target.value)}
+              placeholder={discountType === 'percent' ? '0' : '0,00'}
+              disabled={!discountType}
+              className="input disabled:opacity-50"
+            />
+          </Field>
+        </div>
+        {paymentMethods.length === 0 && (
+          <p className="text-xs text-muted">
+            Nenhuma forma de pagamento cadastrada. Cadastre em{' '}
+            <a href="/admin/formas-pagamento" className="text-accent underline">
+              Formas de pagamento
+            </a>
+            .
+          </p>
+        )}
       </section>
 
       <section className="flex flex-col gap-3 border border-line rounded-xl p-4">

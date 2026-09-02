@@ -12,9 +12,10 @@ export default async function NovoPedidoPage({
 
   const { erro, faltam } = await searchParams
   const supabase = await createClient()
-  const [{ data: customers }, { data: products }] = await Promise.all([
+  const [{ data: customers }, { data: products }, { data: paymentMethods }] = await Promise.all([
     supabase.from('customers').select('*').eq('company_id', active.companyId).order('name'),
     supabase.from('products').select('*').eq('company_id', active.companyId).eq('available', true).order('name'),
+    supabase.from('payment_methods').select('*').eq('company_id', active.companyId).order('sort_order'),
   ])
 
   return (
@@ -28,7 +29,7 @@ export default async function NovoPedidoPage({
           Estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Salve como rascunho ou dê entrada no estoque antes de confirmar.
         </p>
       )}
-      <OrderForm customers={customers ?? []} products={products ?? []} />
+      <OrderForm customers={customers ?? []} products={products ?? []} paymentMethods={paymentMethods ?? []} />
     </div>
   )
 }

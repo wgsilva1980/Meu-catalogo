@@ -34,6 +34,7 @@ export function buildOrderNotificationEmail({
   customer,
   items,
   delivery,
+  paymentMethod,
   panelUrl,
 }: {
   companyName: string
@@ -41,6 +42,7 @@ export function buildOrderNotificationEmail({
   customer: { name: string; phone: string | null; email: string | null; document: string | null }
   items: { product_name: string; quantity: number; unit_price: number; subtotal: number }[]
   delivery?: { method: string; fee: number; address?: string | null } | null
+  paymentMethod?: string | null
   panelUrl?: string | null
 }) {
   const date = new Date(order.createdAt).toLocaleDateString('pt-BR', {
@@ -89,6 +91,14 @@ export function buildOrderNotificationEmail({
     </td></tr>`
     : ''
 
+  const paymentHtml = paymentMethod
+    ? `
+    <tr><td style="padding:16px 32px 0;">
+      <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#5B6472;font-weight:700;margin-bottom:6px;">Forma de pagamento</div>
+      <div style="font-size:13px;color:#12182A;">${escapeHtml(paymentMethod)}</div>
+    </td></tr>`
+    : ''
+
   const footerLink = panelUrl
     ? ` · <a href="${panelUrl}" style="color:#FF5A36;text-decoration:none;font-weight:700;">Ver no painel</a>`
     : ''
@@ -133,6 +143,7 @@ export function buildOrderNotificationEmail({
   </td></tr>
   ${notesHtml}
   ${deliveryHtml}
+  ${paymentHtml}
 
   <tr><td style="padding:24px 32px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FF5A36;border-radius:12px;"><tr>
