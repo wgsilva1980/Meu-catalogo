@@ -553,9 +553,107 @@ export type ShipmentTracking = {
   events: ShipmentTrackingEvent[]
 }
 
+// Marcos do envio, a partir dos timestamps que o /shipment/tracking sempre
+// devolve. Serve de linha do tempo básica quando os eventos detalhados da
+// transportadora ainda não estão disponíveis.
+function milestoneEvents(raw: Record<string, unknown>): ShipmentTrackingEvent[] {
+  const rows: Array<[unknown, string]> = [
+    [raw.delivered_at, 'Entregue'],
+    [raw.posted_at, 'Postado'],
+    [raw.generated_at, 'Etiqueta gerada'],
+    [raw.paid_at, 'Frete pago'],
+    [raw.created_at, 'Pedido criado no Melhor Envio'],
+    [raw.canceled_at, 'Cancelado'],
+    [raw.expired_at, 'Expirado'],
+  ]
+  return rows
+    .filter(([d]) => typeof d === 'string' && d)
+    .map(([d, description]) => ({ date: d as string, description, location: null }))
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+}
+
+// Rótulos PT para os códigos de status de evento do melhorrastreio (os campos
+// description/title costumam vir nulos).
+const RASTREIO_STATUS_LABEL: Record<string, string> = {
+  CREATED: 'Etiqueta criada',
+  PENDING: 'Aguardando postagem',
+  POSTED: 'Postado',
+  POSTED_IN_LOCATION: 'Postado no ponto de coleta',
+  RECEIVED: 'Recebido pela transportadora',
+  RECEIVED_IN_LOCATION: 'Recebido no ponto',
+  IN_TRANSIT: 'Em trânsito',
+  IN_ROUTE: 'Em rota de entrega',
+  OUT_FOR_DELIVERY: 'Saiu para entrega',
+  WAITING_PICKUP: 'Aguardando retirada',
+  DELIVERED: 'Entregue',
+  DELIVERY_FAILED: 'Tentativa de entrega sem sucesso',
+  RETURNING: 'Em devolução',
+  RETURNED: 'Devolvido ao remetente',
+  CANCELED: 'Cancelado',
+}
+
+function formatEventLocation(loc: unknown): string | null {
+  if (!loc || typeof loc !== 'object') return null
+  const l = loc as Record<string, unknown>
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
+  const parts = [
+    [str(l.address), str(l.number)].filter(Boolean).join(', '),
+    str(l.locality),
+    [str(l.city), str(l.state)].filter(Boolean).join(' - '),
+  ].filter(Boolean)
+  return parts.join(' · ') || null
+}
+
+// Eventos detalhados da transportadora, do mesmo serviço que alimenta o
+// rastreador público melhorrastreio.com.br. API não oficial — best effort:
+// se falhar, o chamador usa os marcos do Melhor Envio.
+async function getMelhorRastreioEvents(trackingCode: string): Promise<ShipmentTrackingEvent[]> {
+  try {
+    const res = await fetch('https://api.melhorrastreio.com.br/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({
+        query:
+          'query($t:TrackerTrackingCode!){findByTrackingCode(tracker:$t){' +
+          'trackingEvents{createdAt registeredAt title description status location{address number locality city state}}' +
+          'pudoEvents{createdAt registeredAt title description status location{address number locality city state}}}}',
+        variables: { t: { trackingCode } },
+      }),
+    })
+    if (!res.ok) return []
+    const json = (await res.json()) as {
+      data?: { findByTrackingCode?: { trackingEvents?: unknown[]; pudoEvents?: unknown[] } }
+    }
+    const parcel = json?.data?.findByTrackingCode
+    if (!parcel) return []
+
+    const raw = [...(parcel.trackingEvents ?? []), ...(parcel.pudoEvents ?? [])] as Array<Record<string, unknown>>
+    return raw
+      .map((e) => {
+        const status = typeof e.status === 'string' ? e.status : null
+        const description =
+          (typeof e.description === 'string' && e.description) ||
+          (typeof e.title === 'string' && e.title) ||
+          (status ? RASTREIO_STATUS_LABEL[status] ?? status.replace(/_/g, ' ').toLowerCase() : null) ||
+          null
+        const date =
+          (typeof e.createdAt === 'string' && e.createdAt) ||
+          (typeof e.registeredAt === 'string' && e.registeredAt) ||
+          null
+        return { date, description, location: formatEventLocation(e.location) }
+      })
+      .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+  } catch (err) {
+    console.error('melhorrastreio indisponível:', err)
+    return []
+  }
+}
+
 // Consulta o rastreio de um envio já gerado no Melhor Envio.
 // POST /api/v2/me/shipment/tracking devolve um objeto indexado pelo id do
-// pedido no Melhor Envio.
+// pedido — dá o código e os marcos (postado/entregue/…). Os eventos passo a
+// passo da transportadora vêm do melhorrastreio (best effort).
 export async function getShipmentTracking({
   companyId,
   melhorEnvioId,
@@ -574,34 +672,16 @@ export async function getShipmentTracking({
   // trazem o objeto direto — aceita os dois.
   const raw = (data?.[melhorEnvioId] ??
     (typeof data?.tracking === 'string' || typeof data?.status === 'string' ? data : {})) as Record<string, unknown>
-  const rawEvents = (Array.isArray(raw.tracking_events)
-    ? raw.tracking_events
-    : Array.isArray((raw as { events?: unknown[] }).events)
-    ? (raw as { events: unknown[] }).events
-    : []) as Array<Record<string, unknown>>
+
+  const code = typeof raw.tracking === 'string' && raw.tracking ? raw.tracking : null
+  const detailed = code ? await getMelhorRastreioEvents(code) : []
 
   return {
-    code: typeof raw.tracking === 'string' && raw.tracking ? raw.tracking : null,
+    code,
     melhorEnvioTracking:
       typeof raw.melhorenvio_tracking === 'string' && raw.melhorenvio_tracking ? raw.melhorenvio_tracking : null,
     status: typeof raw.status === 'string' ? raw.status : null,
-    events: rawEvents.map((e) => ({
-      date: typeof e.date === 'string' ? e.date : typeof e.created_at === 'string' ? e.created_at : null,
-      description:
-        typeof e.description === 'string'
-          ? e.description
-          : typeof e.status === 'string'
-          ? e.status
-          : typeof e.title === 'string'
-          ? e.title
-          : null,
-      location:
-        typeof e.location === 'string'
-          ? e.location
-          : typeof e.city === 'string'
-          ? e.city
-          : null,
-    })),
+    events: detailed.length > 0 ? detailed : milestoneEvents(raw),
   }
 }
 
