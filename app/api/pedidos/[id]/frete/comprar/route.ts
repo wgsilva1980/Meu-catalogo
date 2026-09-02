@@ -141,11 +141,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         price: body.price ?? null,
         status: 'gerado',
         print_url: result.printUrl,
+        tracking_code: result.trackingCode ?? null,
       },
       { onConflict: 'order_id' }
     )
 
-    return NextResponse.json({ printUrl: result.printUrl })
+    return NextResponse.json({ printUrl: result.printUrl, trackingCode: result.trackingCode ?? null })
   } catch (err) {
     console.error('Falha ao comprar/gerar etiqueta:', err)
     const message = err instanceof Error ? err.message : 'Falha ao gerar etiqueta.'
