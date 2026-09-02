@@ -1,4 +1,5 @@
 import type { Company, Customer, SalesOrder, SalesOrderItem } from '@/lib/types'
+import { orderDiscountAmount } from '@/lib/orderTotals'
 
 const statusLabel: Record<string, string> = {
   rascunho: 'Rascunho',
@@ -34,11 +35,13 @@ export function buildOrderHtml({
   customer,
   order,
   items,
+  paymentMethodName,
 }: {
   company: Company
   customer: Customer
   order: SalesOrder
   items: SalesOrderItem[]
+  paymentMethodName?: string | null
 }) {
   const date = new Date(order.created_at).toLocaleDateString('pt-BR')
 
@@ -46,6 +49,10 @@ export function buildOrderHtml({
   const deliveryMethod = order.delivery_method ?? 'a_combinar'
   const showDelivery = deliveryMethod !== 'a_combinar' || deliveryFee > 0
   const itemsSubtotal = items.reduce((sum, i) => sum + Number(i.subtotal), 0)
+  const discount = orderDiscountAmount(itemsSubtotal, order.discount_type ?? null, Number(order.discount_value ?? 0))
+  const discountLabel =
+    order.discount_type === 'percent' ? `Desconto (${Number(order.discount_value ?? 0)}%)` : 'Desconto'
+  const showBreakdown = showDelivery || discount > 0
   const addr = order.delivery_address
   const deliveryAddressLine = addr
     ? [
@@ -108,18 +115,18 @@ export function buildOrderHtml({
           .join('')}
       </tbody>
       <tfoot>
-        ${
-          showDelivery
-            ? `<tr>
+        ${showBreakdown ? `<tr>
           <td colspan="3" class="num">Subtotal dos itens</td>
           <td class="num">${formatPrice(itemsSubtotal)}</td>
-        </tr>
-        <tr>
+        </tr>` : ''}
+        ${discount > 0 ? `<tr>
+          <td colspan="3" class="num">${esc(discountLabel)}</td>
+          <td class="num">- ${formatPrice(discount)}</td>
+        </tr>` : ''}
+        ${showDelivery ? `<tr>
           <td colspan="3" class="num">Entrega (${esc(deliveryLabel[deliveryMethod] ?? deliveryMethod)})</td>
           <td class="num">${formatPrice(deliveryFee)}</td>
-        </tr>`
-            : ''
-        }
+        </tr>` : ''}
         <tr>
           <td colspan="3" class="num total-label">Total</td>
           <td class="num total-value">${formatPrice(order.total)}</td>
@@ -127,6 +134,11 @@ export function buildOrderHtml({
       </tfoot>
     </table>
 
+    ${
+      paymentMethodName
+        ? `<section class="notes"><div class="label">Forma de pagamento</div><p>${esc(paymentMethodName)}</p></section>`
+        : ''
+    }
     ${
       showDelivery && deliveryAddressLine
         ? `<section class="notes"><div class="label">Endereço de entrega</div><p>${esc(deliveryAddressLine)}</p></section>`

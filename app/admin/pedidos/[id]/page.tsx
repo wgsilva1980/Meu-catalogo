@@ -28,13 +28,15 @@ export default async function EditarPedidoPage({
 
   if (!order) notFound()
 
-  const [{ data: items }, { data: customers }, { data: products }, { data: melhorEnvioAccount }, { data: shipment }] = await Promise.all([
-    supabase.from('sales_order_items').select('*').eq('order_id', id).eq('company_id', active.companyId),
-    supabase.from('customers').select('*').eq('company_id', active.companyId).order('name'),
-    supabase.from('products').select('*').eq('company_id', active.companyId).order('name'),
-    supabase.from('melhor_envio_accounts').select('company_id').eq('company_id', active.companyId).maybeSingle(),
-    supabase.from('shipments').select('*').eq('order_id', id).eq('company_id', active.companyId).maybeSingle(),
-  ])
+  const [{ data: items }, { data: customers }, { data: products }, { data: melhorEnvioAccount }, { data: shipment }, { data: paymentMethods }] =
+    await Promise.all([
+      supabase.from('sales_order_items').select('*').eq('order_id', id).eq('company_id', active.companyId),
+      supabase.from('customers').select('*').eq('company_id', active.companyId).order('name'),
+      supabase.from('products').select('*').eq('company_id', active.companyId).order('name'),
+      supabase.from('melhor_envio_accounts').select('company_id').eq('company_id', active.companyId).maybeSingle(),
+      supabase.from('shipments').select('*').eq('order_id', id).eq('company_id', active.companyId).maybeSingle(),
+      supabase.from('payment_methods').select('*').eq('company_id', active.companyId).order('sort_order'),
+    ])
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -62,6 +64,7 @@ export default async function EditarPedidoPage({
         products={products ?? []}
         melhorEnvioConnected={!!melhorEnvioAccount}
         shipment={shipment ?? null}
+        paymentMethods={paymentMethods ?? []}
       />
       {(order.delivery_method ?? 'a_combinar') !== 'melhor_envio' && (
         <DeliveryCard

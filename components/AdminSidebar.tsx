@@ -11,6 +11,7 @@ const items = [
   { href: '/admin/categorias', label: 'Categorias' },
   { href: '/admin/clientes', label: 'Clientes' },
   { href: '/admin/pedidos', label: 'Pedidos' },
+  { href: '/admin/formas-pagamento', label: 'Formas de pagamento' },
   { href: '/admin/catalogo', label: 'Gerar catálogo' },
   { href: '/admin/configuracoes', label: 'Configurações' },
 ]

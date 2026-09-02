@@ -167,6 +167,19 @@ export type SalesOrderItem = {
   subtotal: number
 }
 
+export type PaymentMethod = {
+  id: string
+  company_id: string
+  name: string
+  sort_order: number
+  active: boolean
+  created_at: string
+}
+
+// Desconto do pedido: percentual sobre o subtotal ('percent') ou valor fixo
+// em reais ('amount'). Incide sobre o subtotal dos itens, antes do frete.
+export type DiscountType = 'percent' | 'amount'
+
 export type SalesOrder = {
   id: string
   company_id: string
@@ -175,6 +188,9 @@ export type SalesOrder = {
   status: OrderStatus
   notes: string | null
   total: number
+  payment_method_id: string | null
+  discount_type: DiscountType | null
+  discount_value: number
   pdf_path: string | null
   // O pedido já baixou o estoque? Vira true quando confirmado, false ao
   // cancelar/reabrir. Usado para reconciliar entradas/saídas.

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
+import { orderTotal } from '@/lib/orderTotals'
 import type { OrderStatus } from '@/lib/types'
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>
@@ -124,7 +125,36 @@ export async function saveOrder(formData: FormData) {
   const rawFee = Number(String(formData.get('delivery_fee') ?? '').replace(',', '.'))
   const delivery_fee = Number.isFinite(rawFee) && rawFee > 0 ? Math.round(rawFee * 100) / 100 : 0
 
-  const total = items.reduce((sum, item) => sum + item.subtotal, 0) + delivery_fee
+  // Forma de pagamento: precisa ser uma da própria empresa (ou nenhuma).
+  const rawPaymentId = (formData.get('payment_method_id') as string) || ''
+  let payment_method_id: string | null = null
+  if (rawPaymentId) {
+    const { data: pm } = await supabase
+      .from('payment_methods')
+      .select('id')
+      .eq('id', rawPaymentId)
+      .eq('company_id', active.companyId)
+      .maybeSingle()
+    payment_method_id = pm?.id ?? null
+  }
+
+  // Desconto: percentual ou valor fixo sobre o subtotal dos itens.
+  const rawDiscountType = (formData.get('discount_type') as string) || ''
+  const discount_type: 'percent' | 'amount' | null =
+    rawDiscountType === 'percent' || rawDiscountType === 'amount' ? rawDiscountType : null
+  const rawDiscountValue = Number(String(formData.get('discount_value') ?? '').replace(',', '.'))
+  const discount_value =
+    discount_type && Number.isFinite(rawDiscountValue) && rawDiscountValue > 0
+      ? Math.round(rawDiscountValue * 100) / 100
+      : 0
+
+  const itemsSubtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
+  const { total } = orderTotal({
+    itemsSubtotal,
+    discountType: discount_type,
+    discountValue: discount_value,
+    deliveryFee: delivery_fee,
+  })
 
   // Pedido confirmado só passa se houver saldo — checagem antes de gravar
   // qualquer coisa.
@@ -137,9 +167,21 @@ export async function saveOrder(formData: FormData) {
   }
 
   const orderPayload = { customer_id, status, notes, total }
-  // delivery_* dependem de migration_lalamove.sql; se não rodou, faz o
-  // update/insert sem esses campos.
+  // Campos que dependem de migrations que podem não ter rodado: entrega
+  // (migration_lalamove) e pagamento/desconto (migration_payment_and_discount).
+  // Tenta o payload mais completo e vai afunilando se o banco recusar.
   const withDelivery = { ...orderPayload, delivery_method, delivery_fee }
+  const withPayment = { ...withDelivery, payment_method_id, discount_type, discount_value }
+
+  async function persist(
+    run: (payload: Record<string, unknown>) => PromiseLike<{ error: unknown }>
+  ): Promise<void> {
+    for (const payload of [withPayment, withDelivery, orderPayload]) {
+      const { error } = await run(payload)
+      if (!error) return
+      console.error('Falha ao salvar pedido, tentando com menos campos:', error)
+    }
+  }
 
   let orderId = id
   let wasCommitted = false
@@ -152,27 +194,23 @@ export async function saveOrder(formData: FormData) {
       .maybeSingle()
     wasCommitted = existing?.stock_committed ?? false
 
-    const { error } = await supabase.from('sales_orders').update(withDelivery).eq('id', id).eq('company_id', active.companyId)
-    if (error) {
-      console.error('Falha ao salvar pedido com campos de entrega, tentando sem eles:', error)
-      await supabase.from('sales_orders').update(orderPayload).eq('id', id).eq('company_id', active.companyId)
-    }
+    await persist((payload) =>
+      supabase.from('sales_orders').update(payload).eq('id', id).eq('company_id', active.companyId)
+    )
     await supabase.from('sales_order_items').delete().eq('order_id', id).eq('company_id', active.companyId)
   } else {
-    let created = await supabase
-      .from('sales_orders')
-      .insert({ ...withDelivery, company_id: active.companyId })
-      .select('id')
-      .single()
-    if (created.error) {
-      console.error('Falha ao criar pedido com campos de entrega, tentando sem eles:', created.error)
-      created = await supabase
+    for (const payload of [withPayment, withDelivery, orderPayload]) {
+      const created = await supabase
         .from('sales_orders')
-        .insert({ ...orderPayload, company_id: active.companyId })
+        .insert({ ...payload, company_id: active.companyId })
         .select('id')
         .single()
+      if (!created.error) {
+        orderId = created.data?.id ?? null
+        break
+      }
+      console.error('Falha ao criar pedido, tentando com menos campos:', created.error)
     }
-    orderId = created.data?.id ?? null
   }
 
   if (orderId && items.length > 0) {
