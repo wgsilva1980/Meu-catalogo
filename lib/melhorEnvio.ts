@@ -530,7 +530,79 @@ export async function purchaseAndGenerateLabel({
     body: { mode: 'private', orders: [cartItem.id] },
   })
 
-  return { melhorEnvioId: cartItem.id, printUrl: printResult.url }
+  // Código de rastreio: melhor esforço. Logo após gerar, a transportadora
+  // pode ainda não ter devolvido o código — nesse caso fica null e o admin
+  // atualiza depois pelo botão "Atualizar rastreio".
+  let trackingCode: string | null = null
+  try {
+    const tracking = await getShipmentTracking({ companyId, melhorEnvioId: cartItem.id })
+    trackingCode = tracking.code
+  } catch (err) {
+    console.error('Rastreio indisponível logo após gerar a etiqueta:', err)
+  }
+
+  return { melhorEnvioId: cartItem.id, printUrl: printResult.url, trackingCode }
+}
+
+export type ShipmentTrackingEvent = { date: string | null; description: string | null; location: string | null }
+
+export type ShipmentTracking = {
+  code: string | null
+  melhorEnvioTracking: string | null
+  status: string | null
+  events: ShipmentTrackingEvent[]
+}
+
+// Consulta o rastreio de um envio já gerado no Melhor Envio.
+// POST /api/v2/me/shipment/tracking devolve um objeto indexado pelo id do
+// pedido no Melhor Envio.
+export async function getShipmentTracking({
+  companyId,
+  melhorEnvioId,
+}: {
+  companyId: string
+  melhorEnvioId: string
+}): Promise<ShipmentTracking> {
+  const data = await melhorEnvioRequest<Record<string, unknown>>({
+    companyId,
+    method: 'POST',
+    path: '/api/v2/me/shipment/tracking',
+    body: { orders: [melhorEnvioId] },
+  })
+
+  // Normalmente a resposta vem indexada pelo id do pedido; alguns retornos
+  // trazem o objeto direto — aceita os dois.
+  const raw = (data?.[melhorEnvioId] ??
+    (typeof data?.tracking === 'string' || typeof data?.status === 'string' ? data : {})) as Record<string, unknown>
+  const rawEvents = (Array.isArray(raw.tracking_events)
+    ? raw.tracking_events
+    : Array.isArray((raw as { events?: unknown[] }).events)
+    ? (raw as { events: unknown[] }).events
+    : []) as Array<Record<string, unknown>>
+
+  return {
+    code: typeof raw.tracking === 'string' && raw.tracking ? raw.tracking : null,
+    melhorEnvioTracking:
+      typeof raw.melhorenvio_tracking === 'string' && raw.melhorenvio_tracking ? raw.melhorenvio_tracking : null,
+    status: typeof raw.status === 'string' ? raw.status : null,
+    events: rawEvents.map((e) => ({
+      date: typeof e.date === 'string' ? e.date : typeof e.created_at === 'string' ? e.created_at : null,
+      description:
+        typeof e.description === 'string'
+          ? e.description
+          : typeof e.status === 'string'
+          ? e.status
+          : typeof e.title === 'string'
+          ? e.title
+          : null,
+      location:
+        typeof e.location === 'string'
+          ? e.location
+          : typeof e.city === 'string'
+          ? e.city
+          : null,
+    })),
+  }
 }
 
 function onlyDigits(value: string) {

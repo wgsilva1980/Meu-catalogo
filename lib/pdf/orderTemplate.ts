@@ -36,12 +36,14 @@ export function buildOrderHtml({
   order,
   items,
   paymentMethodName,
+  shipping,
 }: {
   company: Company
   customer: Customer
   order: SalesOrder
   items: SalesOrderItem[]
   paymentMethodName?: string | null
+  shipping?: { serviceName: string | null; trackingCode: string | null } | null
 }) {
   const date = new Date(order.created_at).toLocaleDateString('pt-BR')
 
@@ -137,6 +139,13 @@ export function buildOrderHtml({
     ${
       paymentMethodName
         ? `<section class="notes"><div class="label">Forma de pagamento</div><p>${esc(paymentMethodName)}</p></section>`
+        : ''
+    }
+    ${
+      shipping?.trackingCode
+        ? `<section class="notes"><div class="label">Rastreio</div><p>${esc(shipping.trackingCode)}${
+            shipping.serviceName ? ` · ${esc(shipping.serviceName)}` : ''
+          }</p></section>`
         : ''
     }
     ${

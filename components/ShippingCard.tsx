@@ -15,6 +15,32 @@ type QuoteOption = {
 // carrinho do Melhor Envio; Correios e demais não usam.
 const AGENCY_REQUIRED_CARRIERS = new Set([2, 3])
 
+type TrackingEvent = { date: string | null; description: string | null; location: string | null }
+type TrackingInfo = { code: string | null; status: string | null; events: TrackingEvent[] }
+
+const TRACKING_STATUS_LABEL: Record<string, string> = {
+  pending: 'Aguardando postagem',
+  released: 'Etiqueta liberada',
+  posted: 'Postado',
+  collected: 'Coletado',
+  in_transit: 'Em trânsito',
+  delivered: 'Entregue',
+  returning: 'Em devolução',
+  returned: 'Devolvido',
+  canceled: 'Cancelado',
+  cancelled: 'Cancelado',
+}
+
+function trackingUrl(code: string) {
+  return `https://melhorrastreio.com.br/rastreio/${encodeURIComponent(code)}`
+}
+
+function formatEventDate(raw: string | null) {
+  if (!raw) return ''
+  const d = new Date(raw)
+  return Number.isNaN(d.getTime()) ? raw : d.toLocaleString('pt-BR')
+}
+
 export default function ShippingCard({
   orderId,
   connected,
@@ -40,6 +66,26 @@ export default function ShippingCard({
   const [box, setBox] = useState<{ name: string; fits: boolean } | null>(null)
   const [preferredMissing, setPreferredMissing] = useState(false)
   const [originAgencyId, setOriginAgencyId] = useState<number | null>(null)
+  const [tracking, setTracking] = useState<TrackingInfo | null>(
+    shipment?.tracking_code ? { code: shipment.tracking_code, status: null, events: [] } : null
+  )
+  const [trackingStatus, setTrackingStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  async function refreshTracking() {
+    setTrackingStatus('loading')
+    try {
+      const res = await fetch(`/api/pedidos/${orderId}/frete/rastreio`)
+      const data = await res.json()
+      if (!res.ok) {
+        setTrackingStatus('error')
+        return
+      }
+      setTracking({ code: data.code ?? null, status: data.status ?? null, events: data.events ?? [] })
+      setTrackingStatus('idle')
+    } catch {
+      setTrackingStatus('error')
+    }
+  }
 
   async function handleCalculate() {
     setLoading(true)
@@ -126,6 +172,7 @@ export default function ShippingCard({
   if (generated && printUrl) {
     const serviceName = shipment?.service_name ?? selected?.name ?? ''
     const price = shipment?.price ?? (selected ? Number(selected.price) : 0)
+    const code = tracking?.code ?? null
     return (
       <section className={wrap('gap-2')}>
         <h2 className="text-sm font-bold">Frete</h2>
@@ -135,6 +182,54 @@ export default function ShippingCard({
         <a href={printUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-accent underline w-fit">
           Ver/imprimir etiqueta
         </a>
+
+        <div className="flex flex-col gap-1.5 border-t border-line pt-2 mt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-muted">Rastreio</span>
+            <button
+              type="button"
+              onClick={refreshTracking}
+              disabled={trackingStatus === 'loading'}
+              className="text-xs font-semibold text-accent disabled:opacity-50"
+            >
+              {trackingStatus === 'loading' ? 'Atualizando...' : 'Atualizar rastreio'}
+            </button>
+          </div>
+
+          {code ? (
+            <p className="text-sm">
+              <span className="font-mono">{code}</span>
+              {' · '}
+              <a href={trackingUrl(code)} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
+                acompanhar
+              </a>
+              {tracking?.status && (
+                <span className="text-muted"> · {TRACKING_STATUS_LABEL[tracking.status] ?? tracking.status}</span>
+              )}
+            </p>
+          ) : (
+            <p className="text-xs text-muted">
+              Código de rastreio ainda não disponível. A transportadora costuma liberar após a postagem — use
+              &quot;Atualizar rastreio&quot;.
+            </p>
+          )}
+
+          {trackingStatus === 'error' && (
+            <p className="text-xs text-red-600">Falha ao consultar o rastreio. Tente novamente em instantes.</p>
+          )}
+
+          {tracking?.events && tracking.events.length > 0 && (
+            <ul className="flex flex-col gap-1 mt-1">
+              {tracking.events.map((ev, i) => (
+                <li key={i} className="text-xs text-muted">
+                  {ev.date && <span className="tabular-nums">{formatEventDate(ev.date)} — </span>}
+                  {ev.description ?? '—'}
+                  {ev.location && <span> ({ev.location})</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
     )
   }
