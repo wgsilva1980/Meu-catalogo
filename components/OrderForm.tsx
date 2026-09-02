@@ -9,6 +9,7 @@ const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
   retirada: 'Retirar na loja',
   motoboy: 'Motoboy',
   a_combinar: 'A combinar',
+  melhor_envio: 'Melhor Envio',
 }
 
 type Line = { key: number; product_id: string; quantity: number }
@@ -208,7 +209,8 @@ export default function OrderForm({
             >
               <option value="a_combinar">A combinar</option>
               <option value="retirada">Retirar na loja</option>
-              <option value="motoboy">Motoboy</option>
+              <option value="motoboy">Motoboy (Lalamove)</option>
+              <option value="melhor_envio">Melhor Envio (transportadora)</option>
             </select>
           </Field>
           <Field label="Valor da entrega (R$)">
@@ -224,7 +226,7 @@ export default function OrderForm({
             />
           </Field>
         </div>
-        {order && (
+        {order && deliveryMethod === 'motoboy' && (
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -237,7 +239,12 @@ export default function OrderForm({
             <span className="text-xs text-muted">Usa o endereço cadastrado do cliente.</span>
           </div>
         )}
-        {motoError && <p className="text-xs text-red-600">{motoError}</p>}
+        {motoError && deliveryMethod === 'motoboy' && <p className="text-xs text-red-600">{motoError}</p>}
+        {deliveryMethod === 'melhor_envio' && (
+          <p className="text-xs text-muted">
+            Salve o pedido para liberar a cotação e a geração da etiqueta do Melhor Envio abaixo.
+          </p>
+        )}
       </section>
 
       <Field label="Observações">

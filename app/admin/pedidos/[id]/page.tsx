@@ -52,13 +52,16 @@ export default async function EditarPedidoPage({
         </p>
       )}
       <OrderForm order={order} items={items ?? []} customers={customers ?? []} products={products ?? []} />
-      <DeliveryCard
-        method={order.delivery_method ?? 'a_combinar'}
-        fee={Number(order.delivery_fee ?? 0)}
-        address={order.delivery_address ?? null}
-        quote={order.delivery_quote ?? null}
-      />
-      <ShippingCard orderId={order.id} connected={!!melhorEnvioAccount} shipment={shipment ?? null} />
+      {(order.delivery_method ?? 'a_combinar') === 'melhor_envio' ? (
+        <ShippingCard orderId={order.id} connected={!!melhorEnvioAccount} shipment={shipment ?? null} />
+      ) : (
+        <DeliveryCard
+          method={order.delivery_method ?? 'a_combinar'}
+          fee={Number(order.delivery_fee ?? 0)}
+          address={order.delivery_address ?? null}
+          quote={order.delivery_quote ?? null}
+        />
+      )}
     </div>
   )
 }

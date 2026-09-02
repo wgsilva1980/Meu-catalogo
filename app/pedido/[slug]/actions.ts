@@ -70,8 +70,10 @@ export async function submitPublicOrder(formData: FormData) {
   // Entrega. Só 'motoboy' mexe em valor — e o valor NUNCA vem do client: é
   // recotado aqui no servidor. Se a recotação falhar, o pedido segue como
   // 'a_combinar' sem taxa (a loja acerta a entrega por fora).
+  // O link público só oferece estes 3 métodos; "melhor_envio" é escolha
+  // interna da loja na edição do pedido.
   const rawMethod = (formData.get('delivery_method') as string) || 'a_combinar'
-  let deliveryMethod: DeliveryMethod = (['retirada', 'motoboy', 'a_combinar'] as const).includes(rawMethod as DeliveryMethod)
+  let deliveryMethod: DeliveryMethod = (['retirada', 'motoboy', 'a_combinar'] as const).includes(rawMethod as never)
     ? (rawMethod as DeliveryMethod)
     : 'a_combinar'
   let deliveryFee = 0
