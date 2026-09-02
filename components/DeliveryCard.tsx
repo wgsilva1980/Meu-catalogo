@@ -4,6 +4,7 @@ const METHOD_LABEL: Record<DeliveryMethod, string> = {
   retirada: 'Retirar na loja',
   motoboy: 'Motoboy',
   a_combinar: 'A combinar',
+  melhor_envio: 'Melhor Envio',
 }
 
 function formatPrice(value: number) {

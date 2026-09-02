@@ -118,7 +118,7 @@ export async function saveOrder(formData: FormData) {
   // Entrega: método + taxa (manual ou vinda da cotação de motoboy). A taxa
   // entra no total do pedido.
   const rawMethod = (formData.get('delivery_method') as string) || 'a_combinar'
-  const delivery_method = (['retirada', 'motoboy', 'a_combinar'] as const).includes(rawMethod as never)
+  const delivery_method = (['retirada', 'motoboy', 'a_combinar', 'melhor_envio'] as const).includes(rawMethod as never)
     ? rawMethod
     : 'a_combinar'
   const rawFee = Number(String(formData.get('delivery_fee') ?? '').replace(',', '.'))

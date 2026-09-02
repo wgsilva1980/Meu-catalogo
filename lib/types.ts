@@ -131,7 +131,7 @@ export type StockMovement = {
 
 export type OrderStatus = 'rascunho' | 'confirmado' | 'cancelado'
 
-export type DeliveryMethod = 'retirada' | 'motoboy' | 'a_combinar'
+export type DeliveryMethod = 'retirada' | 'motoboy' | 'a_combinar' | 'melhor_envio'
 
 export type DeliveryAddress = {
   zip_code: string | null

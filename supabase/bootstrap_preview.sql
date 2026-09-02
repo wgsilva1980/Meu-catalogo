@@ -889,10 +889,38 @@ alter table companies add column if not exists shipping_origin_lat    numeric(10
 alter table companies add column if not exists shipping_origin_lng    numeric(10,7);
 
 alter table sales_orders add column if not exists delivery_method text not null default 'a_combinar'
-  check (delivery_method in ('retirada', 'motoboy', 'a_combinar'));
+  check (delivery_method in ('retirada', 'motoboy', 'a_combinar', 'melhor_envio'));
 alter table sales_orders add column if not exists delivery_fee numeric(10,2) not null default 0;
 alter table sales_orders add column if not exists delivery_address jsonb;
 alter table sales_orders add column if not exists delivery_quote jsonb;
+
+commit;
+
+
+-- ###################################################################
+-- 15) migration_delivery_melhor_envio.sql
+-- ###################################################################
+
+-- "Melhor Envio" vira um método de entrega (escolha única no pedido).
+
+begin;
+
+do $$
+declare c text;
+begin
+  for c in
+    select conname from pg_constraint
+    where conrelid = 'sales_orders'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%delivery_method%'
+  loop
+    execute format('alter table sales_orders drop constraint %I', c);
+  end loop;
+end $$;
+
+alter table sales_orders
+  add constraint sales_orders_delivery_method_check
+  check (delivery_method in ('retirada', 'motoboy', 'a_combinar', 'melhor_envio'));
 
 commit;
 
