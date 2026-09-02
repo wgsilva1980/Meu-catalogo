@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Shipment } from '@/lib/types'
 
 type QuoteOption = {
@@ -70,6 +70,7 @@ export default function ShippingCard({
     shipment?.tracking_code ? { code: shipment.tracking_code, status: null, events: [] } : null
   )
   const [trackingStatus, setTrackingStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const trackingLoadedRef = useRef(false)
 
   async function refreshTracking() {
     setTrackingStatus('loading')
@@ -86,6 +87,16 @@ export default function ShippingCard({
       setTrackingStatus('error')
     }
   }
+
+  // Carrega o rastreio automaticamente ao abrir um pedido com etiqueta já
+  // gerada, para a timeline aparecer na própria tela sem exigir um clique.
+  useEffect(() => {
+    if (generated && printUrl && !trackingLoadedRef.current) {
+      trackingLoadedRef.current = true
+      refreshTracking()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generated, printUrl])
 
   async function handleCalculate() {
     setLoading(true)
@@ -183,8 +194,8 @@ export default function ShippingCard({
           Ver/imprimir etiqueta
         </a>
 
-        <div className="flex flex-col gap-1.5 border-t border-line pt-2 mt-1">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2 border-t border-line pt-2 mt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs font-bold text-muted">Rastreio</span>
             <button
               type="button"
@@ -192,25 +203,23 @@ export default function ShippingCard({
               disabled={trackingStatus === 'loading'}
               className="text-xs font-semibold text-accent disabled:opacity-50"
             >
-              {trackingStatus === 'loading' ? 'Atualizando...' : 'Atualizar rastreio'}
+              {trackingStatus === 'loading' ? 'Atualizando...' : 'Atualizar'}
             </button>
           </div>
 
           {code ? (
             <p className="text-sm">
               <span className="font-mono">{code}</span>
-              {' · '}
-              <a href={trackingUrl(code)} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
-                acompanhar
-              </a>
               {tracking?.status && (
                 <span className="text-muted"> · {TRACKING_STATUS_LABEL[tracking.status] ?? tracking.status}</span>
               )}
             </p>
+          ) : trackingStatus === 'loading' && !tracking ? (
+            <p className="text-xs text-muted">Carregando rastreio…</p>
           ) : (
             <p className="text-xs text-muted">
-              Código de rastreio ainda não disponível. A transportadora costuma liberar após a postagem — use
-              &quot;Atualizar rastreio&quot;.
+              Código de rastreio ainda não disponível. A transportadora costuma liberar após a postagem — toque em
+              &quot;Atualizar&quot;.
             </p>
           )}
 
@@ -218,16 +227,29 @@ export default function ShippingCard({
             <p className="text-xs text-red-600">Falha ao consultar o rastreio. Tente novamente em instantes.</p>
           )}
 
-          {tracking?.events && tracking.events.length > 0 && (
-            <ul className="flex flex-col gap-1 mt-1">
+          {tracking?.events && tracking.events.length > 0 ? (
+            <ol className="flex flex-col gap-2 border-l border-line pl-3 mt-0.5">
               {tracking.events.map((ev, i) => (
-                <li key={i} className="text-xs text-muted">
-                  {ev.date && <span className="tabular-nums">{formatEventDate(ev.date)} — </span>}
-                  {ev.description ?? '—'}
-                  {ev.location && <span> ({ev.location})</span>}
+                <li key={i} className="relative text-xs">
+                  <span
+                    className={`absolute -left-[17px] top-1 w-2 h-2 rounded-full ${i === 0 ? 'bg-accent' : 'bg-line'}`}
+                  />
+                  <span className={i === 0 ? 'font-semibold' : ''}>{ev.description ?? '—'}</span>
+                  {ev.location && <span className="text-muted"> · {ev.location}</span>}
+                  {ev.date && <span className="block text-muted tabular-nums">{formatEventDate(ev.date)}</span>}
                 </li>
               ))}
-            </ul>
+            </ol>
+          ) : (
+            code && (
+              <p className="text-xs text-muted">
+                Sem eventos ainda. Ou{' '}
+                <a href={trackingUrl(code)} target="_blank" rel="noreferrer" className="underline">
+                  ver no site da transportadora
+                </a>
+                .
+              </p>
+            )
           )}
         </div>
       </section>
