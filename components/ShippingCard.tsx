@@ -21,6 +21,7 @@ type TrackingInfo = { code: string | null; status: string | null; events: Tracki
 const TRACKING_STATUS_LABEL: Record<string, string> = {
   pending: 'Aguardando postagem',
   released: 'Etiqueta liberada',
+  received: 'Recebido pela transportadora',
   posted: 'Postado',
   collected: 'Coletado',
   in_transit: 'Em trânsito',
