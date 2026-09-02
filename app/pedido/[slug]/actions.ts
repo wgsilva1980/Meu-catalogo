@@ -308,5 +308,15 @@ export async function submitPublicOrder(formData: FormData) {
     console.error('Notificação de pedido falhou (pedido já foi criado normalmente):', err)
   }
 
-  redirect(`/pedido/${slug}?sucesso=1&numero=${order.number}`)
+  // Token do link público de acompanhamento — consulta à parte para não
+  // quebrar a criação do pedido se a migration ainda não rodou.
+  let publicToken: string | null = null
+  {
+    const { data } = await supabase.from('sales_orders').select('public_token').eq('id', order.id).maybeSingle()
+    publicToken = (data as { public_token?: string } | null)?.public_token ?? null
+  }
+
+  redirect(
+    `/pedido/${slug}?sucesso=1&numero=${order.number}${publicToken ? `&token=${publicToken}` : ''}`
+  )
 }

@@ -191,6 +191,8 @@ export type SalesOrder = {
   payment_method_id: string | null
   discount_type: DiscountType | null
   discount_value: number
+  // Token do link público de acompanhamento: /acompanhar/<public_token>
+  public_token: string
   pdf_path: string | null
   // O pedido já baixou o estoque? Vira true quando confirmado, false ao
   // cancelar/reabrir. Usado para reconciliar entradas/saídas.

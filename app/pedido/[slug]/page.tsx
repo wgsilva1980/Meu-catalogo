@@ -8,10 +8,10 @@ export default async function PedidoPublicoPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ sucesso?: string; numero?: string; documento?: string }>
+  searchParams: Promise<{ sucesso?: string; numero?: string; documento?: string; token?: string }>
 }) {
   const { slug } = await params
-  const { sucesso, numero, documento } = await searchParams
+  const { sucesso, numero, documento, token } = await searchParams
 
   const supabase = createAdminClient()
   const { data: company } = await supabase
@@ -92,9 +92,19 @@ export default async function PedidoPublicoPage({
         </div>
 
         {sucesso ? (
-          <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-            Pedido {numero ? `#${numero} ` : ''}recebido com sucesso! Em breve entraremos em contato.
-          </p>
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              Pedido {numero ? `#${numero} ` : ''}recebido com sucesso! Em breve entraremos em contato.
+            </p>
+            {token && (
+              <a
+                href={`/acompanhar/${token}`}
+                className="text-sm font-semibold text-accent underline text-center"
+              >
+                Acompanhar meu pedido
+              </a>
+            )}
+          </div>
         ) : !identified ? (
           <DocumentLookupForm slug={slug} />
         ) : (
