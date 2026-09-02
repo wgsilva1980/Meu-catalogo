@@ -15,7 +15,21 @@ type QuoteOption = {
 // carrinho do Melhor Envio; Correios e demais não usam.
 const AGENCY_REQUIRED_CARRIERS = new Set([2, 3])
 
-export default function ShippingCard({ orderId, connected, shipment }: { orderId: string; connected: boolean; shipment: Shipment | null }) {
+export default function ShippingCard({
+  orderId,
+  connected,
+  shipment,
+  bare = false,
+}: {
+  orderId: string
+  connected: boolean
+  shipment: Shipment | null
+  // Quando renderizado dentro de outro card (ex.: seção Entrega do pedido),
+  // dispensa a moldura própria.
+  bare?: boolean
+}) {
+  const wrap = (gap: 'gap-2' | 'gap-3') =>
+    bare ? `flex flex-col ${gap}` : `flex flex-col ${gap} border border-line rounded-xl p-4`
   const [options, setOptions] = useState<QuoteOption[]>([])
   const [selected, setSelected] = useState<QuoteOption | null>(null)
   const [loading, setLoading] = useState(false)
@@ -93,7 +107,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
 
   if (!connected) {
     return (
-      <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+      <section className={wrap('gap-2')}>
         <h2 className="text-sm font-bold">Frete</h2>
         <p className="text-xs text-muted">
           Conecte sua conta do Melhor Envio em{' '}
@@ -113,7 +127,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
     const serviceName = shipment?.service_name ?? selected?.name ?? ''
     const price = shipment?.price ?? (selected ? Number(selected.price) : 0)
     return (
-      <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+      <section className={wrap('gap-2')}>
         <h2 className="text-sm font-bold">Frete</h2>
         <p className="text-sm">
           Etiqueta gerada — {serviceName} · R$ {Number(price ?? 0).toFixed(2).replace('.', ',')}
@@ -126,7 +140,7 @@ export default function ShippingCard({ orderId, connected, shipment }: { orderId
   }
 
   return (
-    <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+    <section className={wrap('gap-3')}>
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold">Frete</h2>
         <button

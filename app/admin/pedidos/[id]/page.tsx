@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import OrderForm from '@/components/OrderForm'
 import OrderPdfButton from '@/components/OrderPdfButton'
-import ShippingCard from '@/components/ShippingCard'
 import DeliveryCard from '@/components/DeliveryCard'
 
 export default async function EditarPedidoPage({
@@ -11,13 +10,13 @@ export default async function EditarPedidoPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ erro?: string; faltam?: string }>
+  searchParams: Promise<{ erro?: string; faltam?: string; salvo?: string }>
 }) {
   const active = await resolveActiveCompany()
   if (!active.ok) return null
 
   const { id } = await params
-  const { erro, faltam } = await searchParams
+  const { erro, faltam, salvo } = await searchParams
   const supabase = await createClient()
 
   const { data: order } = await supabase
@@ -51,10 +50,20 @@ export default async function EditarPedidoPage({
           Estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Dê entrada no estoque ou reduza a quantidade antes de confirmar.
         </p>
       )}
-      <OrderForm order={order} items={items ?? []} customers={customers ?? []} products={products ?? []} />
-      {(order.delivery_method ?? 'a_combinar') === 'melhor_envio' ? (
-        <ShippingCard orderId={order.id} connected={!!melhorEnvioAccount} shipment={shipment ?? null} />
-      ) : (
+      {salvo === '1' && !erro && (
+        <p className="rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm px-3 py-2">
+          Pedido salvo.
+        </p>
+      )}
+      <OrderForm
+        order={order}
+        items={items ?? []}
+        customers={customers ?? []}
+        products={products ?? []}
+        melhorEnvioConnected={!!melhorEnvioAccount}
+        shipment={shipment ?? null}
+      />
+      {(order.delivery_method ?? 'a_combinar') !== 'melhor_envio' && (
         <DeliveryCard
           method={order.delivery_method ?? 'a_combinar'}
           fee={Number(order.delivery_fee ?? 0)}

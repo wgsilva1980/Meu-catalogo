@@ -199,7 +199,9 @@ export async function saveOrder(formData: FormData) {
 
   revalidatePath('/admin/pedidos')
   revalidatePath('/admin/estoque')
-  redirect('/admin/pedidos')
+  // Fica na tela do próprio pedido depois de salvar (antes voltava para a
+  // lista). Sem id — insert falhou — cai para a lista.
+  redirect(orderId ? `/admin/pedidos/${orderId}?salvo=1` : '/admin/pedidos')
 }
 
 export async function updateOrderStatus(formData: FormData) {

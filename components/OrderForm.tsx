@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { saveOrder } from '@/app/admin/pedidos/actions'
-import type { Customer, DeliveryMethod, OrderStatus, Product, SalesOrder, SalesOrderItem } from '@/lib/types'
+import ShippingCard from '@/components/ShippingCard'
+import type { Customer, DeliveryMethod, OrderStatus, Product, SalesOrder, SalesOrderItem, Shipment } from '@/lib/types'
 
 const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
   retirada: 'Retirar na loja',
@@ -23,11 +24,15 @@ export default function OrderForm({
   items,
   customers,
   products,
+  melhorEnvioConnected = false,
+  shipment = null,
 }: {
   order?: SalesOrder
   items?: SalesOrderItem[]
   customers: Customer[]
   products: Product[]
+  melhorEnvioConnected?: boolean
+  shipment?: Shipment | null
 }) {
   const [lines, setLines] = useState<Line[]>(() => {
     if (items && items.length > 0) {
@@ -240,11 +245,16 @@ export default function OrderForm({
           </div>
         )}
         {motoError && deliveryMethod === 'motoboy' && <p className="text-xs text-red-600">{motoError}</p>}
-        {deliveryMethod === 'melhor_envio' && (
-          <p className="text-xs text-muted">
-            Salve o pedido para liberar a cotação e a geração da etiqueta do Melhor Envio abaixo.
-          </p>
-        )}
+        {deliveryMethod === 'melhor_envio' &&
+          (order ? (
+            <div className="border-t border-line pt-3">
+              <ShippingCard orderId={order.id} connected={melhorEnvioConnected} shipment={shipment} bare />
+            </div>
+          ) : (
+            <p className="text-xs text-muted">
+              Salve o pedido para liberar a cotação e a geração da etiqueta do Melhor Envio.
+            </p>
+          ))}
       </section>
 
       <Field label="Observações">
