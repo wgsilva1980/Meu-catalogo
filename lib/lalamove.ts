@@ -82,39 +82,120 @@ export type GeoPoint = { lat: number; lng: number }
 // centróide do CEP — precisão de rua, suficiente para ESTIMAR o valor do
 // motoboy. Se GOOGLE_MAPS_API_KEY estiver setada e houver endereço completo,
 // tenta o Google primeiro (mais preciso). Retorna null se nada resolver.
-export async function geocode(zipCode: string | null | undefined, addressLine?: string): Promise<GeoPoint | null> {
-  const digits = (zipCode ?? '').replace(/\D/g, '')
+// Aceita um par lat/lng de qualquer fonte (string ou número) e só devolve um
+// GeoPoint quando ambos são finitos e não caem em (0,0) — que várias APIs
+// devolvem como "não encontrei".
+function toGeoPoint(rawLat: unknown, rawLng: unknown): GeoPoint | null {
+  const lat = Number(rawLat)
+  const lng = Number(rawLng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  if (lat === 0 && lng === 0) return null
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null
+  return { lat, lng }
+}
 
+async function geocodeViaGoogle(digits: string, addressLine?: string): Promise<GeoPoint | null> {
   const googleKey = process.env.GOOGLE_MAPS_API_KEY?.trim()
-  if (googleKey && (addressLine || digits)) {
-    try {
-      const query = [addressLine, digits && `CEP ${digits}`, 'Brasil'].filter(Boolean).join(', ')
-      const url = new URL('https://maps.googleapis.com/maps/api/geocode/json')
-      url.searchParams.set('address', query)
-      url.searchParams.set('key', googleKey)
-      url.searchParams.set('region', 'br')
-      const res = await fetch(url, { cache: 'no-store' })
-      const data = (await res.json()) as { status: string; results: Array<{ geometry: { location: { lat: number; lng: number } } }> }
-      const loc = data.results?.[0]?.geometry?.location
-      if (data.status === 'OK' && loc) return { lat: loc.lat, lng: loc.lng }
-    } catch (err) {
-      console.error('Geocodificação Google falhou, caindo para AwesomeAPI:', err)
+  if (!googleKey || (!addressLine && !digits)) return null
+  try {
+    const query = [addressLine, digits && `CEP ${digits}`, 'Brasil'].filter(Boolean).join(', ')
+    const url = new URL('https://maps.googleapis.com/maps/api/geocode/json')
+    url.searchParams.set('address', query)
+    url.searchParams.set('key', googleKey)
+    url.searchParams.set('region', 'br')
+    const res = await fetch(url, { cache: 'no-store' })
+    const data = (await res.json()) as {
+      status: string
+      results: Array<{ geometry: { location: { lat: number; lng: number } } }>
     }
+    const loc = data.results?.[0]?.geometry?.location
+    if (data.status === 'OK' && loc) return toGeoPoint(loc.lat, loc.lng)
+  } catch (err) {
+    console.error('Geocodificação Google falhou:', err)
   }
+  return null
+}
 
+async function geocodeViaAwesomeApi(digits: string): Promise<GeoPoint | null> {
   if (digits.length !== 8) return null
   try {
     const res = await fetch(`https://cep.awesomeapi.com.br/json/${digits}`, { cache: 'no-store' })
     if (!res.ok) return null
     const data = (await res.json()) as { lat?: string; lng?: string }
-    const lat = Number(data.lat)
-    const lng = Number(data.lng)
-    if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) return { lat, lng }
-    return null
+    return toGeoPoint(data.lat, data.lng)
   } catch (err) {
     console.error('Geocodificação AwesomeAPI falhou:', err)
     return null
   }
+}
+
+async function geocodeViaBrasilApi(digits: string): Promise<GeoPoint | null> {
+  if (digits.length !== 8) return null
+  try {
+    const res = await fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`, { cache: 'no-store' })
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      location?: { coordinates?: { latitude?: string | number; longitude?: string | number } }
+    }
+    const coords = data.location?.coordinates
+    return coords ? toGeoPoint(coords.latitude, coords.longitude) : null
+  } catch (err) {
+    console.error('Geocodificação BrasilAPI falhou:', err)
+    return null
+  }
+}
+
+// Último recurso: Nominatim (OpenStreetMap). Cobre praticamente qualquer CEP/
+// endereço do Brasil. A política de uso pede User-Agent identificável e no
+// máximo 1 req/s — o que o fluxo de cotação (uma cotação por clique) respeita.
+async function geocodeViaNominatim(digits: string, addressLine?: string): Promise<GeoPoint | null> {
+  const attempts: Array<Record<string, string>> = []
+  if (addressLine) attempts.push({ q: `${addressLine}, Brasil` })
+  if (digits.length === 8) {
+    attempts.push({ postalcode: `${digits.slice(0, 5)}-${digits.slice(5)}`, country: 'Brazil' })
+  }
+  for (const params of attempts) {
+    try {
+      const url = new URL('https://nominatim.openstreetmap.org/search')
+      url.searchParams.set('format', 'jsonv2')
+      url.searchParams.set('limit', '1')
+      for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: { 'User-Agent': 'meu-catalogo/1.0 (pedido motoboy geocoding)' },
+      })
+      if (!res.ok) continue
+      const data = (await res.json()) as Array<{ lat?: string; lon?: string }>
+      const hit = data?.[0]
+      const point = hit ? toGeoPoint(hit.lat, hit.lon) : null
+      if (point) return point
+    } catch (err) {
+      console.error('Geocodificação Nominatim falhou:', err)
+    }
+  }
+  return null
+}
+
+// CEP/endereço -> coordenadas. Tenta vários provedores em ordem até um
+// resolver: Google (se GOOGLE_MAPS_API_KEY), AwesomeAPI, BrasilAPI e, por
+// último, Nominatim/OSM. Todos devolvem no máximo o centróide do CEP —
+// precisão de rua, suficiente para ESTIMAR o valor do motoboy. Retorna null
+// só se nenhum provedor resolver.
+export async function geocode(zipCode: string | null | undefined, addressLine?: string): Promise<GeoPoint | null> {
+  const digits = (zipCode ?? '').replace(/\D/g, '')
+
+  const providers: Array<() => Promise<GeoPoint | null>> = [
+    () => geocodeViaGoogle(digits, addressLine),
+    () => geocodeViaAwesomeApi(digits),
+    () => geocodeViaBrasilApi(digits),
+    () => geocodeViaNominatim(digits, addressLine),
+  ]
+
+  for (const run of providers) {
+    const point = await run()
+    if (point) return point
+  }
+  return null
 }
 
 export type MotoQuoteStop = { lat: number; lng: number; address: string }
@@ -248,7 +329,11 @@ export async function resolveMotoQuote({
     }))
   }
   if (!originGeo) {
-    return { ok: false, status: 422, error: 'Não foi possível localizar o endereço de origem da loja para cotar o motoboy.' }
+    return {
+      ok: false,
+      status: 422,
+      error: 'Não foi possível localizar o endereço de origem da loja para cotar o motoboy. Confira o CEP de origem em Configurações.',
+    }
   }
 
   const destGeo = await geocode(destination.zip_code, addressLine(destination))
