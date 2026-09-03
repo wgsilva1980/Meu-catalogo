@@ -192,7 +192,10 @@ export async function createCheckoutPreference({
   if (!res.ok || !data?.id) {
     throw new Error(`Falha ao criar a cobrança no Mercado Pago (${res.status}): ${data?.message ?? ''}`)
   }
-  const initPoint = (account.live_mode ? data.init_point : data.sandbox_init_point || data.init_point) ?? data.init_point
+  // Checkout Pro sempre abre pelo `init_point`, inclusive em testes (contas de
+  // teste / usuários de teste). O `sandbox_init_point` é legado e não é o
+  // fluxo recomendado para este produto — só é usado se o `init_point` faltar.
+  const initPoint = data.init_point || data.sandbox_init_point
   if (!initPoint) throw new Error('Mercado Pago não retornou o link de pagamento.')
   return { id: data.id, initPoint }
 }
