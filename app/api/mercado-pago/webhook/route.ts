@@ -17,10 +17,12 @@ export async function POST(request: Request) {
   }
 
   const type = (body.type as string) || url.searchParams.get('type') || url.searchParams.get('topic')
+  // A assinatura do Mercado Pago é calculada sobre o `data.id` da query
+  // string; por isso ele vem primeiro aqui.
   const dataId =
-    ((body.data as { id?: unknown } | undefined)?.id as string | undefined) ||
     url.searchParams.get('data.id') ||
-    url.searchParams.get('id')
+    url.searchParams.get('id') ||
+    ((body.data as { id?: unknown } | undefined)?.id as string | undefined)
 
   // Só tratamos notificações de pagamento.
   if (type !== 'payment' || !dataId) {
