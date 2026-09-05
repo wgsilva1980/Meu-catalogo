@@ -332,8 +332,9 @@ export function normalizePaymentStatus(mpStatus: string): 'pending' | 'approved'
 }
 
 // Valida a assinatura do webhook (header x-signature: "ts=...,v1=...").
-// manifest = "id:<data.id>;request-id:<x-request-id>;ts:<ts>;". Sem secret
-// configurada, não dá para validar — retorna true e loga um aviso.
+// manifest = "id:<data.id>;request-id:<x-request-id>;ts:<ts>;", omitindo
+// qualquer componente ausente na notificação. Sem secret configurada, não dá
+// para validar — retorna true e loga um aviso.
 export function verifyWebhookSignature({
   dataId,
   requestId,
@@ -359,7 +360,15 @@ export function verifyWebhookSignature({
   if (!parts.ts || !parts.v1) return false
 
   const id = /[a-zA-Z]/.test(dataId) ? dataId.toLowerCase() : dataId
-  const manifest = `id:${id};request-id:${requestId ?? ''};ts:${parts.ts};`
+  // O request-id nem sempre vem na notificação (algumas versões do webhook
+  // do Mercado Pago não enviam o header x-request-id) — nesse caso o trecho
+  // precisa ser omitido do manifest, não deixado vazio. Incluir
+  // "request-id:;" gera um HMAC diferente do calculado pelo Mercado Pago e
+  // rejeita notificações de pagamento legítimas.
+  const manifestParts = [`id:${id}`]
+  if (requestId) manifestParts.push(`request-id:${requestId}`)
+  manifestParts.push(`ts:${parts.ts}`)
+  const manifest = manifestParts.join(';') + ';'
   const expected = createHmac('sha256', secret).update(manifest).digest('hex')
   try {
     return timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1))
