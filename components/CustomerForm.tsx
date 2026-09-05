@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { saveCustomer } from '@/app/admin/clientes/actions'
+import { isValidCpfCnpj } from '@/lib/cpfCnpj'
 import type { Customer } from '@/lib/types'
 
 type ViaCepResponse = {
@@ -43,6 +44,8 @@ export default function CustomerForm({
   const [city, setCity] = useState(customer?.city ?? '')
   const [state, setState] = useState(customer?.state ?? '')
   const [cepStatus, setCepStatus] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
+  const [document, setDocument] = useState(customer?.document ?? defaultDocument ?? '')
+  const [documentError, setDocumentError] = useState(false)
 
   async function handleZipCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value
@@ -73,8 +76,15 @@ export default function CustomerForm({
     }
   }
 
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!isValidCpfCnpj(document)) {
+      e.preventDefault()
+      setDocumentError(true)
+    }
+  }
+
   return (
-    <form action={action} className="flex flex-col gap-3 max-w-2xl">
+    <form action={action} onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-2xl">
       {customer && <input type="hidden" name="id" value={customer.id} />}
       {hiddenFields &&
         Object.entries(hiddenFields).map(([key, value]) => <input key={key} type="hidden" name={key} value={value} />)}
@@ -107,7 +117,17 @@ export default function CustomerForm({
       </div>
 
       <Field label="CPF/CNPJ">
-        <input name="document" defaultValue={customer?.document ?? defaultDocument ?? ''} className="input max-w-xs" />
+        <input
+          name="document"
+          value={document}
+          onChange={(e) => {
+            setDocument(e.target.value)
+            setDocumentError(false)
+          }}
+          onBlur={() => setDocumentError(!isValidCpfCnpj(document))}
+          className={`input max-w-xs ${documentError ? 'border-red-500' : ''}`}
+        />
+        {documentError && <span className="text-xs font-normal text-red-600">CPF/CNPJ inválido.</span>}
       </Field>
 
       <section className="flex flex-col gap-3 border border-line rounded-xl p-4">

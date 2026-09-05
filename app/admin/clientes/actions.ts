@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
+import { isValidCpfCnpj } from '@/lib/cpfCnpj'
 
 export async function saveCustomer(formData: FormData) {
   const active = await resolveActiveCompany()
@@ -11,12 +12,17 @@ export async function saveCustomer(formData: FormData) {
 
   const supabase = await createClient()
   const id = formData.get('id') as string | null
+  const document = (formData.get('document') as string) || null
+
+  if (!isValidCpfCnpj(document)) {
+    redirect(id ? `/admin/clientes/${id}?erro=cpf` : `/admin/clientes/novo?erro=cpf`)
+  }
 
   const payload = {
     name: formData.get('name') as string,
     phone: (formData.get('phone') as string) || null,
     email: (formData.get('email') as string) || null,
-    document: (formData.get('document') as string) || null,
+    document,
     zip_code: (formData.get('zip_code') as string) || null,
     street: (formData.get('street') as string) || null,
     number: (formData.get('number') as string) || null,

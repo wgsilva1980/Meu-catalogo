@@ -17,11 +17,18 @@ const statusClass: Record<OrderStatus, string> = {
   cancelado: 'bg-red-100 text-red-700',
 }
 
-export default async function EditarClientePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditarClientePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ erro?: string }>
+}) {
   const active = await resolveActiveCompany()
   if (!active.ok) return null
 
   const { id } = await params
+  const { erro } = await searchParams
   const supabase = await createClient()
   const { data: customer } = await supabase
     .from('customers')
@@ -45,6 +52,11 @@ export default async function EditarClientePage({ params }: { params: Promise<{ 
         <h1 className="font-display text-2xl">Editar cliente</h1>
         <p className="text-sm text-muted">{customer.name}</p>
       </div>
+      {erro === 'cpf' && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+          CPF/CNPJ inválido. Confira os números digitados.
+        </p>
+      )}
       <CustomerForm customer={customer} />
 
       <div>

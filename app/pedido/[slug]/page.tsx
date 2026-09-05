@@ -11,10 +11,17 @@ export default async function PedidoPublicoPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ sucesso?: string; numero?: string; documento?: string; cliente?: string; token?: string }>
+  searchParams: Promise<{
+    sucesso?: string
+    numero?: string
+    documento?: string
+    cliente?: string
+    token?: string
+    erro?: string
+  }>
 }) {
   const { slug } = await params
-  const { sucesso, numero, documento, cliente, token } = await searchParams
+  const { sucesso, numero, documento, cliente, token, erro } = await searchParams
 
   const supabase = createAdminClient()
   const { data: company } = await supabase
@@ -131,7 +138,9 @@ export default async function PedidoPublicoPage({
         ) : !foundCustomer ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted">
-              {digits
+              {erro === 'cpf'
+                ? 'CPF/CNPJ inválido. Confira os números digitados.'
+                : digits
                 ? 'Não encontramos um cadastro com esse CPF. Complete seus dados para continuar.'
                 : 'Complete seu cadastro para continuar o pedido.'}
             </p>

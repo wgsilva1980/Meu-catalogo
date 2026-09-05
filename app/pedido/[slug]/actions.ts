@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendNotificationEmail } from '@/lib/email'
 import { buildOrderNotificationEmail } from '@/lib/emailTemplates'
 import { isBot, readField } from '@/lib/publicForm'
+import { isValidCpfCnpj } from '@/lib/cpfCnpj'
 import { resolveMotoQuote } from '@/lib/lalamove'
 import {
   calculateShipping,
@@ -136,6 +137,13 @@ export async function registerCustomerAndContinue(formData: FormData) {
     neighborhood: readField(formData, 'neighborhood'),
     city: readField(formData, 'city'),
     state: readField(formData, 'state'),
+  }
+
+  // CPF/CNPJ com formato errado (checagem já feita no browser, aqui é
+  // defesa contra envio direto do form): volta para a mesma etapa mostrando
+  // o valor digitado, em vez de cadastrar um documento inválido.
+  if (!isValidCpfCnpj(fields.document)) {
+    redirect(`/pedido/${slug}?documento=${encodeURIComponent(fields.document ?? '')}&erro=cpf`)
   }
 
   // Mesmo telefone já cadastrado: reaproveita o registro em vez de duplicar
@@ -324,7 +332,11 @@ export async function submitPublicOrder(formData: FormData) {
     const name = readField(formData, 'name')
     const phone = readField(formData, 'phone')
     if (!name || !phone) return
-    const document = readField(formData, 'document')
+    const typedDocument = readField(formData, 'document')
+    // CPF/CNPJ inválido não deve travar o pedido nesta etapa (o cliente já
+    // passou pela validação da tela de cadastro para chegar aqui) — só não
+    // salva o valor incorreto.
+    const document = isValidCpfCnpj(typedDocument) ? typedDocument : null
 
     const { data: existingByPhone } = await supabase
       .from('customers')
