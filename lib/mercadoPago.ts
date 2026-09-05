@@ -349,7 +349,10 @@ export function verifyWebhookSignature({
     console.warn('MERCADO_PAGO_WEBHOOK_SECRET não configurada — webhook aceito sem validação de assinatura.')
     return true
   }
-  if (!signatureHeader) return false
+  if (!signatureHeader) {
+    console.warn('Webhook do Mercado Pago sem header x-signature.', { dataId, requestId })
+    return false
+  }
 
   const parts = Object.fromEntries(
     signatureHeader.split(',').map((kv) => {
@@ -357,7 +360,10 @@ export function verifyWebhookSignature({
       return [k?.trim(), v?.trim()]
     })
   ) as { ts?: string; v1?: string }
-  if (!parts.ts || !parts.v1) return false
+  if (!parts.ts || !parts.v1) {
+    console.warn('Webhook do Mercado Pago com x-signature malformado.', { dataId, requestId, signatureHeader })
+    return false
+  }
 
   const id = /[a-zA-Z]/.test(dataId) ? dataId.toLowerCase() : dataId
   // O request-id nem sempre vem na notificação (algumas versões do webhook
@@ -370,9 +376,22 @@ export function verifyWebhookSignature({
   manifestParts.push(`ts:${parts.ts}`)
   const manifest = manifestParts.join(';') + ';'
   const expected = createHmac('sha256', secret).update(manifest).digest('hex')
+  let matches: boolean
   try {
-    return timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1))
+    matches = timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1))
   } catch {
-    return false
+    matches = false
   }
+  // Diagnóstico temporário: nenhum destes valores é o secret em si (são só o
+  // manifest, que não é sigiloso, e o HMAC resultante, que é público) —
+  // seguro de logar para descobrir se a chave configurada bate com a da
+  // aplicação do Mercado Pago que está ativa.
+  if (!matches) {
+    console.warn('Webhook do Mercado Pago com assinatura inválida.', {
+      manifest,
+      expected,
+      received: parts.v1,
+    })
+  }
+  return matches
 }
