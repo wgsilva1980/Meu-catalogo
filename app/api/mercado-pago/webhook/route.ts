@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getConnectedCompanyId, getPayment, normalizePaymentStatus, verifyWebhookSignature } from '@/lib/mercadoPago'
+import { sendNotificationEmail } from '@/lib/email'
+import { buildPaymentConfirmedEmail } from '@/lib/emailTemplates'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -61,6 +63,17 @@ export async function POST(request: Request) {
   const paidAt = status === 'approved' ? payment.date_approved || new Date().toISOString() : null
 
   const admin = createAdminClient()
+
+  // Estado do pedido antes de mexer em nada — é o que diz se essa é a
+  // *primeira* aprovação (dispara baixa de estoque e e-mail) ou uma
+  // notificação repetida do Mercado Pago para o mesmo pagamento.
+  const { data: order } = await admin
+    .from('sales_orders')
+    .select('id, number, status, paid_at, customer_id, public_token')
+    .eq('id', payment.external_reference)
+    .eq('company_id', companyId)
+    .maybeSingle()
+
   await admin.from('payments').upsert(
     {
       company_id: companyId,
@@ -75,11 +88,56 @@ export async function POST(request: Request) {
     { onConflict: 'order_id' }
   )
 
+  const isFirstApproval = status === 'approved' && !order?.paid_at
+  // Pagamento aprovado tira o pedido de "rascunho" — vira "confirmado", o
+  // mesmo estágio que o admin usa manualmente para dizer "pode preparar o
+  // envio" (não existe um status à parte só para isso).
+  const nextStatus = isFirstApproval && order?.status === 'rascunho' ? 'confirmado' : undefined
+
   await admin
     .from('sales_orders')
-    .update({ paid_at: paidAt })
+    .update({ paid_at: paidAt, ...(nextStatus ? { status: nextStatus } : {}) })
     .eq('id', payment.external_reference)
     .eq('company_id', companyId)
+
+  if (isFirstApproval && order) {
+    // Baixa de estoque só quando o pedido ainda não tinha sido confirmado
+    // por outro caminho (ex.: admin confirmou manualmente antes do cliente
+    // pagar) — nesse caso o estoque já foi baixado e baixar de novo duplicaria.
+    if (nextStatus === 'confirmado') {
+      const { error } = await admin.rpc('commit_order_stock', { p_company_id: companyId, p_order_id: order.id })
+      if (error) console.error('Falha ao baixar estoque após pagamento aprovado:', error)
+    }
+
+    // E-mail de confirmação pro cliente, com o link de acompanhamento —
+    // melhor esforço, nunca deve derrubar a confirmação do pagamento.
+    if (order.customer_id && order.public_token) {
+      try {
+        const [{ data: customer }, { data: company }] = await Promise.all([
+          admin.from('customers').select('name, email').eq('id', order.customer_id).maybeSingle(),
+          admin.from('companies').select('name').eq('id', companyId).single(),
+        ])
+        if (customer?.email) {
+          const host = request.headers.get('host')
+          const protocol = host?.startsWith('localhost') ? 'http' : 'https'
+          const trackingUrl = `${protocol}://${host}/acompanhar/${order.public_token}`
+          const html = buildPaymentConfirmedEmail({
+            companyName: company?.name ?? '',
+            customerName: customer.name,
+            orderNumber: order.number,
+            trackingUrl,
+          })
+          await sendNotificationEmail({
+            to: customer.email,
+            subject: `Pagamento confirmado — Pedido #${order.number}`,
+            html,
+          })
+        }
+      } catch (err) {
+        console.error('Falha ao enviar e-mail de pagamento confirmado:', err)
+      }
+    }
+  }
 
   return NextResponse.json({ ok: true })
 }

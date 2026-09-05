@@ -162,3 +162,63 @@ export function buildOrderNotificationEmail({
 </body>
 </html>`
 }
+
+// E-mail para o cliente quando o Mercado Pago confirma o pagamento (webhook).
+// Só o essencial — o link de acompanhamento já mostra itens, entrega e
+// status detalhados, então o e-mail não duplica isso.
+export function buildPaymentConfirmedEmail({
+  companyName,
+  customerName,
+  orderNumber,
+  trackingUrl,
+}: {
+  companyName: string
+  customerName: string
+  orderNumber: number
+  trackingUrl: string
+}) {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagamento confirmado — Pedido #${orderNumber}</title>
+<style>
+  body { margin:0; padding:0; background:#F4F5F1; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#12182A; }
+  table { border-collapse:collapse; }
+  .display { font-family:Georgia,"Times New Roman",serif; }
+</style>
+</head>
+<body>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #DEDCD4;">
+
+  <tr><td style="background:#16A34A;padding:26px 32px;">
+    <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.75);font-weight:700;">✅ Pagamento confirmado</div>
+    <div class="display" style="color:#FFFFFF;font-size:26px;font-weight:700;margin-top:6px;">Pedido #${orderNumber}</div>
+    <div style="color:rgba(255,255,255,0.85);font-size:13px;margin-top:4px;">${escapeHtml(companyName)}</div>
+  </td></tr>
+
+  <tr><td style="padding:28px 32px 8px;">
+    <div style="font-size:14px;color:#12182A;line-height:1.6;">
+      Olá, ${escapeHtml(customerName)}! Recebemos o pagamento do seu pedido #${orderNumber}. A loja já foi avisada e vai preparar o envio.
+    </div>
+  </td></tr>
+
+  <tr><td style="padding:20px 32px 28px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FF5A36;border-radius:12px;"><tr>
+      <td align="center" style="padding:16px 20px;">
+        <a href="${trackingUrl}" style="color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none;">Acompanhar meu pedido</a>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <tr><td style="padding:0 32px 28px;text-align:center;">
+    <div style="font-size:12px;color:#5B6472;">Gerado automaticamente pelo sistema de pedidos</div>
+  </td></tr>
+
+</table>
+</td></tr></table>
+</body>
+</html>`
+}
