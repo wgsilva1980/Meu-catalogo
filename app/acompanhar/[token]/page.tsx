@@ -35,10 +35,10 @@ export default async function AcompanharPedidoPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ status?: string; collection_status?: string }>
+  searchParams: Promise<{ status?: string; collection_status?: string; novo?: string }>
 }) {
   const { token } = await params
-  const { status: mpStatus, collection_status: mpCollectionStatus } = await searchParams
+  const { status: mpStatus, collection_status: mpCollectionStatus, novo } = await searchParams
   if (!UUID_RE.test(token)) notFound()
 
   const supabase = createAdminClient()
@@ -99,6 +99,12 @@ export default async function AcompanharPedidoPage({
           )}
           <h1 className="font-display text-xl">{company?.name}</h1>
         </div>
+
+        {novo === '1' && (
+          <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            Pedido enviado com sucesso! Confira os detalhes abaixo.
+          </p>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-4">
           <div>

@@ -519,7 +519,12 @@ export async function submitPublicOrder(formData: FormData) {
     publicToken = (data as { public_token?: string } | null)?.public_token ?? null
   }
 
-  redirect(
-    `/pedido/${slug}?sucesso=1&numero=${order.number}${publicToken ? `&token=${publicToken}` : ''}`
-  )
+  // Vai direto para o acompanhamento em vez de uma tela de "recebido" à
+  // parte: é lá que o botão "Pagar agora" (Mercado Pago) aparece assim que a
+  // loja tem pagamento online conectado — sem isso, o cliente terminava o
+  // pedido sem ver como pagar.
+  if (publicToken) {
+    redirect(`/acompanhar/${publicToken}?novo=1`)
+  }
+  redirect(`/pedido/${slug}?sucesso=1&numero=${order.number}`)
 }
