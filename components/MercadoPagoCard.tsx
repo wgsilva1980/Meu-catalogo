@@ -46,6 +46,15 @@ export default function MercadoPagoCard({
             {liveMode ? 'PRODUÇÃO — cobra dinheiro real' : 'Ambiente de testes — não cobra dinheiro real'}
           </div>
 
+          {!liveMode && (
+            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              Essa é uma conta de teste do Mercado Pago. Clientes reais não conseguem pagar com ela — o checkout
+              mostra o erro <strong>&quot;Não é possível pagar com Mercado Pago&quot;</strong> para quem tentar pagar
+              com uma conta ou cartão de verdade. Só use para testar com um comprador de teste. Antes de mandar o
+              link de pagamento para um cliente de verdade, desconecte e conecte a conta real da loja.
+            </p>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm">
               <p className="font-semibold">
