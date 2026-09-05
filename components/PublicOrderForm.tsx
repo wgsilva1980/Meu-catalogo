@@ -9,6 +9,25 @@ function formatPrice(value: number) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
+function formatAddress(addr: {
+  zip_code: string
+  street: string
+  number: string
+  complement: string
+  neighborhood: string
+  city: string
+  state: string
+}) {
+  return [
+    [addr.street, addr.number].filter(Boolean).join(', ') + (addr.complement ? ` - ${addr.complement}` : ''),
+    addr.neighborhood,
+    [addr.city, addr.state].filter(Boolean).join(' - '),
+    addr.zip_code ? `CEP ${addr.zip_code}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
 type ViaCepResponse = {
   erro?: boolean
   logradouro?: string
@@ -66,6 +85,11 @@ export default function PublicOrderForm({
     state: foundCustomer?.state ?? '',
   })
   const [cepStatus, setCepStatus] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
+
+  // Cliente já tem endereço cadastrado: mostra ele pronto em vez de pedir
+  // para preencher tudo de novo. Só abre os campos se ele quiser mudar.
+  const hasSavedAddress = Boolean(foundCustomer?.zip_code)
+  const [editingAddress, setEditingAddress] = useState(!hasSavedAddress)
 
   const [quote, setQuote] = useState<MotoQuote | null>(null)
   const [quoteStatus, setQuoteStatus] = useState<'idle' | 'loading' | 'error'>('idle')
@@ -288,7 +312,28 @@ export default function PublicOrderForm({
           </div>
 
           {(method === 'motoboy' || method === 'melhor_envio') && (
-            <AddressFields addr={addr} updateAddr={updateAddr} cepStatus={cepStatus} onZipChange={handleZipChange} />
+            hasSavedAddress && !editingAddress ? (
+              <div className="flex flex-col gap-2 border-t border-line pt-3">
+                <p className="text-xs font-semibold text-muted">Endereço de entrega</p>
+                <p className="text-sm">{formatAddress(addr)}</p>
+                <button
+                  type="button"
+                  onClick={() => setEditingAddress(true)}
+                  className="text-xs font-semibold text-accent underline w-fit"
+                >
+                  Entregar em outro endereço
+                </button>
+                <input type="hidden" name="zip_code" value={addr.zip_code} />
+                <input type="hidden" name="street" value={addr.street} />
+                <input type="hidden" name="number" value={addr.number} />
+                <input type="hidden" name="complement" value={addr.complement} />
+                <input type="hidden" name="neighborhood" value={addr.neighborhood} />
+                <input type="hidden" name="city" value={addr.city} />
+                <input type="hidden" name="state" value={addr.state} />
+              </div>
+            ) : (
+              <AddressFields addr={addr} updateAddr={updateAddr} cepStatus={cepStatus} onZipChange={handleZipChange} />
+            )
           )}
 
           {method === 'motoboy' && (
