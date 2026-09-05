@@ -128,6 +128,44 @@ async function getAccount(companyId: string): Promise<MercadoPagoAccountRow | nu
   return (data as MercadoPagoAccountRow | null) ?? null
 }
 
+export type MercadoPagoAccountDetails = {
+  id: string
+  nickname: string | null
+  email: string | null
+  site_id: string | null
+}
+
+// Detalhes da conta do Mercado Pago conectada (apelido/e-mail), buscados na
+// hora em vez de guardados — assim a tela de Configurações sempre mostra
+// quem está realmente conectado, mesmo que o token tenha sido renovado.
+// Best effort: se a API falhar (token revogado, escopo insuficiente etc.),
+// devolve null e a tela cai para mostrar só o que já tem salvo (live_mode).
+export async function getAccountDetails(companyId: string): Promise<MercadoPagoAccountDetails | null> {
+  const account = await getAccount(companyId)
+  if (!account) return null
+  const accessToken = await refreshIfNeeded(account)
+
+  try {
+    const res = await fetch(`${API_BASE}/users/me`, {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+    })
+    if (!res.ok) {
+      console.error('Falha ao buscar detalhes da conta do Mercado Pago:', res.status, await res.text().catch(() => ''))
+      return null
+    }
+    const data = (await res.json()) as Record<string, unknown>
+    return {
+      id: String(data.id ?? account.mp_user_id),
+      nickname: typeof data.nickname === 'string' ? data.nickname : null,
+      email: typeof data.email === 'string' ? data.email : null,
+      site_id: typeof data.site_id === 'string' ? data.site_id : null,
+    }
+  } catch (err) {
+    console.error('Falha ao buscar detalhes da conta do Mercado Pago:', err)
+    return null
+  }
+}
+
 export async function getConnectedCompanyId(mpUserId: string): Promise<string | null> {
   const admin = createAdminClient()
   const { data } = await admin

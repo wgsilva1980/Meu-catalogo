@@ -5,6 +5,7 @@ import StoreSettingsForm from '@/components/StoreSettingsForm'
 import CopyLinkField from '@/components/CopyLinkField'
 import MelhorEnvioCard from '@/components/MelhorEnvioCard'
 import MercadoPagoCard from '@/components/MercadoPagoCard'
+import { getAccountDetails } from '@/lib/mercadoPago'
 import type { Company } from '@/lib/types'
 
 export default async function ConfiguracoesPage({
@@ -39,6 +40,10 @@ export default async function ConfiguracoesPage({
     .select('live_mode, connected_at')
     .eq('company_id', active.companyId)
     .maybeSingle()
+
+  // Quem está de fato conectado (apelido/e-mail) — busca à parte para não
+  // travar a página se a API do Mercado Pago estiver fora do ar.
+  const mercadoPagoDetails = mercadoPagoAccount ? await getAccountDetails(active.companyId) : null
 
   const settings: Company = data ?? {
     id: active.companyId,
@@ -88,6 +93,7 @@ export default async function ConfiguracoesPage({
       <MelhorEnvioCard account={melhorEnvioAccount ?? null} error={melhor_envio_erro} justConnected={melhor_envio_conectado === '1'} />
       <MercadoPagoCard
         account={mercadoPagoAccount ?? null}
+        details={mercadoPagoDetails}
         error={mercado_pago_erro}
         justConnected={mercado_pago_conectado === '1'}
       />
