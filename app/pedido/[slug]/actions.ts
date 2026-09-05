@@ -104,6 +104,80 @@ async function resolveMelhorEnvioQuote({
   }
 }
 
+// Cadastro obrigatório antes do pedido quando o CPF informado não bate com
+// nenhum cliente já cadastrado (ou o cliente não informou CPF nenhum). Cria
+// o cadastro completo (com endereço) e já entra no pedido identificado por
+// ele — evita pedir o endereço de novo na etapa de entrega.
+export async function registerCustomerAndContinue(formData: FormData) {
+  const slug = formData.get('slug') as string
+  if (!slug) return
+  if (isBot(formData)) return
+
+  const name = readField(formData, 'name')
+  const phone = readField(formData, 'phone')
+  if (!name || !phone) return
+
+  const supabase = createAdminClient()
+  const { data: company } = await supabase
+    .from('companies')
+    .select('id')
+    .eq('slug', slug)
+    .eq('active', true)
+    .single()
+  if (!company) return
+
+  const fields = {
+    email: readField(formData, 'email'),
+    document: readField(formData, 'document'),
+    zip_code: readField(formData, 'zip_code'),
+    street: readField(formData, 'street'),
+    number: readField(formData, 'number'),
+    complement: readField(formData, 'complement'),
+    neighborhood: readField(formData, 'neighborhood'),
+    city: readField(formData, 'city'),
+    state: readField(formData, 'state'),
+  }
+
+  // Mesmo telefone já cadastrado: reaproveita o registro em vez de duplicar
+  // (ex.: pessoa tentou antes sem CPF). Só preenche o que ainda estava
+  // vazio — nunca sobrescreve dado que a loja já tinha.
+  const { data: existingByPhone } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('company_id', company.id)
+    .eq('phone', phone)
+    .maybeSingle()
+
+  let customerId: string
+  if (existingByPhone) {
+    customerId = existingByPhone.id
+    await supabase
+      .from('customers')
+      .update({
+        email: existingByPhone.email ?? fields.email,
+        document: existingByPhone.document ?? fields.document,
+        zip_code: existingByPhone.zip_code ?? fields.zip_code,
+        street: existingByPhone.street ?? fields.street,
+        number: existingByPhone.number ?? fields.number,
+        complement: existingByPhone.complement ?? fields.complement,
+        neighborhood: existingByPhone.neighborhood ?? fields.neighborhood,
+        city: existingByPhone.city ?? fields.city,
+        state: existingByPhone.state ?? fields.state,
+      })
+      .eq('id', customerId)
+  } else {
+    const { data: created } = await supabase
+      .from('customers')
+      .insert({ company_id: company.id, name, phone, ...fields })
+      .select('id')
+      .single()
+    if (!created) return
+    customerId = created.id
+  }
+
+  redirect(`/pedido/${slug}?cliente=${customerId}`)
+}
+
 export async function submitPublicOrder(formData: FormData) {
   const slug = formData.get('slug') as string
   if (!slug) return

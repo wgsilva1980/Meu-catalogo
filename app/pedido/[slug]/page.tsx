@@ -1,18 +1,20 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveShippingBoxes } from '@/lib/melhorEnvio'
+import { registerCustomerAndContinue } from './actions'
 import PublicOrderForm from '@/components/PublicOrderForm'
 import DocumentLookupForm from '@/components/DocumentLookupForm'
+import CustomerForm from '@/components/CustomerForm'
 
 export default async function PedidoPublicoPage({
   params,
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ sucesso?: string; numero?: string; documento?: string; token?: string }>
+  searchParams: Promise<{ sucesso?: string; numero?: string; documento?: string; cliente?: string; token?: string }>
 }) {
   const { slug } = await params
-  const { sucesso, numero, documento, token } = await searchParams
+  const { sucesso, numero, documento, cliente, token } = await searchParams
 
   const supabase = createAdminClient()
   const { data: company } = await supabase
@@ -76,14 +78,20 @@ export default async function PedidoPublicoPage({
     }
   }
 
-  // Etapa de identificação: só avança para o carrinho depois que o cliente
+  // Etapa de identificação: só avança para o pedido depois que o cliente
   // informou o CPF (para tentar recuperar um cadastro existente) ou optou
-  // por seguir sem informar ("documento=skip").
-  const identified = documento !== undefined
+  // por seguir sem informar ("documento=skip"). Quando o CPF não bate com
+  // nenhum cadastro (ou o cliente acabou de se cadastrar via `cliente=<id>`
+  // logo abaixo), a tela de pedido só libera depois do cadastro completo —
+  // nunca cai direto no carrinho sem nome/telefone/endereço confirmados.
+  const identified = documento !== undefined || cliente !== undefined
   const digits = documento && documento !== 'skip' ? documento.replace(/\D/g, '') : ''
 
   let foundCustomer = null
-  if (digits) {
+  if (cliente) {
+    const { data } = await supabase.from('customers').select('*').eq('id', cliente).eq('company_id', company.id).maybeSingle()
+    foundCustomer = data ?? null
+  } else if (digits) {
     const { data: candidates } = await supabase
       .from('customers')
       .select('*')
@@ -120,6 +128,23 @@ export default async function PedidoPublicoPage({
           </div>
         ) : !identified ? (
           <DocumentLookupForm slug={slug} />
+        ) : !foundCustomer ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted">
+              {digits
+                ? 'Não encontramos um cadastro com esse CPF. Complete seus dados para continuar.'
+                : 'Complete seu cadastro para continuar o pedido.'}
+            </p>
+            <CustomerForm
+              action={registerCustomerAndContinue}
+              hiddenFields={{ slug }}
+              submitLabel="Continuar para o pedido"
+              cancelHref={null}
+              requirePhone
+              honeypot
+              defaultDocument={digits || undefined}
+            />
+          </div>
         ) : (
           <PublicOrderForm
             slug={slug}

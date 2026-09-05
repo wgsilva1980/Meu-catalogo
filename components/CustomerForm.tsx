@@ -22,6 +22,7 @@ export default function CustomerForm({
   cancelHref = '/admin/clientes',
   requirePhone = false,
   honeypot = false,
+  defaultDocument,
 }: {
   customer?: Customer
   action?: (formData: FormData) => void | Promise<void>
@@ -30,6 +31,10 @@ export default function CustomerForm({
   cancelHref?: string | null
   requirePhone?: boolean
   honeypot?: boolean
+  // CPF já digitado antes deste formulário (ex.: na busca de identificação
+  // do pedido, que não encontrou cadastro) — vem pronto no campo em vez de
+  // pedir para digitar de novo.
+  defaultDocument?: string
 }) {
   const [zipCode, setZipCode] = useState(customer?.zip_code ?? '')
   const [street, setStreet] = useState(customer?.street ?? '')
@@ -102,7 +107,7 @@ export default function CustomerForm({
       </div>
 
       <Field label="CPF/CNPJ">
-        <input name="document" defaultValue={customer?.document ?? ''} className="input max-w-xs" />
+        <input name="document" defaultValue={customer?.document ?? defaultDocument ?? ''} className="input max-w-xs" />
       </Field>
 
       <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
