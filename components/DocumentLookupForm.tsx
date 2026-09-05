@@ -1,15 +1,32 @@
+'use client'
+
+import { useState } from 'react'
+import { isValidCpfCnpj } from '@/lib/cpfCnpj'
+
 export default function DocumentLookupForm({ slug }: { slug: string }) {
+  const [error, setError] = useState(false)
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    const value = new FormData(e.currentTarget).get('documento') as string
+    if (value.trim() && !isValidCpfCnpj(value)) {
+      e.preventDefault()
+      setError(true)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      <form className="flex flex-col gap-2">
+      <form className="flex flex-col gap-2" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-xs font-semibold text-muted">
           CPF
           <input
             name="documento"
             placeholder="000.000.000-00"
             inputMode="numeric"
-            className="input"
+            onChange={() => setError(false)}
+            className={`input ${error ? 'border-red-500' : ''}`}
           />
+          {error && <span className="text-xs font-normal text-red-600">CPF/CNPJ inválido.</span>}
         </label>
         <p className="text-xs text-muted">
           Informe seu CPF para localizarmos seu cadastro, se já tiver um.
