@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveShippingBoxes } from '@/lib/melhorEnvio'
 import PublicOrderForm from '@/components/PublicOrderForm'
 import DocumentLookupForm from '@/components/DocumentLookupForm'
 
@@ -16,12 +17,24 @@ export default async function PedidoPublicoPage({
   const supabase = createAdminClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name, logo_url, lalamove_enabled')
+    .select(
+      'id, name, logo_url, lalamove_enabled, shipping_origin_zip_code, shipping_packages, shipping_package_length_cm, shipping_package_width_cm, shipping_package_height_cm'
+    )
     .eq('slug', slug)
     .eq('active', true)
     .single()
 
   if (!company) notFound()
+
+  // Melhor Envio só aparece como opção de entrega para o cliente se a loja
+  // já conectou a conta E cadastrou origem/caixas — sem isso a cotação
+  // pública sempre falharia.
+  const { data: melhorEnvioAccount } = await supabase
+    .from('melhor_envio_accounts')
+    .select('company_id')
+    .eq('company_id', company.id)
+    .maybeSingle()
+  const melhorEnvioEnabled = Boolean(melhorEnvioAccount) && Boolean(company.shipping_origin_zip_code) && resolveShippingBoxes(company).length > 0
 
   const { data: categories } = await supabase
     .from('categories')
@@ -115,6 +128,7 @@ export default async function PedidoPublicoPage({
             foundCustomer={foundCustomer}
             typedDocument={digits || null}
             motoboyEnabled={Boolean(company.lalamove_enabled)}
+            melhorEnvioEnabled={melhorEnvioEnabled}
             paymentMethods={paymentMethods ?? []}
           />
         )}

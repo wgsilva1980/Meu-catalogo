@@ -19,6 +19,20 @@ type ViaCepResponse = {
 
 type MotoQuote = { fee: number; distanceKm: number | null; quotationId: string; serviceType: string }
 
+type MelhorEnvioOption = {
+  id: number
+  name: string
+  price: string
+  delivery_time: number
+  company: { id: number; name: string; picture: string }
+}
+
+const STEPS = [
+  { n: 1, label: 'Produtos' },
+  { n: 2, label: 'Entrega' },
+  { n: 3, label: 'Pagamento' },
+] as const
+
 export default function PublicOrderForm({
   slug,
   categories,
@@ -26,6 +40,7 @@ export default function PublicOrderForm({
   foundCustomer,
   typedDocument,
   motoboyEnabled = false,
+  melhorEnvioEnabled = false,
   paymentMethods = [],
 }: {
   slug: string
@@ -34,8 +49,10 @@ export default function PublicOrderForm({
   foundCustomer: Customer | null
   typedDocument: string | null
   motoboyEnabled?: boolean
+  melhorEnvioEnabled?: boolean
   paymentMethods?: { id: string; name: string }[]
 }) {
+  const [step, setStep] = useState<1 | 2 | 3>(1)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
 
   const [method, setMethod] = useState<DeliveryMethod>('a_combinar')
@@ -49,30 +66,53 @@ export default function PublicOrderForm({
     state: foundCustomer?.state ?? '',
   })
   const [cepStatus, setCepStatus] = useState<'idle' | 'loading' | 'not-found' | 'error'>('idle')
+
   const [quote, setQuote] = useState<MotoQuote | null>(null)
   const [quoteStatus, setQuoteStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [quoteError, setQuoteError] = useState<string | null>(null)
 
+  const [meOptions, setMeOptions] = useState<MelhorEnvioOption[]>([])
+  const [meSelected, setMeSelected] = useState<MelhorEnvioOption | null>(null)
+  const [meStatus, setMeStatus] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [meError, setMeError] = useState<string | null>(null)
+
   const productsTotal = products.reduce((sum, p) => sum + (quantities[p.id] || 0) * Number(p.price), 0)
   const itemCount = Object.values(quantities).reduce((sum, q) => sum + (q > 0 ? q : 0), 0)
-  const deliveryFee = method === 'motoboy' && quote ? quote.fee : 0
+  const deliveryFee =
+    method === 'motoboy' && quote ? quote.fee : method === 'melhor_envio' && meSelected ? Number(meSelected.price) : 0
   const total = productsTotal + deliveryFee
 
   const groups = categories
     .map((category) => ({ category, items: products.filter((p) => p.category_id === category.id) }))
     .filter((g) => g.items.length > 0)
 
+  function setQuantity(productId: string, value: number) {
+    setQuantities((q) => ({ ...q, [productId]: Math.max(0, value) }))
+    // o carrinho mudou: qualquer cotação de frete por peso/CEP fica inválida
+    setMeOptions([])
+    setMeSelected(null)
+    setMeError(null)
+  }
+
   function updateAddr(patch: Partial<typeof addr>) {
     setAddr((a) => ({ ...a, ...patch }))
     // qualquer mudança de endereço invalida a cotação anterior
     setQuote(null)
     setQuoteError(null)
+    setMeOptions([])
+    setMeSelected(null)
+    setMeError(null)
   }
 
   function selectMethod(next: DeliveryMethod) {
     setMethod(next)
     setQuoteError(null)
+    setMeError(null)
     if (next !== 'motoboy') setQuote(null)
+    if (next !== 'melhor_envio') {
+      setMeOptions([])
+      setMeSelected(null)
+    }
   }
 
   async function handleZipChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -128,8 +168,43 @@ export default function PublicOrderForm({
     }
   }
 
+  async function calculateMelhorEnvio() {
+    setMeStatus('loading')
+    setMeError(null)
+    setMeOptions([])
+    setMeSelected(null)
+    try {
+      const items = Object.entries(quantities)
+        .filter(([, qty]) => qty > 0)
+        .map(([product_id, quantity]) => ({ product_id, quantity }))
+      const res = await fetch(`/api/pedido/${slug}/entrega/melhor-envio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zip_code: addr.zip_code, items }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setMeStatus('error')
+        setMeError(data.error ?? 'Não foi possível calcular o frete.')
+        return
+      }
+      const options: MelhorEnvioOption[] = data.options ?? []
+      setMeOptions(options)
+      setMeSelected(options[0] ?? null)
+      setMeStatus('idle')
+    } catch {
+      setMeStatus('error')
+      setMeError('Não foi possível calcular o frete.')
+    }
+  }
+
   const canCalculate = addr.zip_code.replace(/\D/g, '').length === 8 && quoteStatus !== 'loading'
-  const blockSubmit = itemCount === 0 || (method === 'motoboy' && !quote)
+  const canCalculateMe = addr.zip_code.replace(/\D/g, '').length === 8 && meStatus !== 'loading' && itemCount > 0
+
+  const canAdvanceToDelivery = itemCount > 0
+  const canAdvanceToPayment =
+    method === 'motoboy' ? Boolean(quote) : method === 'melhor_envio' ? Boolean(meSelected) : true
+  const blockSubmit = !canAdvanceToDelivery || !canAdvanceToPayment
 
   return (
     <form action={submitPublicOrder} className="flex flex-col gap-4">
@@ -141,7 +216,9 @@ export default function PublicOrderForm({
         </label>
       </div>
 
-      <section className="flex flex-col gap-4">
+      <StepHeader step={step} />
+
+      <section className={`flex flex-col gap-4 ${step === 1 ? '' : 'hidden'}`}>
         {groups.map(({ category, items }) => (
           <div key={category.id} className="flex flex-col gap-2">
             <h2 className="text-sm font-bold">{category.name}</h2>
@@ -166,9 +243,7 @@ export default function PublicOrderForm({
                     type="number"
                     min={0}
                     value={quantities[p.id] ?? 0}
-                    onChange={(e) =>
-                      setQuantities((q) => ({ ...q, [p.id]: Math.max(0, Number(e.target.value)) }))
-                    }
+                    onChange={(e) => setQuantity(p.id, Number(e.target.value))}
                     className="input w-16 text-center shrink-0"
                   />
                 </div>
@@ -177,193 +252,351 @@ export default function PublicOrderForm({
           </div>
         ))}
         {products.length === 0 && <p className="text-sm text-muted">Nenhum produto disponível no momento.</p>}
+
+        <CartSummary itemCount={itemCount} productsTotal={productsTotal} />
       </section>
 
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
-        <h2 className="text-sm font-bold">Entrega</h2>
-        <input type="hidden" name="delivery_method" value={method} />
+      <section className={`flex flex-col gap-4 ${step === 2 ? '' : 'hidden'}`}>
+        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+          <h2 className="text-sm font-bold">Entrega</h2>
+          <input type="hidden" name="delivery_method" value={method} />
 
-        <div className="flex flex-col gap-2">
-          <MethodOption checked={method === 'retirada'} onChange={() => selectMethod('retirada')} label="Retirar na loja" hint="Sem custo de entrega" />
-          {motoboyEnabled && (
+          <div className="flex flex-col gap-2">
+            <MethodOption checked={method === 'retirada'} onChange={() => selectMethod('retirada')} label="Retirar na loja" hint="Sem custo de entrega" />
+            {motoboyEnabled && (
+              <MethodOption
+                checked={method === 'motoboy'}
+                onChange={() => selectMethod('motoboy')}
+                label="Motoboy — entrega rápida"
+                hint="Valor calculado pelo seu endereço"
+              />
+            )}
+            {melhorEnvioEnabled && (
+              <MethodOption
+                checked={method === 'melhor_envio'}
+                onChange={() => selectMethod('melhor_envio')}
+                label="Envio pelos Correios/transportadora"
+                hint="Calculamos o frete pelo seu CEP"
+              />
+            )}
             <MethodOption
-              checked={method === 'motoboy'}
-              onChange={() => selectMethod('motoboy')}
-              label="Motoboy — entrega rápida"
-              hint="Valor calculado pelo seu endereço"
+              checked={method === 'a_combinar'}
+              onChange={() => selectMethod('a_combinar')}
+              label="Combinar depois"
+              hint="A loja entra em contato para acertar a entrega"
             />
+          </div>
+
+          {(method === 'motoboy' || method === 'melhor_envio') && (
+            <AddressFields addr={addr} updateAddr={updateAddr} cepStatus={cepStatus} onZipChange={handleZipChange} />
           )}
-          <MethodOption
-            checked={method === 'a_combinar'}
-            onChange={() => selectMethod('a_combinar')}
-            label="Combinar depois"
-            hint="A loja entra em contato para acertar a entrega"
-          />
-        </div>
 
-        {method === 'motoboy' && (
-          <div className="flex flex-col gap-3 border-t border-line pt-3">
-            <div className="flex items-end gap-3">
-              <Field label="CEP">
-                <input
-                  name="zip_code"
-                  value={addr.zip_code}
-                  onChange={handleZipChange}
-                  placeholder="00000-000"
-                  inputMode="numeric"
-                  maxLength={9}
-                  className="input max-w-[10rem]"
-                />
-              </Field>
-              {cepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
-              {cepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
-              {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
-            </div>
+          {method === 'motoboy' && (
+            <div className="flex flex-col gap-3 border-t border-line pt-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={calculateMoto}
+                  disabled={!canCalculate}
+                  className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                >
+                  {quoteStatus === 'loading' ? 'Calculando...' : 'Calcular entrega'}
+                </button>
+                {quote && (
+                  <span className="text-sm font-semibold text-green-700">
+                    Motoboy: {formatPrice(quote.fee)}
+                    {quote.distanceKm != null ? ` · ~${quote.distanceKm} km` : ''}
+                  </span>
+                )}
+              </div>
+              {quoteError && <p className="text-xs text-red-600">{quoteError}</p>}
+              {!quote && !quoteError && (
+                <p className="text-xs text-muted">Calcule a entrega para conseguir avançar com motoboy.</p>
+              )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_7rem] gap-3">
-              <Field label="Rua">
-                <input name="street" value={addr.street} onChange={(e) => updateAddr({ street: e.target.value })} className="input" />
-              </Field>
-              <Field label="Número">
-                <input name="number" value={addr.number} onChange={(e) => updateAddr({ number: e.target.value })} className="input" />
-              </Field>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Complemento">
-                <input name="complement" value={addr.complement} onChange={(e) => updateAddr({ complement: e.target.value })} className="input" />
-              </Field>
-              <Field label="Bairro">
-                <input name="neighborhood" value={addr.neighborhood} onChange={(e) => updateAddr({ neighborhood: e.target.value })} className="input" />
-              </Field>
-            </div>
-            <div className="grid grid-cols-[1fr_5rem] gap-3">
-              <Field label="Cidade">
-                <input name="city" value={addr.city} onChange={(e) => updateAddr({ city: e.target.value })} className="input" />
-              </Field>
-              <Field label="UF">
-                <input
-                  name="state"
-                  value={addr.state}
-                  onChange={(e) => updateAddr({ state: e.target.value.toUpperCase() })}
-                  maxLength={2}
-                  className="input"
-                />
-              </Field>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={calculateMoto}
-                disabled={!canCalculate}
-                className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-              >
-                {quoteStatus === 'loading' ? 'Calculando...' : 'Calcular entrega'}
-              </button>
               {quote && (
-                <span className="text-sm font-semibold text-green-700">
-                  Motoboy: {formatPrice(quote.fee)}
-                  {quote.distanceKm != null ? ` · ~${quote.distanceKm} km` : ''}
-                </span>
+                <>
+                  <input type="hidden" name="delivery_fee" value={quote.fee} />
+                  <input
+                    type="hidden"
+                    name="delivery_quote"
+                    value={JSON.stringify({ quotationId: quote.quotationId, serviceType: quote.serviceType })}
+                  />
+                </>
               )}
             </div>
-            {quoteError && <p className="text-xs text-red-600">{quoteError}</p>}
-            {!quote && !quoteError && (
-              <p className="text-xs text-muted">Calcule a entrega para conseguir enviar o pedido com motoboy.</p>
-            )}
+          )}
 
-            {quote && (
-              <>
-                <input type="hidden" name="delivery_fee" value={quote.fee} />
-                <input
-                  type="hidden"
-                  name="delivery_quote"
-                  value={JSON.stringify({ quotationId: quote.quotationId, serviceType: quote.serviceType })}
-                />
-              </>
-            )}
-          </div>
-        )}
+          {method === 'melhor_envio' && (
+            <div className="flex flex-col gap-3 border-t border-line pt-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={calculateMelhorEnvio}
+                  disabled={!canCalculateMe}
+                  className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                >
+                  {meStatus === 'loading' ? 'Calculando...' : 'Calcular frete'}
+                </button>
+              </div>
+              {meError && <p className="text-xs text-red-600">{meError}</p>}
+              {meOptions.length === 0 && !meError && (
+                <p className="text-xs text-muted">Calcule o frete para ver as opções de envio.</p>
+              )}
+
+              {meOptions.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  {meOptions.map((option) => (
+                    <label
+                      key={option.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border text-sm cursor-pointer ${
+                        meSelected?.id === option.id ? 'border-accent bg-accent/5' : 'border-line'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        checked={meSelected?.id === option.id}
+                        onChange={() => setMeSelected(option)}
+                      />
+                      <span className="flex-1">
+                        <span className="font-semibold block">
+                          {option.company.name} · {option.name}
+                        </span>
+                        <span className="block text-xs text-muted">Prazo: {option.delivery_time} dia(s) úteis</span>
+                      </span>
+                      <span className="font-bold tabular-nums">{formatPrice(Number(option.price))}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {meSelected && (
+                <input type="hidden" name="melhor_envio_service_id" value={meSelected.id} />
+              )}
+            </div>
+          )}
+        </section>
+
+        <CartSummary itemCount={itemCount} productsTotal={productsTotal} deliveryFee={deliveryFee} deliveryLabel={method === 'motoboy' ? 'Entrega (motoboy)' : method === 'melhor_envio' ? 'Frete' : undefined} />
       </section>
 
-      {paymentMethods.length > 0 && (
-        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
-          <h2 className="text-sm font-bold">Forma de pagamento</h2>
-          <Field label="Como você prefere pagar?">
-            <select name="payment_method_id" defaultValue="" className="input">
-              <option value="">Combinar com a loja</option>
-              {paymentMethods.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </section>
-      )}
-
-      <div className="flex flex-col gap-1 border-t border-line pt-3 text-sm">
-        <div className="flex justify-between text-muted">
-          <span>
-            {itemCount} {itemCount === 1 ? 'item' : 'itens'}
-          </span>
-          <span>{formatPrice(productsTotal)}</span>
-        </div>
-        {deliveryFee > 0 && (
-          <div className="flex justify-between text-muted">
-            <span>Entrega (motoboy)</span>
-            <span>{formatPrice(deliveryFee)}</span>
-          </div>
+      <section className={`flex flex-col gap-4 ${step === 3 ? '' : 'hidden'}`}>
+        {paymentMethods.length > 0 && (
+          <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+            <h2 className="text-sm font-bold">Forma de pagamento</h2>
+            <Field label="Como você prefere pagar?">
+              <select name="payment_method_id" defaultValue="" className="input">
+                <option value="">Combinar com a loja</option>
+                {paymentMethods.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </section>
         )}
-        <div className="flex justify-between font-bold">
-          <span>Total</span>
-          <span>{formatPrice(total)}</span>
+
+        {foundCustomer ? (
+          <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+            <input type="hidden" name="customer_id" value={foundCustomer.id} />
+            <h2 className="text-sm font-bold">Seus dados</h2>
+            <p className="text-sm">
+              Cadastro encontrado: <span className="font-semibold">{foundCustomer.name}</span>
+            </p>
+            <a href={`/pedido/${slug}`} className="text-xs text-accent underline w-fit">
+              Não é você? Buscar outro CPF
+            </a>
+            <Field label="Observações">
+              <textarea name="notes" className="input h-20" />
+            </Field>
+          </section>
+        ) : (
+          <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+            <h2 className="text-sm font-bold">Seus dados</h2>
+            {typedDocument && <input type="hidden" name="document" value={typedDocument} />}
+            <Field label="Nome">
+              <input name="name" required={step === 3} className="input" />
+            </Field>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Telefone/WhatsApp">
+                <input name="phone" required={step === 3} placeholder="(00) 00000-0000" className="input" />
+              </Field>
+              <Field label="E-mail">
+                <input name="email" type="email" className="input" />
+              </Field>
+            </div>
+            <Field label="Observações">
+              <textarea name="notes" className="input h-20" />
+            </Field>
+          </section>
+        )}
+
+        <CartSummary itemCount={itemCount} productsTotal={productsTotal} deliveryFee={deliveryFee} deliveryLabel={method === 'motoboy' ? 'Entrega (motoboy)' : method === 'melhor_envio' ? 'Frete' : undefined} />
+      </section>
+
+      <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
+        {step > 1 ? (
+          <button
+            type="button"
+            onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
+            className="border border-line rounded-lg px-4 py-2 text-sm font-semibold"
+          >
+            Voltar
+          </button>
+        ) : (
+          <span />
+        )}
+
+        {step < 3 ? (
+          <button
+            type="button"
+            onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)}
+            disabled={step === 1 ? !canAdvanceToDelivery : !canAdvanceToPayment}
+            className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40"
+          >
+            Continuar
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={blockSubmit}
+            className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40"
+          >
+            Enviar pedido
+          </button>
+        )}
+      </div>
+    </form>
+  )
+}
+
+function StepHeader({ step }: { step: 1 | 2 | 3 }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      {STEPS.map(({ n, label }, i) => (
+        <div key={n} className="flex items-center flex-1 last:flex-none">
+          <div className="flex flex-col items-center gap-1">
+            <span
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                n === step ? 'bg-accent text-white' : n < step ? 'bg-accent/20 text-accent' : 'bg-paper text-muted border border-line'
+              }`}
+            >
+              {n}
+            </span>
+            <span className={`text-[11px] font-semibold ${n === step ? 'text-ink' : 'text-muted'}`}>{label}</span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div className={`h-px flex-1 mx-2 ${n < step ? 'bg-accent/40' : 'bg-line'}`} />
+          )}
         </div>
+      ))}
+    </div>
+  )
+}
+
+function CartSummary({
+  itemCount,
+  productsTotal,
+  deliveryFee = 0,
+  deliveryLabel,
+}: {
+  itemCount: number
+  productsTotal: number
+  deliveryFee?: number
+  deliveryLabel?: string
+}) {
+  return (
+    <div className="flex flex-col gap-1 border-t border-line pt-3 text-sm">
+      <div className="flex justify-between text-muted">
+        <span>
+          {itemCount} {itemCount === 1 ? 'item' : 'itens'}
+        </span>
+        <span>{formatPrice(productsTotal)}</span>
+      </div>
+      {deliveryFee > 0 && (
+        <div className="flex justify-between text-muted">
+          <span>{deliveryLabel ?? 'Entrega'}</span>
+          <span>{formatPrice(deliveryFee)}</span>
+        </div>
+      )}
+      <div className="flex justify-between font-bold">
+        <span>Total</span>
+        <span>{formatPrice(productsTotal + deliveryFee)}</span>
+      </div>
+    </div>
+  )
+}
+
+function AddressFields({
+  addr,
+  updateAddr,
+  cepStatus,
+  onZipChange,
+}: {
+  addr: {
+    zip_code: string
+    street: string
+    number: string
+    complement: string
+    neighborhood: string
+    city: string
+    state: string
+  }
+  updateAddr: (patch: Partial<typeof addr>) => void
+  cepStatus: 'idle' | 'loading' | 'not-found' | 'error'
+  onZipChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+}) {
+  return (
+    <div className="flex flex-col gap-3 border-t border-line pt-3">
+      <div className="flex items-end gap-3">
+        <Field label="CEP">
+          <input
+            name="zip_code"
+            value={addr.zip_code}
+            onChange={onZipChange}
+            placeholder="00000-000"
+            inputMode="numeric"
+            maxLength={9}
+            className="input max-w-[10rem]"
+          />
+        </Field>
+        {cepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
+        {cepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
+        {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
       </div>
 
-      {foundCustomer ? (
-        <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
-          <input type="hidden" name="customer_id" value={foundCustomer.id} />
-          <h2 className="text-sm font-bold">Seus dados</h2>
-          <p className="text-sm">
-            Cadastro encontrado: <span className="font-semibold">{foundCustomer.name}</span>
-          </p>
-          <a href={`/pedido/${slug}`} className="text-xs text-accent underline w-fit">
-            Não é você? Buscar outro CPF
-          </a>
-          <Field label="Observações">
-            <textarea name="notes" className="input h-20" />
-          </Field>
-        </section>
-      ) : (
-        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
-          <h2 className="text-sm font-bold">Seus dados</h2>
-          {typedDocument && <input type="hidden" name="document" value={typedDocument} />}
-          <Field label="Nome">
-            <input name="name" required className="input" />
-          </Field>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Telefone/WhatsApp">
-              <input name="phone" required placeholder="(00) 00000-0000" className="input" />
-            </Field>
-            <Field label="E-mail">
-              <input name="email" type="email" className="input" />
-            </Field>
-          </div>
-          <Field label="Observações">
-            <textarea name="notes" className="input h-20" />
-          </Field>
-        </section>
-      )}
-
-      <button
-        type="submit"
-        disabled={blockSubmit}
-        className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40"
-      >
-        Enviar pedido
-      </button>
-    </form>
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_7rem] gap-3">
+        <Field label="Rua">
+          <input name="street" value={addr.street} onChange={(e) => updateAddr({ street: e.target.value })} className="input" />
+        </Field>
+        <Field label="Número">
+          <input name="number" value={addr.number} onChange={(e) => updateAddr({ number: e.target.value })} className="input" />
+        </Field>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field label="Complemento">
+          <input name="complement" value={addr.complement} onChange={(e) => updateAddr({ complement: e.target.value })} className="input" />
+        </Field>
+        <Field label="Bairro">
+          <input name="neighborhood" value={addr.neighborhood} onChange={(e) => updateAddr({ neighborhood: e.target.value })} className="input" />
+        </Field>
+      </div>
+      <div className="grid grid-cols-[1fr_5rem] gap-3">
+        <Field label="Cidade">
+          <input name="city" value={addr.city} onChange={(e) => updateAddr({ city: e.target.value })} className="input" />
+        </Field>
+        <Field label="UF">
+          <input
+            name="state"
+            value={addr.state}
+            onChange={(e) => updateAddr({ state: e.target.value.toUpperCase() })}
+            maxLength={2}
+            className="input"
+          />
+        </Field>
+      </div>
+    </div>
   )
 }
 

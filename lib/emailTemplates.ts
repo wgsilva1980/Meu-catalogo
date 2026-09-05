@@ -11,6 +11,7 @@ const statusLabel: Record<string, string> = {
 const deliveryLabel: Record<string, string> = {
   retirada: 'Retirar na loja',
   motoboy: 'Motoboy',
+  melhor_envio: 'Melhor Envio',
   a_combinar: 'A combinar',
 }
 

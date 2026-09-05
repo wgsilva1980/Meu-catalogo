@@ -7,7 +7,14 @@ import { sendNotificationEmail } from '@/lib/email'
 import { buildOrderNotificationEmail } from '@/lib/emailTemplates'
 import { isBot, readField } from '@/lib/publicForm'
 import { resolveMotoQuote } from '@/lib/lalamove'
-import type { DeliveryMethod } from '@/lib/types'
+import {
+  calculateShipping,
+  pickShippingBox,
+  resolveShippingBoxes,
+  type PackableItem,
+  type ShippingQuoteItem,
+} from '@/lib/melhorEnvio'
+import type { DeliveryMethod, ShippingBox } from '@/lib/types'
 
 // Cópia opcional enviada em todo pedido (monitoramento do envio de e-mail).
 // Configurável por ambiente — não expor um endereço pessoal fixo no código.
@@ -20,6 +27,81 @@ function parseQuantity(raw: unknown): number {
   const n = Math.floor(Number(raw))
   if (!Number.isFinite(n) || n <= 0) return 0
   return Math.min(n, MAX_QUANTITY)
+}
+
+type CompanyForShipping = {
+  id: string
+  shipping_origin_zip_code?: string | null
+  shipping_origin_carrier_id?: number | null
+  shipping_packages?: ShippingBox[] | null
+  shipping_package_length_cm?: number | null
+  shipping_package_width_cm?: number | null
+  shipping_package_height_cm?: number | null
+}
+
+// Recota, no servidor, a opção de frete que o cliente escolheu na tela de
+// entrega — nunca confiamos no preço vindo do client. Se o produto perdeu
+// peso/dimensões ou a opção não existe mais, devolve null e o pedido cai
+// para "a combinar".
+async function resolveMelhorEnvioQuote({
+  company,
+  destinationZip,
+  items,
+  serviceId,
+}: {
+  company: CompanyForShipping
+  destinationZip: string
+  items: { product_id: string; quantity: number; unit_price: number }[]
+  serviceId: number
+}) {
+  if (!company.shipping_origin_zip_code) return null
+  const boxes = resolveShippingBoxes(company)
+  if (boxes.length === 0) return null
+
+  const supabase = createAdminClient()
+  const productIds = items.map((i) => i.product_id)
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, weight_kg, length_cm, width_cm, height_cm')
+    .eq('company_id', company.id)
+    .in('id', productIds)
+
+  const quoteItems: ShippingQuoteItem[] = []
+  const packItems: PackableItem[] = []
+  for (const item of items) {
+    const product = (products ?? []).find((p) => p.id === item.product_id)
+    if (!product?.weight_kg || !product.length_cm || !product.width_cm || !product.height_cm) return null
+    quoteItems.push({
+      weight_kg: Number(product.weight_kg),
+      quantity: item.quantity,
+      insurance_value: item.unit_price * item.quantity,
+    })
+    packItems.push({
+      weight_kg: Number(product.weight_kg),
+      length_cm: Number(product.length_cm),
+      width_cm: Number(product.width_cm),
+      height_cm: Number(product.height_cm),
+      quantity: item.quantity,
+    })
+  }
+
+  const picked = pickShippingBox(boxes, packItems)
+  if (!picked) return null
+
+  try {
+    const options = await calculateShipping({
+      companyId: company.id,
+      fromPostalCode: company.shipping_origin_zip_code,
+      toPostalCode: destinationZip,
+      items: quoteItems,
+      packageBox: { length_cm: picked.box.length_cm, width_cm: picked.box.width_cm, height_cm: picked.box.height_cm },
+      preferredCarrierCompanyId: company.shipping_origin_carrier_id ?? null,
+    })
+    return options.find((o) => o.id === serviceId) ?? null
+  } catch (err) {
+    console.error('Falha ao recotar Melhor Envio no envio do pedido:', err)
+    return null
+  }
 }
 
 export async function submitPublicOrder(formData: FormData) {
@@ -67,13 +149,14 @@ export async function submitPublicOrder(formData: FormData) {
 
   if (items.length === 0) return
 
-  // Entrega. Só 'motoboy' mexe em valor — e o valor NUNCA vem do client: é
-  // recotado aqui no servidor. Se a recotação falhar, o pedido segue como
-  // 'a_combinar' sem taxa (a loja acerta a entrega por fora).
-  // O link público só oferece estes 3 métodos; "melhor_envio" é escolha
-  // interna da loja na edição do pedido.
+  // Entrega. Só 'motoboy' e 'melhor_envio' mexem em valor — e o valor NUNCA
+  // vem do client: é recotado aqui no servidor. Se a recotação falhar, o
+  // pedido segue como 'a_combinar' sem taxa (a loja acerta a entrega por
+  // fora).
   const rawMethod = (formData.get('delivery_method') as string) || 'a_combinar'
-  let deliveryMethod: DeliveryMethod = (['retirada', 'motoboy', 'a_combinar'] as const).includes(rawMethod as never)
+  let deliveryMethod: DeliveryMethod = (['retirada', 'motoboy', 'melhor_envio', 'a_combinar'] as const).includes(
+    rawMethod as never
+  )
     ? (rawMethod as DeliveryMethod)
     : 'a_combinar'
   let deliveryFee = 0
@@ -81,16 +164,17 @@ export async function submitPublicOrder(formData: FormData) {
   let deliveryQuote: Record<string, unknown> | null = null
   let deliveryNote: string | null = null
 
+  const dest = {
+    zip_code: readField(formData, 'zip_code'),
+    street: readField(formData, 'street'),
+    number: readField(formData, 'number'),
+    complement: readField(formData, 'complement'),
+    neighborhood: readField(formData, 'neighborhood'),
+    city: readField(formData, 'city'),
+    state: readField(formData, 'state'),
+  }
+
   if (deliveryMethod === 'motoboy') {
-    const dest = {
-      zip_code: readField(formData, 'zip_code'),
-      street: readField(formData, 'street'),
-      number: readField(formData, 'number'),
-      complement: readField(formData, 'complement'),
-      neighborhood: readField(formData, 'neighborhood'),
-      city: readField(formData, 'city'),
-      state: readField(formData, 'state'),
-    }
     const result = company.lalamove_enabled ? await resolveMotoQuote({ company, destination: dest }) : null
     if (result && result.ok) {
       deliveryFee = result.quote.total
@@ -116,6 +200,34 @@ export async function submitPublicOrder(formData: FormData) {
       deliveryMethod = 'a_combinar'
       deliveryAddress = dest.zip_code ? { ...dest, lat: null, lng: null } : null
       deliveryNote = 'Cliente pediu entrega por motoboy — cotação automática indisponível, combinar valor.'
+    }
+  }
+
+  if (deliveryMethod === 'melhor_envio') {
+    const chosenServiceId = Number(formData.get('melhor_envio_service_id'))
+    const meResult = Number.isFinite(chosenServiceId) && chosenServiceId > 0 && dest.zip_code
+      ? await resolveMelhorEnvioQuote({ company, destinationZip: dest.zip_code, items, serviceId: chosenServiceId })
+      : null
+
+    if (meResult) {
+      deliveryFee = Number(meResult.price)
+      deliveryAddress = { ...dest, lat: null, lng: null }
+      deliveryQuote = {
+        provider: 'melhor_envio',
+        service_id: meResult.id,
+        service_name: meResult.name,
+        carrier_company_id: meResult.company.id,
+        carrier_company_name: meResult.company.name,
+        delivery_time: meResult.delivery_time,
+        price: deliveryFee,
+        quotedAt: new Date().toISOString(),
+      }
+    } else {
+      // não deu para recotar a opção escolhida: não trava o pedido, cai para
+      // "a combinar" e a loja acerta o frete manualmente pelo painel.
+      deliveryMethod = 'a_combinar'
+      deliveryAddress = dest.zip_code ? { ...dest, lat: null, lng: null } : null
+      deliveryNote = 'Cliente pediu envio via Melhor Envio — cotação automática indisponível, combinar valor.'
     }
   }
 
@@ -214,6 +326,23 @@ export async function submitPublicOrder(formData: FormData) {
   if (!order) return
 
   await supabase.from('sales_order_items').insert(items.map((item) => ({ ...item, order_id: order.id })))
+
+  // Guarda a cotação escolhida pelo cliente já como "cotado" — o admin só
+  // precisa conferir e comprar a etiqueta, sem recalcular do zero. Melhor
+  // esforço: se a tabela/migration não existir, não trava o pedido.
+  if (deliveryMethod === 'melhor_envio' && deliveryQuote) {
+    await supabase.from('shipments').upsert(
+      {
+        company_id: company.id,
+        order_id: order.id,
+        service_id: deliveryQuote.service_id,
+        service_name: deliveryQuote.service_name,
+        price: deliveryQuote.price,
+        status: 'cotado',
+      },
+      { onConflict: 'order_id' }
+    )
+  }
 
   // Melhor esforço: se o cliente informou endereço de entrega e o cadastro
   // dele ainda não tem CEP, guarda o endereço no cadastro.
