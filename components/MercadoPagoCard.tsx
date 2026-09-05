@@ -9,13 +9,15 @@ export default function MercadoPagoCard({
   justConnected,
 }: {
   account: Pick<MercadoPagoAccount, 'live_mode' | 'connected_at'> | null
-  // Apelido/e-mail de quem está conectado, buscados na hora na API do
-  // Mercado Pago — null quando a busca falha (a conexão em si continua
-  // valendo, só não dá pra confirmar visualmente qual conta é).
+  // Apelido/e-mail/produção-ou-teste de quem está conectado, buscados/
+  // recalculados na hora — mais confiáveis que o `live_mode` gravado em
+  // `account` (o valor que o Mercado Pago devolve no OAuth de marketplace
+  // já veio errado em produção mesmo logando com usuário de teste).
   details?: MercadoPagoAccountDetails | null
   error?: string
   justConnected?: boolean
 }) {
+  const liveMode = details?.live_mode ?? account?.live_mode ?? false
   return (
     <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
       <div>
@@ -37,11 +39,11 @@ export default function MercadoPagoCard({
         <div className="flex flex-col gap-3">
           <div
             className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold ${
-              account.live_mode ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
+              liveMode ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${account.live_mode ? 'bg-red-600' : 'bg-green-600'}`} />
-            {account.live_mode ? 'PRODUÇÃO — cobra dinheiro real' : 'Ambiente de testes — não cobra dinheiro real'}
+            <span className={`w-2 h-2 rounded-full ${liveMode ? 'bg-red-600' : 'bg-green-600'}`} />
+            {liveMode ? 'PRODUÇÃO — cobra dinheiro real' : 'Ambiente de testes — não cobra dinheiro real'}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">

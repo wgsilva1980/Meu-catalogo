@@ -60,6 +60,14 @@ async function requestToken(body: Record<string, string>): Promise<OAuthTokenRes
   return (await res.json()) as OAuthTokenResponse
 }
 
+// O `live_mode` que a própria API devolve no OAuth de marketplace não é
+// confiável — já observamos ele vir `true` mesmo logando com um usuário de
+// teste do Mercado Pago. O sinal documentado e confiável é o prefixo do
+// access_token: "TEST-" para credenciais de teste, "APP_USR-" para produção.
+function isTestAccessToken(accessToken: string): boolean {
+  return accessToken.startsWith('TEST-')
+}
+
 export async function connectAccount({
   companyId,
   code,
@@ -77,7 +85,7 @@ export async function connectAccount({
     access_token: token.access_token,
     refresh_token: token.refresh_token,
     public_key: token.public_key ?? null,
-    live_mode: Boolean(token.live_mode),
+    live_mode: !isTestAccessToken(token.access_token),
     expires_at: new Date(Date.now() + token.expires_in * 1000).toISOString(),
   })
 }
@@ -108,6 +116,7 @@ async function refreshIfNeeded(account: MercadoPagoAccountRow): Promise<string> 
       .update({
         access_token: token.access_token,
         refresh_token: token.refresh_token,
+        live_mode: !isTestAccessToken(token.access_token),
         expires_at: new Date(Date.now() + token.expires_in * 1000).toISOString(),
       })
       .eq('company_id', account.company_id)
@@ -133,6 +142,9 @@ export type MercadoPagoAccountDetails = {
   nickname: string | null
   email: string | null
   site_id: string | null
+  // Recalculado a partir do prefixo do access_token (ver isTestAccessToken) —
+  // mais confiável do que o `live_mode` gravado na conexão.
+  live_mode: boolean
 }
 
 // Detalhes da conta do Mercado Pago conectada (apelido/e-mail), buscados na
@@ -144,6 +156,7 @@ export async function getAccountDetails(companyId: string): Promise<MercadoPagoA
   const account = await getAccount(companyId)
   if (!account) return null
   const accessToken = await refreshIfNeeded(account)
+  const live_mode = !isTestAccessToken(accessToken)
 
   try {
     const res = await fetch(`${API_BASE}/users/me`, {
@@ -151,7 +164,9 @@ export async function getAccountDetails(companyId: string): Promise<MercadoPagoA
     })
     if (!res.ok) {
       console.error('Falha ao buscar detalhes da conta do Mercado Pago:', res.status, await res.text().catch(() => ''))
-      return null
+      // O prefixo do token ainda dá pra confirmar teste x produção mesmo sem
+      // o resto dos detalhes.
+      return { id: account.mp_user_id, nickname: null, email: null, site_id: null, live_mode }
     }
     const data = (await res.json()) as Record<string, unknown>
     return {
@@ -159,10 +174,11 @@ export async function getAccountDetails(companyId: string): Promise<MercadoPagoA
       nickname: typeof data.nickname === 'string' ? data.nickname : null,
       email: typeof data.email === 'string' ? data.email : null,
       site_id: typeof data.site_id === 'string' ? data.site_id : null,
+      live_mode,
     }
   } catch (err) {
     console.error('Falha ao buscar detalhes da conta do Mercado Pago:', err)
-    return null
+    return { id: account.mp_user_id, nickname: null, email: null, site_id: null, live_mode }
   }
 }
 
