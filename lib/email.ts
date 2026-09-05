@@ -17,10 +17,18 @@ function getTransporter() {
 // chamou (cadastro/pedido público), então erros só vão pro log.
 export async function sendNotificationEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   const client = getTransporter()
-  if (!client || !to) return
+  if (!client) {
+    // Sem isso, um GMAIL_USER/GMAIL_APP_PASSWORD faltando neste ambiente
+    // (ex.: configurado só em Production, faltando em Preview) fica
+    // indistinguível de "e-mail enviado" — nenhum log, nenhum erro.
+    console.warn('E-mail não enviado: GMAIL_USER/GMAIL_APP_PASSWORD não configuradas neste ambiente.', { subject })
+    return
+  }
+  if (!to) return
 
   try {
-    await client.sendMail({ from: process.env.GMAIL_USER, to, subject, html })
+    const info = await client.sendMail({ from: process.env.GMAIL_USER, to, subject, html })
+    console.log('E-mail de notificação enviado:', { to, subject, messageId: info.messageId })
   } catch (err) {
     console.error('Falha ao enviar e-mail de notificação:', err)
   }
