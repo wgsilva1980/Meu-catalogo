@@ -60,12 +60,39 @@ async function requestToken(body: Record<string, string>): Promise<OAuthTokenRes
   return (await res.json()) as OAuthTokenResponse
 }
 
-// O `live_mode` que a própria API devolve no OAuth de marketplace não é
-// confiável — já observamos ele vir `true` mesmo logando com um usuário de
-// teste do Mercado Pago. O sinal documentado e confiável é o prefixo do
-// access_token: "TEST-" para credenciais de teste, "APP_USR-" para produção.
-function isTestAccessToken(accessToken: string): boolean {
-  return accessToken.startsWith('TEST-')
+// Nem o `live_mode` do OAuth nem o prefixo do access_token são confiáveis
+// para saber se a conta conectada é uma conta de teste: ambos vêm "de
+// produção" (live_mode: true, token "APP_USR-...") mesmo logando com um
+// usuário de teste do Mercado Pago — confirmado testando com uma conta real
+// de "Contas de teste" do painel deles. O único sinal confiável é o próprio
+// GET /users/me, que marca a conta com tags: ["test_user", ...] e o objeto
+// test_data.test_user quando é uma conta de teste.
+type MercadoPagoUser = {
+  id: string
+  nickname: string | null
+  email: string | null
+  site_id: string | null
+  isTestUser: boolean
+}
+
+async function fetchMercadoPagoUser(accessToken: string): Promise<MercadoPagoUser | null> {
+  const res = await fetch(`${API_BASE}/users/me`, {
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+  })
+  if (!res.ok) {
+    console.error('Falha ao buscar detalhes da conta do Mercado Pago:', res.status, await res.text().catch(() => ''))
+    return null
+  }
+  const data = (await res.json()) as Record<string, unknown>
+  const tags = Array.isArray(data.tags) ? (data.tags as unknown[]) : []
+  const testData = (data.test_data as Record<string, unknown> | undefined) ?? undefined
+  return {
+    id: String(data.id ?? ''),
+    nickname: typeof data.nickname === 'string' ? data.nickname : null,
+    email: typeof data.email === 'string' ? data.email : null,
+    site_id: typeof data.site_id === 'string' ? data.site_id : null,
+    isTestUser: Boolean(testData?.test_user) || tags.includes('test_user'),
+  }
 }
 
 export async function connectAccount({
@@ -78,6 +105,9 @@ export async function connectAccount({
   redirectUri: string
 }) {
   const token = await requestToken({ grant_type: 'authorization_code', code, redirect_uri: redirectUri })
+  // Melhor esforço: sem isso ainda dá pra conectar a conta, só não dá pra
+  // confirmar de cara se é uma conta de teste (a tela recalcula depois).
+  const user = await fetchMercadoPagoUser(token.access_token).catch(() => null)
   const admin = createAdminClient()
   await admin.from('mercado_pago_accounts').upsert({
     company_id: companyId,
@@ -85,7 +115,7 @@ export async function connectAccount({
     access_token: token.access_token,
     refresh_token: token.refresh_token,
     public_key: token.public_key ?? null,
-    live_mode: !isTestAccessToken(token.access_token),
+    live_mode: user ? !user.isTestUser : Boolean(token.live_mode),
     expires_at: new Date(Date.now() + token.expires_in * 1000).toISOString(),
   })
 }
@@ -110,13 +140,14 @@ async function refreshIfNeeded(account: MercadoPagoAccountRow): Promise<string> 
 
   try {
     const token = await requestToken({ grant_type: 'refresh_token', refresh_token: account.refresh_token })
+    const user = await fetchMercadoPagoUser(token.access_token).catch(() => null)
     const admin = createAdminClient()
     await admin
       .from('mercado_pago_accounts')
       .update({
         access_token: token.access_token,
         refresh_token: token.refresh_token,
-        live_mode: !isTestAccessToken(token.access_token),
+        ...(user ? { live_mode: !user.isTestUser } : {}),
         expires_at: new Date(Date.now() + token.expires_in * 1000).toISOString(),
       })
       .eq('company_id', account.company_id)
@@ -142,43 +173,32 @@ export type MercadoPagoAccountDetails = {
   nickname: string | null
   email: string | null
   site_id: string | null
-  // Recalculado a partir do prefixo do access_token (ver isTestAccessToken) —
-  // mais confiável do que o `live_mode` gravado na conexão.
+  // Vem de GET /users/me (tags/test_data.test_user) — ver fetchMercadoPagoUser.
   live_mode: boolean
 }
 
-// Detalhes da conta do Mercado Pago conectada (apelido/e-mail), buscados na
-// hora em vez de guardados — assim a tela de Configurações sempre mostra
-// quem está realmente conectado, mesmo que o token tenha sido renovado.
-// Best effort: se a API falhar (token revogado, escopo insuficiente etc.),
-// devolve null e a tela cai para mostrar só o que já tem salvo (live_mode).
+// Detalhes da conta do Mercado Pago conectada (apelido/e-mail/teste-ou-não),
+// buscados na hora em vez de guardados — assim a tela de Configurações
+// sempre mostra quem está realmente conectado, mesmo que o token tenha sido
+// renovado. Best effort: se a API falhar, devolve null e a tela cai para o
+// que já tem salvo (`account.live_mode`, que pode estar desatualizado).
 export async function getAccountDetails(companyId: string): Promise<MercadoPagoAccountDetails | null> {
   const account = await getAccount(companyId)
   if (!account) return null
   const accessToken = await refreshIfNeeded(account)
-  const live_mode = !isTestAccessToken(accessToken)
 
-  try {
-    const res = await fetch(`${API_BASE}/users/me`, {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
-    })
-    if (!res.ok) {
-      console.error('Falha ao buscar detalhes da conta do Mercado Pago:', res.status, await res.text().catch(() => ''))
-      // O prefixo do token ainda dá pra confirmar teste x produção mesmo sem
-      // o resto dos detalhes.
-      return { id: account.mp_user_id, nickname: null, email: null, site_id: null, live_mode }
-    }
-    const data = (await res.json()) as Record<string, unknown>
-    return {
-      id: String(data.id ?? account.mp_user_id),
-      nickname: typeof data.nickname === 'string' ? data.nickname : null,
-      email: typeof data.email === 'string' ? data.email : null,
-      site_id: typeof data.site_id === 'string' ? data.site_id : null,
-      live_mode,
-    }
-  } catch (err) {
+  const user = await fetchMercadoPagoUser(accessToken).catch((err) => {
     console.error('Falha ao buscar detalhes da conta do Mercado Pago:', err)
-    return { id: account.mp_user_id, nickname: null, email: null, site_id: null, live_mode }
+    return null
+  })
+  if (!user) return null
+
+  return {
+    id: user.id || account.mp_user_id,
+    nickname: user.nickname,
+    email: user.email,
+    site_id: user.site_id,
+    live_mode: !user.isTestUser,
   }
 }
 
