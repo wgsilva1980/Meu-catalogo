@@ -230,8 +230,19 @@ export default function PublicOrderForm({
     method === 'motoboy' ? Boolean(quote) : method === 'melhor_envio' ? Boolean(meSelected) : true
   const blockSubmit = !canAdvanceToDelivery || !canAdvanceToPayment
 
+  // Trava de segurança: o formulário só pode ser enviado de fato quando o
+  // cliente chegou à última fase com os dados válidos. Sem isso, qualquer
+  // envio implícito do navegador (ex.: confirmar um <select> no teclado do
+  // celular) usa o único botão type="submit" do formulário e finaliza o
+  // pedido nas fases anteriores, sem o cliente ter clicado em nada.
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (step !== 3 || blockSubmit) {
+      e.preventDefault()
+    }
+  }
+
   return (
-    <form action={submitPublicOrder} className="flex flex-col gap-4">
+    <form action={submitPublicOrder} onSubmit={handleSubmit} className="flex flex-col gap-4">
       <input type="hidden" name="slug" value={slug} />
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
         <label>
@@ -495,6 +506,7 @@ export default function PublicOrderForm({
 
         {step < 3 ? (
           <button
+            key="continue"
             type="button"
             onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)}
             disabled={step === 1 ? !canAdvanceToDelivery : !canAdvanceToPayment}
@@ -504,6 +516,7 @@ export default function PublicOrderForm({
           </button>
         ) : (
           <button
+            key="submit"
             type="submit"
             disabled={blockSubmit}
             className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40"
