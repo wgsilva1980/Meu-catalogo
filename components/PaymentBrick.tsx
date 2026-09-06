@@ -80,6 +80,11 @@ export default function PaymentBrick({ token, publicKey, amount, payer }: Props)
     <div className="flex flex-col gap-1">
       {formError && <p className="text-xs text-red-600">{formError}</p>}
       <Payment
+        // O SDK loga o BIN do cartão no console por padrão quando essa prop
+        // não é passada (`onBinChangeDefault` em @mercadopago/sdk-react) — só
+        // os 8 primeiros dígitos, não sensível por si só, mas sem motivo pra
+        // aparecer no console do comprador.
+        onBinChange={() => {}}
         initialization={{
           amount,
           payer: {
