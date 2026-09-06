@@ -255,6 +255,10 @@ export async function createCheckoutPreference({
       back_urls: { success: backUrl, pending: backUrl, failure: backUrl },
       auto_return: 'approved',
       notification_url: notificationUrl,
+      // `ticket` cobre boleto e outros pagamentos offline — a loja só quer
+      // aceitar cartão, Pix e transferência (que caem em outros tipos e não
+      // podem ser excluídos sem tirar cartão/Pix junto).
+      payment_methods: { excluded_payment_types: [{ id: 'ticket' }] },
       ...(payer?.name || payer?.email
         ? { payer: { ...(payer.name ? { name: payer.name } : {}), ...(payer.email ? { email: payer.email } : {}) } }
         : {}),
