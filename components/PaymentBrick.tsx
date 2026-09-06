@@ -61,7 +61,11 @@ export default function PaymentBrick({ token, publicKey, amount, payer }: Props)
       <div className="flex flex-col gap-3">
         <StatusScreen
           initialization={{ paymentId: result.paymentId }}
-          customization={{ backUrls: { return: `/acompanhar/${token}` } }}
+          // O Brick monta isso com `new URL(...)` internamente — um path
+          // relativo (`/acompanhar/...`) quebra com "Failed to construct
+          // 'URL': Invalid URL" e a tela de status trava no carregamento.
+          // Só roda no cliente (depois de `ready`), então `window` existe.
+          customization={{ backUrls: { return: `${window.location.origin}/acompanhar/${token}` } }}
         />
         {result.status === 'rejected' && (
           <button type="button" onClick={() => setResult(null)} className="text-xs text-muted underline text-center">
@@ -82,6 +86,10 @@ export default function PaymentBrick({ token, publicKey, amount, payer }: Props)
             email: payer.email ?? undefined,
             firstName: payer.firstName ?? undefined,
             identification: payer.identification ?? undefined,
+            // Sem isso o Brick reclama ("entityType only receives the value
+            // individual or association") — CNPJ é pessoa jurídica, o resto
+            // (CPF ou sem documento ainda) é pessoa física.
+            entityType: payer.identification?.type === 'CNPJ' ? 'association' : 'individual',
           },
         }}
         // Só cartão e Pix — os outros tipos (`ticket`/boleto, `atm`,
