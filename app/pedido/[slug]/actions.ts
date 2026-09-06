@@ -17,10 +17,6 @@ import {
 } from '@/lib/melhorEnvio'
 import type { DeliveryMethod, ShippingBox } from '@/lib/types'
 
-// Cópia opcional enviada em todo pedido (monitoramento do envio de e-mail).
-// Configurável por ambiente — não expor um endereço pessoal fixo no código.
-const ORDER_NOTIFICATION_BCC = process.env.ORDER_NOTIFICATION_BCC?.trim() || null
-
 const MAX_QUANTITY = 100_000
 const MAX_LINE_ITEMS = 200
 
@@ -462,7 +458,6 @@ export async function submitPublicOrder(formData: FormData) {
 
     const recipients = new Set<string>()
     if (companySettings?.email) recipients.add(companySettings.email)
-    if (ORDER_NOTIFICATION_BCC) recipients.add(ORDER_NOTIFICATION_BCC)
     if (recipients.size === 0) throw new Error('nenhum destinatário de notificação configurado')
 
     const { data: customer } = await supabase
