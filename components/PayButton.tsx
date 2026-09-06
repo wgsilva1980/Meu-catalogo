@@ -35,7 +35,7 @@ export default function PayButton({ token, label = 'Pagar agora' }: { token: str
         {loading ? 'Abrindo pagamento...' : label}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
-      <p className="text-xs text-muted">Você será levado ao Mercado Pago (Pix, cartão ou boleto).</p>
+      <p className="text-xs text-muted">Você será levado ao Mercado Pago (Pix, cartão ou transferência).</p>
     </div>
   )
 }
