@@ -1043,6 +1043,47 @@ alter table sales_orders add column if not exists paid_at timestamptz;
 commit;
 
 
+-- ###################################################################
+-- 19) migration_mercado_pago_transparente.sql
+-- ###################################################################
+
+-- Checkout Transparente (Payment Brick): centraliza a "primeira aprovação"
+-- (avançar status + baixar estoque) numa transação atômica, já que agora
+-- tanto a resposta síncrona da criação do pagamento quanto o webhook podem
+-- disparar esse efeito para o mesmo pedido.
+
+begin;
+
+create or replace function claim_order_payment(p_company_id uuid, p_order_id uuid, p_paid_at timestamptz)
+returns table (id uuid, number int, status text, customer_id uuid, public_token uuid)
+language plpgsql
+as $$
+declare
+  r record;
+begin
+  update sales_orders
+     set paid_at = p_paid_at,
+         status = case when sales_orders.status = 'rascunho' then 'confirmado' else sales_orders.status end
+   where sales_orders.id = p_order_id and sales_orders.company_id = p_company_id and sales_orders.paid_at is null
+  returning sales_orders.id, sales_orders.number, sales_orders.status,
+            sales_orders.customer_id, sales_orders.public_token
+    into r;
+
+  if r.id is null then
+    return;
+  end if;
+
+  if r.status = 'confirmado' then
+    perform commit_order_stock(p_company_id, p_order_id);
+  end if;
+
+  return query select r.id, r.number, r.status, r.customer_id, r.public_token;
+end;
+$$;
+
+commit;
+
+
 -- #####################################################################
 -- PÓS-INSTALAÇÃO  (rode depois de criar seu usuário no ambiente novo)
 -- #####################################################################

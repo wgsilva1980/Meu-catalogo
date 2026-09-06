@@ -1,4 +1,4 @@
-// Cliente para o Mercado Pago (Checkout Pro, modelo marketplace/OAuth).
+// Cliente para o Mercado Pago (Checkout Transparente/Payment Brick, modelo marketplace/OAuth).
 // Uma aplicação da plataforma (MERCADO_PAGO_* nas env vars) é compartilhada;
 // cada empresa conecta a própria conta e o token dela fica em
 // `mercado_pago_accounts`. Nunca importar em código client.
@@ -212,72 +212,6 @@ export async function getConnectedCompanyId(mpUserId: string): Promise<string | 
   return (data as { company_id: string } | null)?.company_id ?? null
 }
 
-// Cria a preferência de Checkout Pro para um pedido. Uma linha única com o
-// total já calculado do pedido — sempre bate com o valor cobrado.
-export async function createCheckoutPreference({
-  companyId,
-  order,
-  title,
-  backUrl,
-  notificationUrl,
-  payer,
-}: {
-  companyId: string
-  order: { id: string; number: number; total: number }
-  title: string
-  backUrl: string
-  notificationUrl: string
-  payer?: { name?: string | null; email?: string | null }
-}): Promise<{ id: string; initPoint: string }> {
-  const account = await getAccount(companyId)
-  if (!account) throw new Error('Empresa não conectou a conta do Mercado Pago')
-  const accessToken = await refreshIfNeeded(account)
-
-  const res = await fetch(`${API_BASE}/checkout/preferences`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({
-      items: [
-        {
-          id: order.id,
-          title,
-          quantity: 1,
-          unit_price: Math.round(Number(order.total) * 100) / 100,
-          currency_id: 'BRL',
-        },
-      ],
-      external_reference: order.id,
-      metadata: { order_id: order.id, order_number: order.number },
-      back_urls: { success: backUrl, pending: backUrl, failure: backUrl },
-      auto_return: 'approved',
-      notification_url: notificationUrl,
-      // `ticket` cobre boleto e outros pagamentos offline — a loja só quer
-      // aceitar cartão, Pix e transferência (que caem em outros tipos e não
-      // podem ser excluídos sem tirar cartão/Pix junto).
-      payment_methods: { excluded_payment_types: [{ id: 'ticket' }] },
-      ...(payer?.name || payer?.email
-        ? { payer: { ...(payer.name ? { name: payer.name } : {}), ...(payer.email ? { email: payer.email } : {}) } }
-        : {}),
-    }),
-  })
-  const data = (await res.json().catch(() => null)) as
-    | { id?: string; init_point?: string; sandbox_init_point?: string; message?: string }
-    | null
-  if (!res.ok || !data?.id) {
-    throw new Error(`Falha ao criar a cobrança no Mercado Pago (${res.status}): ${data?.message ?? ''}`)
-  }
-  // Checkout Pro sempre abre pelo `init_point`, inclusive em testes (contas de
-  // teste / usuários de teste). O `sandbox_init_point` é legado e não é o
-  // fluxo recomendado para este produto — só é usado se o `init_point` faltar.
-  const initPoint = data.init_point || data.sandbox_init_point
-  if (!initPoint) throw new Error('Mercado Pago não retornou o link de pagamento.')
-  return { id: data.id, initPoint }
-}
-
 export type MercadoPagoPayment = {
   id: string
   status: string
@@ -285,6 +219,17 @@ export type MercadoPagoPayment = {
   transaction_amount: number | null
   external_reference: string | null
   date_approved: string | null
+}
+
+function parsePaymentResponse(p: Record<string, unknown>): MercadoPagoPayment {
+  return {
+    id: String(p.id),
+    status: typeof p.status === 'string' ? p.status : 'unknown',
+    status_detail: typeof p.status_detail === 'string' ? p.status_detail : null,
+    transaction_amount: typeof p.transaction_amount === 'number' ? p.transaction_amount : null,
+    external_reference: typeof p.external_reference === 'string' ? p.external_reference : null,
+    date_approved: typeof p.date_approved === 'string' ? p.date_approved : null,
+  }
 }
 
 export async function getPayment({
@@ -305,15 +250,73 @@ export async function getPayment({
     console.error('Falha ao buscar pagamento no Mercado Pago:', res.status, await res.text().catch(() => ''))
     return null
   }
-  const p = (await res.json()) as Record<string, unknown>
-  return {
-    id: String(p.id),
-    status: typeof p.status === 'string' ? p.status : 'unknown',
-    status_detail: typeof p.status_detail === 'string' ? p.status_detail : null,
-    transaction_amount: typeof p.transaction_amount === 'number' ? p.transaction_amount : null,
-    external_reference: typeof p.external_reference === 'string' ? p.external_reference : null,
-    date_approved: typeof p.date_approved === 'string' ? p.date_approved : null,
+  return parsePaymentResponse((await res.json()) as Record<string, unknown>)
+}
+
+// Cria um pagamento direto (Checkout Transparente / Payment Brick) — cartão
+// ou Pix. `transactionAmount` é sempre recalculado a partir do pedido pelo
+// chamador, nunca deve vir do valor que o cliente mandou pro navegador.
+// O Mercado Pago responde 2xx mesmo para pagamento recusado (`status:
+// "rejected"` é uma resposta válida) — só um HTTP de erro aqui significa que
+// a própria requisição foi malformada, não que o pagamento falhou.
+export async function createPayment({
+  companyId,
+  idempotencyKey,
+  transactionAmount,
+  description,
+  externalReference,
+  notificationUrl,
+  paymentMethodId,
+  token,
+  installments,
+  issuerId,
+  payer,
+}: {
+  companyId: string
+  idempotencyKey: string
+  transactionAmount: number
+  description: string
+  externalReference: string
+  notificationUrl: string
+  paymentMethodId: string
+  token?: string
+  installments?: number
+  issuerId?: string | number
+  payer: { email: string; identification?: { type: string; number: string } | null }
+}): Promise<MercadoPagoPayment> {
+  const account = await getAccount(companyId)
+  if (!account) throw new Error('Empresa não conectou a conta do Mercado Pago')
+  const accessToken = await refreshIfNeeded(account)
+
+  const res = await fetch(`${API_BASE}/v1/payments`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'X-Idempotency-Key': idempotencyKey,
+    },
+    body: JSON.stringify({
+      transaction_amount: Math.round(Number(transactionAmount) * 100) / 100,
+      description,
+      payment_method_id: paymentMethodId,
+      ...(token ? { token } : {}),
+      ...(installments ? { installments } : {}),
+      ...(issuerId ? { issuer_id: issuerId } : {}),
+      external_reference: externalReference,
+      metadata: { order_id: externalReference },
+      notification_url: notificationUrl,
+      payer: {
+        email: payer.email,
+        ...(payer.identification ? { identification: payer.identification } : {}),
+      },
+    }),
+  })
+  const data = (await res.json().catch(() => null)) as (Record<string, unknown> & { message?: string }) | null
+  if (!res.ok || !data?.id) {
+    throw new Error(`Falha ao criar pagamento no Mercado Pago (${res.status}): ${data?.message ?? ''}`)
   }
+  return parsePaymentResponse(data)
 }
 
 // pending/in_process/authorized -> 'pending'; approved -> 'approved';

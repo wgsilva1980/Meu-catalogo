@@ -52,3 +52,12 @@ export function isValidCpfCnpj(value: string | null | undefined): boolean {
   if (digits.length === 14) return isValidCNPJ(digits)
   return false
 }
+
+// Formato que a API de pagamentos do Mercado Pago espera em `payer.identification`.
+// Nunca repassa um documento com dígito verificador inválido.
+export function toMercadoPagoIdentification(value: string | null | undefined): { type: 'CPF' | 'CNPJ'; number: string } | null {
+  const digits = (value ?? '').replace(/\D/g, '')
+  if (digits.length === 11 && isValidCPF(digits)) return { type: 'CPF', number: digits }
+  if (digits.length === 14 && isValidCNPJ(digits)) return { type: 'CNPJ', number: digits }
+  return null
+}

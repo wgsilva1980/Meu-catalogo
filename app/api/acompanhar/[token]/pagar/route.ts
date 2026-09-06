@@ -1,18 +1,41 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createCheckoutPreference } from '@/lib/mercadoPago'
+import { createPayment, normalizePaymentStatus } from '@/lib/mercadoPago'
+import { recordPaymentResult } from '@/lib/orderPayments'
+import { toMercadoPagoIdentification } from '@/lib/cpfCnpj'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-// Cria a cobrança no Mercado Pago para o pedido do link público de
-// acompanhamento e devolve o link do checkout. O token do pedido é a
+// Recebe o `formData` do Payment Brick (cartão ou Pix) e cria o pagamento
+// direto no Mercado Pago — sem preferência/redirect. O token do pedido é a
 // credencial — sem login.
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   if (!UUID_RE.test(token)) return NextResponse.json({ error: 'Link inválido.' }, { status: 404 })
+
+  let body: {
+    idempotencyKey?: string
+    formData?: {
+      payment_method_id?: string
+      token?: string
+      installments?: number
+      issuer_id?: string | number
+      payer?: { email?: string; identification?: { type?: string; number?: string } }
+    }
+  } = {}
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Requisição inválida.' }, { status: 400 })
+  }
+  const formData = body.formData
+  const idempotencyKey = body.idempotencyKey
+  if (!idempotencyKey || !formData?.payment_method_id || !formData.payer?.email) {
+    return NextResponse.json({ error: 'Dados de pagamento incompletos.' }, { status: 422 })
+  }
 
   const supabase = createAdminClient()
   const { data: order } = await supabase
@@ -36,41 +59,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     return NextResponse.json({ error: 'A loja ainda não habilitou pagamento online.' }, { status: 422 })
   }
 
-  const [{ data: company }, { data: customer }] = await Promise.all([
-    supabase.from('companies').select('name').eq('id', order.company_id).single(),
-    order.customer_id
-      ? supabase.from('customers').select('name, email').eq('id', order.customer_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ])
-
   const host = request.headers.get('host')
   const protocol = host?.startsWith('localhost') ? 'http' : 'https'
   const origin = `${protocol}://${host}`
 
+  // Só repassa o que o backend precisa — nunca o `formData` inteiro — e
+  // recalcula o valor a partir do pedido, nunca do que o Brick mandou.
+  const identification =
+    formData.payer.identification?.type && formData.payer.identification.number
+      ? toMercadoPagoIdentification(formData.payer.identification.number)
+      : null
+
   try {
-    const pref = await createCheckoutPreference({
+    const payment = await createPayment({
       companyId: order.company_id,
-      order: { id: order.id, number: order.number, total: Number(order.total) },
-      title: `Pedido #${order.number}${company?.name ? ` — ${company.name}` : ''}`,
-      backUrl: `${origin}/acompanhar/${token}`,
+      idempotencyKey,
+      transactionAmount: Number(order.total),
+      description: `Pedido #${order.number}`,
+      externalReference: order.id,
       notificationUrl: `${origin}/api/mercado-pago/webhook`,
-      payer: { name: customer?.name ?? null, email: customer?.email ?? null },
+      paymentMethodId: formData.payment_method_id,
+      token: formData.token,
+      installments: formData.installments,
+      issuerId: formData.issuer_id,
+      payer: { email: formData.payer.email, identification },
     })
 
-    await supabase.from('payments').upsert(
-      {
-        company_id: order.company_id,
-        order_id: order.id,
-        provider: 'mercado_pago',
-        mp_preference_id: pref.id,
-        status: 'pending',
-      },
-      { onConflict: 'order_id' }
-    )
+    await recordPaymentResult({ admin: supabase, companyId: order.company_id, orderId: order.id, payment, origin })
 
-    return NextResponse.json({ initPoint: pref.initPoint })
+    const status = normalizePaymentStatus(payment.status)
+    if (status === 'approved') return NextResponse.json({ status: 'approved' })
+    if (status === 'rejected')
+      return NextResponse.json({ status: 'rejected', paymentId: payment.id, statusDetail: payment.status_detail })
+    return NextResponse.json({ status: 'pending', paymentId: payment.id })
   } catch (err) {
-    console.error('Falha ao criar cobrança no Mercado Pago:', err)
-    return NextResponse.json({ error: 'Não foi possível iniciar o pagamento agora.' }, { status: 502 })
+    console.error('Falha ao criar pagamento no Mercado Pago:', err)
+    return NextResponse.json({ error: 'Não foi possível processar o pagamento agora.' }, { status: 502 })
   }
 }
