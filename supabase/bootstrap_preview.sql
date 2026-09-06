@@ -1050,21 +1050,29 @@ commit;
 -- Checkout Transparente (Payment Brick): centraliza a "primeira aprovação"
 -- (avançar status + baixar estoque) numa transação atômica, já que agora
 -- tanto a resposta síncrona da criação do pagamento quanto o webhook podem
--- disparar esse efeito para o mesmo pedido.
+-- disparar esse efeito para o mesmo pedido. `payment_lock_at` é um lock
+-- leve usado antes de cobrar no Mercado Pago, pra duplo-clique/retry não
+-- gerar duas cobranças reais pro mesmo pedido.
 
 begin;
 
+alter table sales_orders add column if not exists payment_lock_at timestamptz;
+
 create or replace function claim_order_payment(p_company_id uuid, p_order_id uuid, p_paid_at timestamptz)
-returns table (id uuid, number int, status text, customer_id uuid, public_token uuid)
+returns table (id uuid, number int, status text, customer_id uuid, public_token uuid, stock_ok boolean)
 language plpgsql
 as $$
 declare
   r record;
+  v_stock_ok boolean := true;
 begin
   update sales_orders
      set paid_at = p_paid_at,
          status = case when sales_orders.status = 'rascunho' then 'confirmado' else sales_orders.status end
-   where sales_orders.id = p_order_id and sales_orders.company_id = p_company_id and sales_orders.paid_at is null
+   where sales_orders.id = p_order_id
+     and sales_orders.company_id = p_company_id
+     and sales_orders.paid_at is null
+     and sales_orders.status <> 'cancelado'
   returning sales_orders.id, sales_orders.number, sales_orders.status,
             sales_orders.customer_id, sales_orders.public_token
     into r;
@@ -1074,10 +1082,15 @@ begin
   end if;
 
   if r.status = 'confirmado' then
-    perform commit_order_stock(p_company_id, p_order_id);
+    begin
+      perform commit_order_stock(p_company_id, p_order_id);
+    exception when others then
+      v_stock_ok := false;
+      raise warning 'claim_order_payment: falha ao baixar estoque do pedido % (empresa %): %', p_order_id, p_company_id, sqlerrm;
+    end;
   end if;
 
-  return query select r.id, r.number, r.status, r.customer_id, r.public_token;
+  return query select r.id, r.number, r.status, r.customer_id, r.public_token, v_stock_ok;
 end;
 $$;
 

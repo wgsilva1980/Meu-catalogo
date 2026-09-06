@@ -8,6 +8,10 @@ type Props = {
   token: string
   publicKey: string
   amount: number
+  // Pix criado numa visita anterior que ainda não confirmou — retoma a tela
+  // de status em vez de mostrar o formulário do zero (senão dá pra gerar um
+  // segundo Pix pro mesmo pedido sem querer).
+  pendingPayment: { paymentId: string } | null
   payer: {
     email: string | null
     firstName: string | null
@@ -17,10 +21,12 @@ type Props = {
 
 type Result = { paymentId: string; status: 'pending' | 'rejected' }
 
-export default function PaymentBrick({ token, publicKey, amount, payer }: Props) {
+export default function PaymentBrick({ token, publicKey, amount, pendingPayment, payer }: Props) {
   const router = useRouter()
   const [ready, setReady] = useState(false)
-  const [result, setResult] = useState<Result | null>(null)
+  const [result, setResult] = useState<Result | null>(
+    pendingPayment ? { paymentId: pendingPayment.paymentId, status: 'pending' } : null
+  )
   const [formError, setFormError] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 

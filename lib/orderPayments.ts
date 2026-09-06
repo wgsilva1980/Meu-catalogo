@@ -40,11 +40,28 @@ export async function recordPaymentResult({
     { onConflict: 'order_id' }
   )
 
-  if (status !== 'approved') return
+  if (status !== 'approved') {
+    // Estorno/chargeback depois de uma aprovação anterior: desfaz só o
+    // `paid_at` (mesmo comportamento que o webhook antigo já tinha) — não
+    // mexe em `status` nem tenta repor estoque automaticamente, porque a
+    // essa altura o pedido já pode ter seguido pra separação/envio; reverter
+    // isso sozinho é decisão de quem opera a loja, não do webhook.
+    if (status === 'refunded' || status === 'cancelled') {
+      const { error } = await admin
+        .from('sales_orders')
+        .update({ paid_at: null })
+        .eq('id', orderId)
+        .eq('company_id', companyId)
+      if (error) console.error('Falha ao reverter paid_at após estorno/cancelamento:', error)
+    }
+    return
+  }
 
   // Atômico: só quem "ganha" a corrida recebe a linha de volta — uma
   // notificação duplicada do Mercado Pago, ou o outro caminho (síncrono vs
   // webhook) chegando ao mesmo tempo, não repete baixa de estoque nem e-mail.
+  // Também não reivindica nada pra um pedido cancelado ou pra estoque que
+  // faltou (esse último caso ainda volta `stock_ok: false`, tratado abaixo).
   const { data: claimed, error } = await admin.rpc('claim_order_payment', {
     p_company_id: companyId,
     p_order_id: orderId,
@@ -56,6 +73,15 @@ export async function recordPaymentResult({
   }
   const order = Array.isArray(claimed) ? claimed[0] : claimed
   if (!order) return
+
+  if (order.stock_ok === false) {
+    // Pagamento aprovado e `paid_at` já gravado — só o estoque não baixou.
+    // Não é motivo pra deixar de notificar o cliente; precisa de revisão
+    // manual do lado da loja (ver aviso já logado dentro da função SQL).
+    console.error(
+      `Pedido ${order.number} (empresa ${companyId}) foi pago mas o estoque não pôde ser baixado — revisar manualmente.`
+    )
+  }
 
   if (!order.customer_id || !order.public_token) return
   try {

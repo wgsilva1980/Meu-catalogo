@@ -69,7 +69,7 @@ export default async function AcompanharPedidoPage({
     order.payment_method_id
       ? supabase.from('payment_methods').select('name').eq('id', order.payment_method_id).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from('payments').select('status').eq('order_id', order.id).maybeSingle(),
+    supabase.from('payments').select('status, mp_payment_id').eq('order_id', order.id).maybeSingle(),
     supabase.from('mercado_pago_accounts').select('public_key').eq('company_id', order.company_id).maybeSingle(),
     supabase.from('customers').select('name, email, document').eq('id', order.customer_id).maybeSingle(),
   ])
@@ -181,6 +181,14 @@ export default async function AcompanharPedidoPage({
                   token={token}
                   publicKey={mpAccount.public_key}
                   amount={Number(order.total)}
+                  // Pix pendente sobrevive a fechar a aba — sem isso, reabrir
+                  // o link mostra o formulário do zero de novo, e dá pra
+                  // acabar gerando (e pagando) um segundo Pix pro mesmo pedido.
+                  pendingPayment={
+                    payment?.status === 'pending' && payment.mp_payment_id
+                      ? { paymentId: payment.mp_payment_id }
+                      : null
+                  }
                   payer={{
                     email: customer?.email ?? null,
                     firstName: customer?.name?.split(' ')[0] ?? null,

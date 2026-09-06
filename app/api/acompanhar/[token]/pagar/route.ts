@@ -59,6 +59,31 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     return NextResponse.json({ error: 'A loja ainda não habilitou pagamento online.' }, { status: 422 })
   }
 
+  // Reivindica o "direito" de cobrar este pedido agora — sem isso, um
+  // duplo-clique no Brick (ou um retry por rede lenta) pode passar pela
+  // checagem de `paid_at` acima duas vezes antes que a primeira chamada
+  // termine, e cada uma cobraria de verdade no Mercado Pago. O UPDATE em si
+  // é o lock: só uma requisição consegue casar `paid_at is null and (lock
+  // vazio ou expirado)` por vez, a outra recebe zero linhas de volta.
+  const LOCK_TTL_MS = 25_000
+  const lockExpiredBefore = new Date(Date.now() - LOCK_TTL_MS).toISOString()
+  const { data: claimedOrder } = await supabase
+    .from('sales_orders')
+    .update({ payment_lock_at: new Date().toISOString() })
+    .eq('id', order.id)
+    .is('paid_at', null)
+    .or(`payment_lock_at.is.null,payment_lock_at.lt.${lockExpiredBefore}`)
+    .select('id, number, total, company_id, customer_id')
+    .maybeSingle()
+  if (!claimedOrder) {
+    return NextResponse.json(
+      { error: 'Já existe uma tentativa de pagamento em andamento para este pedido. Aguarde alguns segundos e tente novamente.' },
+      { status: 409 }
+    )
+  }
+
+  const releaseLock = () => supabase.from('sales_orders').update({ payment_lock_at: null }).eq('id', order.id)
+
   const host = request.headers.get('host')
   const protocol = host?.startsWith('localhost') ? 'http' : 'https'
   const origin = `${protocol}://${host}`
@@ -95,5 +120,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   } catch (err) {
     console.error('Falha ao criar pagamento no Mercado Pago:', err)
     return NextResponse.json({ error: 'Não foi possível processar o pagamento agora.' }, { status: 502 })
+  } finally {
+    // Libera o lock em qualquer desfecho — se deu aprovado, `paid_at` já
+    // está setado e o lock nem importa mais; nos outros casos, o cliente
+    // pode tentar de novo sem esperar os 25s expirarem sozinhos.
+    await releaseLock()
   }
 }
