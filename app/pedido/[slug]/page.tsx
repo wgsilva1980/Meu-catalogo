@@ -51,26 +51,18 @@ export default async function PedidoPublicoPage({
     .eq('company_id', company.id)
     .order('sort_order')
 
-  // Loja com Mercado Pago conectado paga online (Pix/cartão) na própria
-  // página de acompanhamento, via Payment Brick — o cliente escolhe o meio
-  // ali, na hora de pagar de verdade, não aqui no pedido. Perguntar de novo
-  // aqui só criava uma forma "combinada" que nunca refletia o que ele
-  // realmente pagou (ex.: escolher "Transferência" aqui e pagar Pix depois).
-  const { data: mpAccount } = await supabase
-    .from('mercado_pago_accounts')
-    .select('company_id')
+  // Formas de pagamento ativas pra o cliente escolher (ex.: "combinar com a
+  // loja", "dinheiro na entrega"). Mantido mesmo quando a loja tem Mercado
+  // Pago conectado — o cliente ainda pode preferir combinar em vez de pagar
+  // online. Se ele acabar pagando pelo Payment Brick mesmo assim, o resumo
+  // do pedido mostra o meio realmente usado (Pix/cartão), não essa escolha
+  // manual — ver `describeMercadoPagoPaymentMethod` em app/acompanhar/[token]/page.tsx.
+  // Se a migration ainda não rodou, a consulta falha e seguimos sem o campo.
+  const { data: paymentMethods } = await supabase
+    .from('payment_methods')
+    .select('id, name')
     .eq('company_id', company.id)
-    .maybeSingle()
-
-  // Formas de pagamento ativas para o cliente escolher. Se a migration ainda
-  // não rodou, a consulta falha e seguimos sem o campo.
-  const { data: paymentMethods } = mpAccount
-    ? { data: [] }
-    : await supabase
-        .from('payment_methods')
-        .select('id, name')
-        .eq('company_id', company.id)
-        .eq('active', true)
+    .eq('active', true)
         .order('sort_order')
 
   // Só produtos disponíveis E com saldo em estoque. `.gt('stock_quantity', 0)`
