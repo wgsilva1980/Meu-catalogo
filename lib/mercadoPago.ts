@@ -219,6 +219,8 @@ export type MercadoPagoPayment = {
   transaction_amount: number | null
   external_reference: string | null
   date_approved: string | null
+  payment_type_id: string | null
+  payment_method_id: string | null
 }
 
 function parsePaymentResponse(p: Record<string, unknown>): MercadoPagoPayment {
@@ -229,6 +231,31 @@ function parsePaymentResponse(p: Record<string, unknown>): MercadoPagoPayment {
     transaction_amount: typeof p.transaction_amount === 'number' ? p.transaction_amount : null,
     external_reference: typeof p.external_reference === 'string' ? p.external_reference : null,
     date_approved: typeof p.date_approved === 'string' ? p.date_approved : null,
+    payment_type_id: typeof p.payment_type_id === 'string' ? p.payment_type_id : null,
+    payment_method_id: typeof p.payment_method_id === 'string' ? p.payment_method_id : null,
+  }
+}
+
+// Traduz o que o próprio Mercado Pago escolheu (o cliente decide no Payment
+// Brick, na hora de pagar) pra um rótulo em PT-BR — usado no lugar da forma
+// de pagamento "combinada" manualmente quando o pedido tem um pagamento
+// online de verdade. `payment_type_id` já resolve os casos comuns; cai pro
+// `payment_method_id` cru só se aparecer algum tipo novo/raro.
+export function describeMercadoPagoPaymentMethod(payment: {
+  payment_type_id: string | null
+  payment_method_id: string | null
+}): string | null {
+  switch (payment.payment_type_id) {
+    case 'credit_card':
+      return 'Cartão de crédito'
+    case 'debit_card':
+      return 'Cartão de débito'
+    case 'bank_transfer':
+      return 'Pix'
+    case 'ticket':
+      return 'Boleto'
+    default:
+      return payment.payment_method_id
   }
 }
 

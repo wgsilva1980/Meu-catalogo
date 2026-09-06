@@ -51,14 +51,27 @@ export default async function PedidoPublicoPage({
     .eq('company_id', company.id)
     .order('sort_order')
 
+  // Loja com Mercado Pago conectado paga online (Pix/cartão) na própria
+  // página de acompanhamento, via Payment Brick — o cliente escolhe o meio
+  // ali, na hora de pagar de verdade, não aqui no pedido. Perguntar de novo
+  // aqui só criava uma forma "combinada" que nunca refletia o que ele
+  // realmente pagou (ex.: escolher "Transferência" aqui e pagar Pix depois).
+  const { data: mpAccount } = await supabase
+    .from('mercado_pago_accounts')
+    .select('company_id')
+    .eq('company_id', company.id)
+    .maybeSingle()
+
   // Formas de pagamento ativas para o cliente escolher. Se a migration ainda
   // não rodou, a consulta falha e seguimos sem o campo.
-  const { data: paymentMethods } = await supabase
-    .from('payment_methods')
-    .select('id, name')
-    .eq('company_id', company.id)
-    .eq('active', true)
-    .order('sort_order')
+  const { data: paymentMethods } = mpAccount
+    ? { data: [] }
+    : await supabase
+        .from('payment_methods')
+        .select('id, name')
+        .eq('company_id', company.id)
+        .eq('active', true)
+        .order('sort_order')
 
   // Só produtos disponíveis E com saldo em estoque. `.gt('stock_quantity', 0)`
   // depende da migration de estoque; se ela ainda não rodou, o erro faz cair

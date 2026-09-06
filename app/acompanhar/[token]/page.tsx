@@ -4,6 +4,7 @@ import { getShipmentTracking } from '@/lib/melhorEnvio'
 import { orderDiscountAmount } from '@/lib/orderTotals'
 import TrackingTimeline from '@/components/TrackingTimeline'
 import PaymentBrick from '@/components/PaymentBrick'
+import { describeMercadoPagoPaymentMethod } from '@/lib/mercadoPago'
 import { toMercadoPagoIdentification } from '@/lib/cpfCnpj'
 import type { DeliveryMethod, DiscountType } from '@/lib/types'
 
@@ -69,10 +70,23 @@ export default async function AcompanharPedidoPage({
     order.payment_method_id
       ? supabase.from('payment_methods').select('name').eq('id', order.payment_method_id).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from('payments').select('status, mp_payment_id').eq('order_id', order.id).maybeSingle(),
+    supabase.from('payments').select('status, mp_payment_id, raw').eq('order_id', order.id).maybeSingle(),
     supabase.from('mercado_pago_accounts').select('public_key').eq('company_id', order.company_id).maybeSingle(),
     supabase.from('customers').select('name, email, document').eq('id', order.customer_id).maybeSingle(),
   ])
+
+  // Quando existe um pagamento online de verdade, o que o cliente escolheu
+  // no Payment Brick (Pix/cartão) manda mais do que a forma "combinada" na
+  // hora do pedido — senão o resumo fica preso no que foi escolhido antes de
+  // saber que ia pagar online (ex.: mostrar "Transferência" pra um Pix).
+  const rawPayment = payment?.raw as { payment_type_id?: string; payment_method_id?: string } | null | undefined
+  const onlinePaymentLabel = rawPayment
+    ? describeMercadoPagoPaymentMethod({
+        payment_type_id: rawPayment.payment_type_id ?? null,
+        payment_method_id: rawPayment.payment_method_id ?? null,
+      })
+    : null
+  const paymentMethodLabel = onlinePaymentLabel ?? paymentMethod?.name ?? null
 
   const itemsSubtotal = (items ?? []).reduce((sum, i) => sum + Number(i.subtotal), 0)
   const discount = orderDiscountAmount(
@@ -164,7 +178,7 @@ export default async function AcompanharPedidoPage({
         <section className="flex flex-col gap-1 text-sm">
           <h2 className="text-sm font-bold">Entrega e pagamento</h2>
           <div className="text-muted">Entrega: {DELIVERY_LABEL[deliveryMethod] ?? deliveryMethod}</div>
-          {paymentMethod?.name && <div className="text-muted">Forma de pagamento: {paymentMethod.name}</div>}
+          {paymentMethodLabel && <div className="text-muted">Forma de pagamento: {paymentMethodLabel}</div>}
         </section>
 
         {Number(order.total) > 0 && (Boolean(order.paid_at) || Boolean(mpAccount?.public_key) || Boolean(payment)) && (
