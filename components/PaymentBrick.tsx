@@ -28,7 +28,8 @@ export default function PaymentBrick({ token, publicKey, amount, pendingPayment,
     pendingPayment ? { paymentId: pendingPayment.paymentId, status: 'pending' } : null
   )
   const [formError, setFormError] = useState<string | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [pixExpired, setPixExpired] = useState(false)
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Cada loja conectada tem a própria public_key (modelo marketplace) — não
   // dá pra chamar isso uma vez só no topo do app como os exemplos padrão do
@@ -40,23 +41,41 @@ export default function PaymentBrick({ token, publicKey, amount, pendingPayment,
 
   // Pix fica pendente até o webhook confirmar — só então `paid_at` é setado.
   // O Status Screen Brick mostra o QR/status, mas quem decide que terminou é
-  // este polling, lendo o que o webhook já gravou no banco.
+  // este polling, lendo o que o webhook já gravou no banco. Some vez com
+  // frequência maior (4s) nos primeiros ~2min, depois cai pra 15s — e para
+  // de vez depois de 30min, senão um cliente que abandona a aba fica
+  // sondando o servidor pra sempre.
   useEffect(() => {
     if (result?.status !== 'pending') return
-    pollRef.current = setInterval(async () => {
+    setPixExpired(false)
+    const startedAt = Date.now()
+    const MAX_POLL_MS = 30 * 60 * 1000
+    let cancelled = false
+
+    const tick = async (attempt: number) => {
+      if (cancelled) return
+      if (Date.now() - startedAt > MAX_POLL_MS) {
+        setPixExpired(true)
+        return
+      }
       try {
         const res = await fetch(`/api/acompanhar/${token}/status`)
         const data = await res.json()
         if (data.paid) {
-          if (pollRef.current) clearInterval(pollRef.current)
           router.refresh()
+          return
         }
       } catch {
         // tenta de novo no próximo tick
       }
-    }, 4000)
+      if (cancelled) return
+      pollRef.current = setTimeout(() => tick(attempt + 1), attempt < 30 ? 4000 : 15000)
+    }
+    tick(0)
+
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
+      cancelled = true
+      if (pollRef.current) clearTimeout(pollRef.current)
     }
   }, [result, token, router])
 
@@ -73,6 +92,11 @@ export default function PaymentBrick({ token, publicKey, amount, pendingPayment,
           // Só roda no cliente (depois de `ready`), então `window` existe.
           customization={{ backUrls: { return: `${window.location.origin}/acompanhar/${token}` } }}
         />
+        {pixExpired && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+            Paramos de checar automaticamente. Se você já pagou, atualize a página — se ainda não, o código pode ter expirado.
+          </p>
+        )}
         {result.status === 'rejected' && (
           <button type="button" onClick={() => setResult(null)} className="text-xs text-muted underline text-center">
             Tentar com outro pagamento
@@ -107,9 +131,11 @@ export default function PaymentBrick({ token, publicKey, amount, pendingPayment,
         // `mercadoPago`) ficam de fora por simplesmente não serem declarados
         // aqui. O tipo do SDK só aceita uma chave de cada vez por engano
         // (união em vez de interseção) — na prática o Brick aceita várias.
+        // `maxInstallments: 3` limita o parcelamento no crédito — decisão da
+        // loja pra não bancar taxa de antecipação de parcelamentos longos.
         customization={
           {
-            paymentMethods: { creditCard: 'all', debitCard: 'all', bankTransfer: 'all' },
+            paymentMethods: { creditCard: 'all', debitCard: 'all', bankTransfer: 'all', maxInstallments: 3 },
           } as ComponentProps<typeof Payment>['customization']
         }
         onSubmit={async ({ formData }) => {

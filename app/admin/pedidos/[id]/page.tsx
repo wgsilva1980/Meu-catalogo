@@ -30,7 +30,7 @@ export default async function EditarPedidoPage({
 
   if (!order) notFound()
 
-  const [{ data: items }, { data: customers }, { data: products }, { data: melhorEnvioAccount }, { data: shipment }, { data: paymentMethods }] =
+  const [{ data: items }, { data: customers }, { data: products }, { data: melhorEnvioAccount }, { data: shipment }, { data: paymentMethods }, { data: payment }] =
     await Promise.all([
       supabase.from('sales_order_items').select('*').eq('order_id', id).eq('company_id', active.companyId),
       supabase.from('customers').select('*').eq('company_id', active.companyId).order('name'),
@@ -38,6 +38,7 @@ export default async function EditarPedidoPage({
       supabase.from('melhor_envio_accounts').select('company_id').eq('company_id', active.companyId).maybeSingle(),
       supabase.from('shipments').select('*').eq('order_id', id).eq('company_id', active.companyId).maybeSingle(),
       supabase.from('payment_methods').select('*').eq('company_id', active.companyId).order('sort_order'),
+      supabase.from('payments').select('status').eq('order_id', id).maybeSingle(),
     ])
 
   const host = (await headers()).get('host')
@@ -52,6 +53,19 @@ export default async function EditarPedidoPage({
             <h1 className="font-display text-2xl">Pedido #{order.number}</h1>
             {order.paid_at && (
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Pago</span>
+            )}
+            {order.status === 'confirmado' && order.paid_at && !order.stock_committed && (
+              <span
+                className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700"
+                title="O pagamento foi aprovado mas o estoque não pôde ser baixado automaticamente — provavelmente faltou saldo na hora. Dê entrada no estoque e confirme o pedido de novo."
+              >
+                Revisar estoque
+              </span>
+            )}
+            {(payment?.status === 'refunded' || payment?.status === 'cancelled') && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                {payment.status === 'refunded' ? 'Estornado' : 'Pagamento cancelado'}
+              </span>
             )}
           </div>
           <p className="text-sm text-muted">Editar pedido</p>

@@ -40,6 +40,16 @@ export default async function PedidosPage({
     ? (orders ?? []).filter((o: any) => (o.customers?.name ?? '').toLowerCase().includes(q.toLowerCase()))
     : orders ?? []
 
+  // Pago mas sem baixar estoque (estoque faltou na hora que o Mercado Pago
+  // aprovou) ou pagamento estornado depois — nenhum dos dois aparece só
+  // pelo status/paid_at do pedido, então busca à parte pra sinalizar na
+  // lista em vez de ficar só no log do servidor.
+  const orderIds = filtered.map((o: any) => o.id)
+  const { data: payments } = orderIds.length
+    ? await supabase.from('payments').select('order_id, status').in('order_id', orderIds)
+    : { data: [] }
+  const paymentStatusByOrder = new Map((payments ?? []).map((p) => [p.order_id, p.status]))
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -92,6 +102,19 @@ export default async function PedidosPage({
             <span className={`px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${statusClass[o.status as OrderStatus]}`}>
               {statusLabel[o.status as OrderStatus]}
             </span>
+            {o.status === 'confirmado' && o.paid_at && !o.stock_committed && (
+              <span
+                className="px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap bg-amber-100 text-amber-700"
+                title="O pagamento foi aprovado mas o estoque não pôde ser baixado automaticamente — provavelmente faltou saldo na hora."
+              >
+                Revisar estoque
+              </span>
+            )}
+            {(paymentStatusByOrder.get(o.id) === 'refunded' || paymentStatusByOrder.get(o.id) === 'cancelled') && (
+              <span className="px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap bg-red-100 text-red-700">
+                {paymentStatusByOrder.get(o.id) === 'refunded' ? 'Estornado' : 'Pagamento cancelado'}
+              </span>
+            )}
             <div className="font-bold tabular-nums text-sm whitespace-nowrap">
               R$ {Number(o.total).toFixed(2).replace('.', ',')}
             </div>
