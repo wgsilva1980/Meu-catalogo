@@ -4,6 +4,7 @@
 // `melhor_envio_accounts`. Nunca importar em código client — usa a service
 // role para ler/gravar tokens, que não passam pelo navegador do usuário.
 import { createAdminClient } from '@/lib/supabase/admin'
+import { onlyDigits } from '@/lib/format'
 import type { MelhorEnvioEnvironment, ShippingBox } from '@/lib/types'
 
 const BASE_URL: Record<MelhorEnvioEnvironment, string> = {
@@ -422,6 +423,96 @@ export async function calculateShipping({
   })
 }
 
+export type CompanyForShippingQuote = {
+  id: string
+  shipping_origin_zip_code?: string | null
+  shipping_origin_carrier_id?: number | null
+  shipping_packages?: ShippingBox[] | null
+  shipping_package_length_cm?: number | null
+  shipping_package_width_cm?: number | null
+  shipping_package_height_cm?: number | null
+}
+
+export type MelhorEnvioQuoteResult =
+  | { ok: true; options: ShippingQuoteOption[] }
+  | { ok: false; reason: 'not_configured' | 'missing_dimensions' | 'quote_failed'; message: string }
+
+// Cotação de frete via Melhor Envio pra um carrinho — usada tanto pela rota
+// pública de cotação quanto pela recotação de servidor no envio do pedido
+// (que antes duplicavam essa pipeline inteira e já tinham divergido: só uma
+// filtrava produto `available = true`). Sempre busca peso/dimensões/preço
+// frescos do banco, nunca do chamador, e sempre filtra `available = true` —
+// um produto que ficou indisponível depois da cotação inicial não deveria
+// mais entrar na conta.
+export async function quoteMelhorEnvioForCart({
+  company,
+  destinationZip,
+  items,
+}: {
+  company: CompanyForShippingQuote
+  destinationZip: string
+  items: { product_id: string; quantity: number }[]
+}): Promise<MelhorEnvioQuoteResult> {
+  const boxes = resolveShippingBoxes(company)
+  if (!company.shipping_origin_zip_code || boxes.length === 0) {
+    return { ok: false, reason: 'not_configured', message: 'Frete via Melhor Envio não está disponível para esta loja.' }
+  }
+
+  const supabase = createAdminClient()
+  const productIds = items.map((i) => i.product_id)
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, weight_kg, length_cm, width_cm, height_cm, price')
+    .eq('company_id', company.id)
+    .eq('available', true)
+    .in('id', productIds)
+
+  const quoteItems: ShippingQuoteItem[] = []
+  const packItems: PackableItem[] = []
+  for (const item of items) {
+    const product = (products ?? []).find((p) => p.id === item.product_id)
+    if (!product?.weight_kg || !product.length_cm || !product.width_cm || !product.height_cm) {
+      return {
+        ok: false,
+        reason: 'missing_dimensions',
+        message: 'Um ou mais produtos do carrinho não têm peso/dimensões cadastrados. Fale com a loja.',
+      }
+    }
+    quoteItems.push({
+      weight_kg: Number(product.weight_kg),
+      quantity: item.quantity,
+      insurance_value: Number(product.price) * item.quantity,
+    })
+    packItems.push({
+      weight_kg: Number(product.weight_kg),
+      length_cm: Number(product.length_cm),
+      width_cm: Number(product.width_cm),
+      height_cm: Number(product.height_cm),
+      quantity: item.quantity,
+    })
+  }
+
+  // `boxes.length > 0` já foi checado acima, então `pickShippingBox` nunca
+  // devolve null aqui — só null quando não há caixa nenhuma cadastrada.
+  const picked = pickShippingBox(boxes, packItems)!
+
+  try {
+    const options = await calculateShipping({
+      companyId: company.id,
+      fromPostalCode: company.shipping_origin_zip_code,
+      toPostalCode: destinationZip,
+      items: quoteItems,
+      packageBox: { length_cm: picked.box.length_cm, width_cm: picked.box.width_cm, height_cm: picked.box.height_cm },
+      preferredCarrierCompanyId: company.shipping_origin_carrier_id ?? null,
+    })
+    return { ok: true, options }
+  } catch (err) {
+    console.error('Falha ao calcular frete (Melhor Envio):', err)
+    const message = err instanceof Error ? err.message : 'Não foi possível calcular o frete.'
+    return { ok: false, reason: 'quote_failed', message }
+  }
+}
+
 export type ShippingAddress = {
   name: string
   phone?: string | null
@@ -683,10 +774,6 @@ export async function getShipmentTracking({
     status: typeof raw.status === 'string' ? raw.status : null,
     events: detailed.length > 0 ? detailed : milestoneEvents(raw),
   }
-}
-
-function onlyDigits(value: string) {
-  return value.replace(/\D/g, '')
 }
 
 // O Melhor Envio exige peso mínimo de 0.01kg (10g) por pacote — abaixo disso

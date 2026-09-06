@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { resolveActiveCompany } from '@/lib/company'
 import { listShippingAgencies, listShippingCarriers } from '@/lib/melhorEnvio'
+import { onlyDigits } from '@/lib/format'
 
 export const runtime = 'nodejs'
 
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const carrierParam = url.searchParams.get('company')
   const state = (url.searchParams.get('state') || '').trim().toUpperCase()
-  const postalCode = (url.searchParams.get('postal_code') || '').replace(/\D/g, '')
+  const postalCode = onlyDigits(url.searchParams.get('postal_code') || '')
 
   try {
     if (!carrierParam && !state && !postalCode) {

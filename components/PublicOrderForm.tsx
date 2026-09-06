@@ -4,10 +4,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { submitPublicOrder } from '@/app/pedido/[slug]/actions'
 import type { Category, Customer, DeliveryMethod, Product } from '@/lib/types'
-
-function formatPrice(value: number) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
-}
+import { formatPrice, isValidZipCode } from '@/lib/format'
 
 function formatAddress(addr: {
   zip_code: string
@@ -222,8 +219,8 @@ export default function PublicOrderForm({
     }
   }
 
-  const canCalculate = addr.zip_code.replace(/\D/g, '').length === 8 && quoteStatus !== 'loading'
-  const canCalculateMe = addr.zip_code.replace(/\D/g, '').length === 8 && meStatus !== 'loading' && itemCount > 0
+  const canCalculate = isValidZipCode(addr.zip_code) && quoteStatus !== 'loading'
+  const canCalculateMe = isValidZipCode(addr.zip_code) && meStatus !== 'loading' && itemCount > 0
 
   const canAdvanceToDelivery = itemCount > 0
   const canAdvanceToPayment =

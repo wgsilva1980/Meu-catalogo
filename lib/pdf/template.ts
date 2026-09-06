@@ -1,10 +1,7 @@
 import type { Category, Company, Product } from '@/lib/types'
+import { formatPrice } from '@/lib/format'
 
 type CategoryWithProducts = Category & { products: Product[] }
-
-function formatPrice(value: number) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
-}
 
 // O HTML é renderizado por um navegador headless para gerar o PDF, então todo
 // texto dinâmico precisa ser escapado antes de entrar no markup.

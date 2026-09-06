@@ -6,14 +6,13 @@ import TrackingTimeline from '@/components/TrackingTimeline'
 import PaymentBrick from '@/components/PaymentBrick'
 import { describeMercadoPagoPaymentMethod } from '@/lib/mercadoPago'
 import { toMercadoPagoIdentification } from '@/lib/cpfCnpj'
+import { formatPrice, UUID_RE } from '@/lib/format'
 import type { DeliveryMethod, DiscountType } from '@/lib/types'
 
 export const runtime = 'nodejs'
 // Cache leve por link: evita bater na API do Melhor Envio a cada refresh do
 // cliente. O botão "Atualizar" busca o rastreio fresco pela rota de API.
 export const revalidate = 60
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   rascunho: { label: 'Aguardando confirmação', cls: 'bg-amber-100 text-amber-700' },
@@ -26,10 +25,6 @@ const DELIVERY_LABEL: Record<DeliveryMethod, string> = {
   motoboy: 'Entrega por motoboy',
   a_combinar: 'Entrega a combinar',
   melhor_envio: 'Envio por transportadora',
-}
-
-function formatPrice(value: number) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
 export default async function AcompanharPedidoPage({

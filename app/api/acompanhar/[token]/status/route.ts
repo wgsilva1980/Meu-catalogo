@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { UUID_RE } from '@/lib/format'
 
 export const runtime = 'nodejs'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Polling leve enquanto o Pix está pendente: só lê o que o webhook já
 // gravou no banco, sem chamar a API do Mercado Pago de novo.

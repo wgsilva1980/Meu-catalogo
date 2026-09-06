@@ -1,6 +1,7 @@
 // Templates de e-mail HTML. Ficam separados de lib/email.ts (que só cuida do
 // envio) e usam apenas os campos que realmente precisam — não os tipos
 // completos de lib/types — para não acoplar o template a colunas extras.
+import { formatPrice } from '@/lib/format'
 
 const statusLabel: Record<string, string> = {
   rascunho: 'Rascunho',
@@ -13,10 +14,6 @@ const deliveryLabel: Record<string, string> = {
   motoboy: 'Motoboy',
   melhor_envio: 'Melhor Envio',
   a_combinar: 'A combinar',
-}
-
-function formatPrice(value: number) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
 // Todo texto abaixo vem de formulários públicos sem autenticação, então

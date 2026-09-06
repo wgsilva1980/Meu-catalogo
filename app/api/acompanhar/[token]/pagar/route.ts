@@ -3,11 +3,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createPayment, normalizePaymentStatus } from '@/lib/mercadoPago'
 import { recordPaymentResult } from '@/lib/orderPayments'
 import { toMercadoPagoIdentification } from '@/lib/cpfCnpj'
+import { UUID_RE } from '@/lib/format'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Recebe o `formData` do Payment Brick (cartão ou Pix) e cria o pagamento
 // direto no Mercado Pago — sem preferência/redirect. O token do pedido é a

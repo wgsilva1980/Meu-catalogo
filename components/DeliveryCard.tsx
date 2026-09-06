@@ -1,14 +1,11 @@
 import type { DeliveryAddress, DeliveryMethod, LalamoveQuote } from '@/lib/types'
+import { formatPrice } from '@/lib/format'
 
 const METHOD_LABEL: Record<DeliveryMethod, string> = {
   retirada: 'Retirar na loja',
   motoboy: 'Motoboy',
   a_combinar: 'A combinar',
   melhor_envio: 'Melhor Envio',
-}
-
-function formatPrice(value: number) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
 // Card só-leitura com o endereço e a cotação de entrega que vieram do pedido

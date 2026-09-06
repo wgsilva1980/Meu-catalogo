@@ -1,5 +1,6 @@
 import type { Company, Customer, SalesOrder, SalesOrderItem } from '@/lib/types'
 import { orderDiscountAmount } from '@/lib/orderTotals'
+import { formatPrice } from '@/lib/format'
 
 const statusLabel: Record<string, string> = {
   rascunho: 'Rascunho',
@@ -12,10 +13,6 @@ const deliveryLabel: Record<string, string> = {
   motoboy: 'Motoboy',
   a_combinar: 'A combinar',
   melhor_envio: 'Melhor Envio',
-}
-
-function formatPrice(value: number) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
 }
 
 // Parte destes campos (nome/telefone/e-mail do cliente, observações) vem de

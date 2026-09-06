@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { saveOrder } from '@/app/admin/pedidos/actions'
 import ShippingCard from '@/components/ShippingCard'
 import { orderTotal } from '@/lib/orderTotals'
+import { formatPrice } from '@/lib/format'
 import type {
   Customer,
   DeliveryMethod,
@@ -25,10 +26,6 @@ const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
 }
 
 type Line = { key: number; product_id: string; quantity: number }
-
-function formatPrice(value: number) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
-}
 
 export default function OrderForm({
   order,

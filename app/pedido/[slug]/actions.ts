@@ -8,14 +8,8 @@ import { buildOrderNotificationEmail } from '@/lib/emailTemplates'
 import { isBot, readField } from '@/lib/publicForm'
 import { isValidCpfCnpj } from '@/lib/cpfCnpj'
 import { resolveMotoQuote } from '@/lib/lalamove'
-import {
-  calculateShipping,
-  pickShippingBox,
-  resolveShippingBoxes,
-  type PackableItem,
-  type ShippingQuoteItem,
-} from '@/lib/melhorEnvio'
-import type { DeliveryMethod, ShippingBox } from '@/lib/types'
+import { quoteMelhorEnvioForCart, type CompanyForShippingQuote } from '@/lib/melhorEnvio'
+import type { DeliveryMethod } from '@/lib/types'
 
 const MAX_QUANTITY = 100_000
 const MAX_LINE_ITEMS = 200
@@ -26,79 +20,28 @@ function parseQuantity(raw: unknown): number {
   return Math.min(n, MAX_QUANTITY)
 }
 
-type CompanyForShipping = {
-  id: string
-  shipping_origin_zip_code?: string | null
-  shipping_origin_carrier_id?: number | null
-  shipping_packages?: ShippingBox[] | null
-  shipping_package_length_cm?: number | null
-  shipping_package_width_cm?: number | null
-  shipping_package_height_cm?: number | null
-}
-
 // Recota, no servidor, a opção de frete que o cliente escolheu na tela de
 // entrega — nunca confiamos no preço vindo do client. Se o produto perdeu
 // peso/dimensões ou a opção não existe mais, devolve null e o pedido cai
-// para "a combinar".
+// para "a combinar". A pipeline em si (buscar produto, montar caixa, cotar)
+// é compartilhada com a rota pública de cotação — ver quoteMelhorEnvioForCart.
 async function resolveMelhorEnvioQuote({
   company,
   destinationZip,
   items,
   serviceId,
 }: {
-  company: CompanyForShipping
+  company: CompanyForShippingQuote
   destinationZip: string
-  items: { product_id: string; quantity: number; unit_price: number }[]
+  items: { product_id: string; quantity: number }[]
   serviceId: number
 }) {
-  if (!company.shipping_origin_zip_code) return null
-  const boxes = resolveShippingBoxes(company)
-  if (boxes.length === 0) return null
-
-  const supabase = createAdminClient()
-  const productIds = items.map((i) => i.product_id)
-  const { data: products } = await supabase
-    .from('products')
-    .select('id, weight_kg, length_cm, width_cm, height_cm')
-    .eq('company_id', company.id)
-    .in('id', productIds)
-
-  const quoteItems: ShippingQuoteItem[] = []
-  const packItems: PackableItem[] = []
-  for (const item of items) {
-    const product = (products ?? []).find((p) => p.id === item.product_id)
-    if (!product?.weight_kg || !product.length_cm || !product.width_cm || !product.height_cm) return null
-    quoteItems.push({
-      weight_kg: Number(product.weight_kg),
-      quantity: item.quantity,
-      insurance_value: item.unit_price * item.quantity,
-    })
-    packItems.push({
-      weight_kg: Number(product.weight_kg),
-      length_cm: Number(product.length_cm),
-      width_cm: Number(product.width_cm),
-      height_cm: Number(product.height_cm),
-      quantity: item.quantity,
-    })
-  }
-
-  const picked = pickShippingBox(boxes, packItems)
-  if (!picked) return null
-
-  try {
-    const options = await calculateShipping({
-      companyId: company.id,
-      fromPostalCode: company.shipping_origin_zip_code,
-      toPostalCode: destinationZip,
-      items: quoteItems,
-      packageBox: { length_cm: picked.box.length_cm, width_cm: picked.box.width_cm, height_cm: picked.box.height_cm },
-      preferredCarrierCompanyId: company.shipping_origin_carrier_id ?? null,
-    })
-    return options.find((o) => o.id === serviceId) ?? null
-  } catch (err) {
-    console.error('Falha ao recotar Melhor Envio no envio do pedido:', err)
+  const result = await quoteMelhorEnvioForCart({ company, destinationZip, items })
+  if (!result.ok) {
+    if (result.reason === 'quote_failed') console.error('Falha ao recotar Melhor Envio no envio do pedido:', result.message)
     return null
   }
+  return result.options.find((o) => o.id === serviceId) ?? null
 }
 
 // Cadastro obrigatório antes do pedido quando o CPF informado não bate com

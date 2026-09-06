@@ -134,9 +134,14 @@ type MercadoPagoAccountRow = {
   expires_at: string
 }
 
-async function refreshIfNeeded(account: MercadoPagoAccountRow): Promise<string> {
+// Devolve o `user` do GET /users/me junto quando ele já foi buscado pra
+// decidir `live_mode` no refresh — evita `getAccountDetails` ter que
+// refazer a mesma chamada logo em seguida. `user: null` só quer dizer "não
+// buscamos agora" (token ainda válido, ou o refresh falhou), não "conta sem
+// detalhes" — quem chama decide se precisa buscar por conta própria.
+async function refreshIfNeeded(account: MercadoPagoAccountRow): Promise<{ accessToken: string; user: MercadoPagoUser | null }> {
   const expiresInMs = new Date(account.expires_at).getTime() - Date.now()
-  if (expiresInMs > 24 * 60 * 60 * 1000) return account.access_token
+  if (expiresInMs > 24 * 60 * 60 * 1000) return { accessToken: account.access_token, user: null }
 
   try {
     const token = await requestToken({ grant_type: 'refresh_token', refresh_token: account.refresh_token })
@@ -151,10 +156,10 @@ async function refreshIfNeeded(account: MercadoPagoAccountRow): Promise<string> 
         expires_at: new Date(Date.now() + token.expires_in * 1000).toISOString(),
       })
       .eq('company_id', account.company_id)
-    return token.access_token
+    return { accessToken: token.access_token, user }
   } catch (err) {
     console.error('Falha ao renovar token do Mercado Pago:', err)
-    return account.access_token
+    return { accessToken: account.access_token, user: null }
   }
 }
 
@@ -185,12 +190,14 @@ export type MercadoPagoAccountDetails = {
 export async function getAccountDetails(companyId: string): Promise<MercadoPagoAccountDetails | null> {
   const account = await getAccount(companyId)
   if (!account) return null
-  const accessToken = await refreshIfNeeded(account)
+  const { accessToken, user: refreshedUser } = await refreshIfNeeded(account)
 
-  const user = await fetchMercadoPagoUser(accessToken).catch((err) => {
-    console.error('Falha ao buscar detalhes da conta do Mercado Pago:', err)
-    return null
-  })
+  const user =
+    refreshedUser ??
+    (await fetchMercadoPagoUser(accessToken).catch((err) => {
+      console.error('Falha ao buscar detalhes da conta do Mercado Pago:', err)
+      return null
+    }))
   if (!user) return null
 
   return {
@@ -268,7 +275,7 @@ export async function getPayment({
 }): Promise<MercadoPagoPayment | null> {
   const account = await getAccount(companyId)
   if (!account) return null
-  const accessToken = await refreshIfNeeded(account)
+  const { accessToken } = await refreshIfNeeded(account)
 
   const res = await fetch(`${API_BASE}/v1/payments/${paymentId}`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
@@ -313,7 +320,7 @@ export async function createPayment({
 }): Promise<MercadoPagoPayment> {
   const account = await getAccount(companyId)
   if (!account) throw new Error('Empresa não conectou a conta do Mercado Pago')
-  const accessToken = await refreshIfNeeded(account)
+  const { accessToken } = await refreshIfNeeded(account)
 
   const res = await fetch(`${API_BASE}/v1/payments`, {
     method: 'POST',

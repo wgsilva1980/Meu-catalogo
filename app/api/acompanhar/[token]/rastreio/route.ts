@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getShipmentTracking } from '@/lib/melhorEnvio'
+import { UUID_RE } from '@/lib/format'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Rastreio para o link público de acompanhamento. O próprio token do pedido
 // é a credencial — sem login.

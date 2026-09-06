@@ -10,6 +10,7 @@
 // saldo real e exige agendamento de coleta) — a loja aciona o motoboy à mão.
 
 import crypto from 'node:crypto'
+import { onlyDigits } from '@/lib/format'
 
 type LalamoveEnvironment = 'sandbox' | 'production'
 
@@ -182,7 +183,7 @@ async function geocodeViaNominatim(digits: string, addressLine?: string): Promis
 // precisão de rua, suficiente para ESTIMAR o valor do motoboy. Retorna null
 // só se nenhum provedor resolver.
 export async function geocode(zipCode: string | null | undefined, addressLine?: string): Promise<GeoPoint | null> {
-  const digits = (zipCode ?? '').replace(/\D/g, '')
+  const digits = onlyDigits(zipCode ?? '')
 
   const providers: Array<() => Promise<GeoPoint | null>> = [
     () => geocodeViaGoogle(digits, addressLine),
