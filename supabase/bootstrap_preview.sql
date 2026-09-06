@@ -1097,6 +1097,21 @@ $$;
 commit;
 
 
+-- 20) migration_mercado_pago_min_installment.sql
+-- ###################################################################
+
+-- A loja configura um valor mínimo de parcela pro cartão de crédito no
+-- Checkout Transparente; o número de parcelas oferecido ao cliente é
+-- calculado a partir disso (total do pedido / valor mínimo).
+
+begin;
+
+alter table mercado_pago_accounts
+  add column if not exists min_installment_amount numeric(10,2) not null default 50;
+
+commit;
+
+
 -- #####################################################################
 -- PÓS-INSTALAÇÃO  (rode depois de criar seu usuário no ambiente novo)
 -- #####################################################################

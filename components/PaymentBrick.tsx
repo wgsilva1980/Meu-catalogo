@@ -8,6 +8,9 @@ type Props = {
   token: string
   publicKey: string
   amount: number
+  // Já calculado no servidor a partir do total do pedido e do valor mínimo
+  // de parcela configurado pela loja (Configurações > Mercado Pago).
+  maxInstallments: number
   // Pix criado numa visita anterior que ainda não confirmou — retoma a tela
   // de status em vez de mostrar o formulário do zero (senão dá pra gerar um
   // segundo Pix pro mesmo pedido sem querer).
@@ -21,7 +24,7 @@ type Props = {
 
 type Result = { paymentId: string; status: 'pending' | 'rejected' }
 
-export default function PaymentBrick({ token, publicKey, amount, pendingPayment, payer }: Props) {
+export default function PaymentBrick({ token, publicKey, amount, maxInstallments, pendingPayment, payer }: Props) {
   const router = useRouter()
   const [ready, setReady] = useState(false)
   const [result, setResult] = useState<Result | null>(
@@ -131,11 +134,12 @@ export default function PaymentBrick({ token, publicKey, amount, pendingPayment,
         // `mercadoPago`) ficam de fora por simplesmente não serem declarados
         // aqui. O tipo do SDK só aceita uma chave de cada vez por engano
         // (união em vez de interseção) — na prática o Brick aceita várias.
-        // `maxInstallments: 3` limita o parcelamento no crédito — decisão da
-        // loja pra não bancar taxa de antecipação de parcelamentos longos.
+        // `maxInstallments` já vem calculado do servidor (total do pedido ÷
+        // valor mínimo de parcela que a loja configurou) — não é um teto
+        // fixo igual pra qualquer valor de pedido.
         customization={
           {
-            paymentMethods: { creditCard: 'all', debitCard: 'all', bankTransfer: 'all', maxInstallments: 3 },
+            paymentMethods: { creditCard: 'all', debitCard: 'all', bankTransfer: 'all', maxInstallments },
           } as ComponentProps<typeof Payment>['customization']
         }
         onSubmit={async ({ formData }) => {

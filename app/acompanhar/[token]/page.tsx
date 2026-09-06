@@ -71,7 +71,7 @@ export default async function AcompanharPedidoPage({
       ? supabase.from('payment_methods').select('name').eq('id', order.payment_method_id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from('payments').select('status, mp_payment_id, raw').eq('order_id', order.id).maybeSingle(),
-    supabase.from('mercado_pago_accounts').select('public_key').eq('company_id', order.company_id).maybeSingle(),
+    supabase.from('mercado_pago_accounts').select('public_key, min_installment_amount').eq('company_id', order.company_id).maybeSingle(),
     supabase.from('customers').select('name, email, document').eq('id', order.customer_id).maybeSingle(),
   ])
 
@@ -87,6 +87,12 @@ export default async function AcompanharPedidoPage({
       })
     : null
   const paymentMethodLabel = onlinePaymentLabel ?? paymentMethod?.name ?? null
+
+  // Parcelas oferecidas no cartão = quantas cabem no valor mínimo que a
+  // loja configurou (Configurações > Mercado Pago), não um teto fixo igual
+  // pra qualquer pedido — um pedido de R$60 não deveria oferecer 6x de R$10.
+  const minInstallmentAmount = Number(mpAccount?.min_installment_amount ?? 50) || 50
+  const maxInstallments = Math.max(1, Math.min(12, Math.floor(Number(order.total) / minInstallmentAmount)))
 
   const itemsSubtotal = (items ?? []).reduce((sum, i) => sum + Number(i.subtotal), 0)
   const discount = orderDiscountAmount(
@@ -195,6 +201,7 @@ export default async function AcompanharPedidoPage({
                   token={token}
                   publicKey={mpAccount.public_key}
                   amount={Number(order.total)}
+                  maxInstallments={maxInstallments}
                   // Pix pendente sobrevive a fechar a aba — sem isso, reabrir
                   // o link mostra o formulário do zero de novo, e dá pra
                   // acabar gerando (e pagando) um segundo Pix pro mesmo pedido.

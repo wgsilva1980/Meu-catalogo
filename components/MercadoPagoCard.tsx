@@ -1,4 +1,4 @@
-import { disconnectMercadoPago } from '@/app/admin/configuracoes/mercado-pago/actions'
+import { disconnectMercadoPago, updateMinInstallmentAmount } from '@/app/admin/configuracoes/mercado-pago/actions'
 import type { MercadoPagoAccount } from '@/lib/types'
 import type { MercadoPagoAccountDetails } from '@/lib/mercadoPago'
 
@@ -8,7 +8,7 @@ export default function MercadoPagoCard({
   error,
   justConnected,
 }: {
-  account: Pick<MercadoPagoAccount, 'live_mode' | 'connected_at'> | null
+  account: Pick<MercadoPagoAccount, 'live_mode' | 'connected_at' | 'min_installment_amount'> | null
   // Apelido/e-mail/produção-ou-teste de quem está conectado, buscados/
   // recalculados na hora — mais confiáveis que o `live_mode` gravado em
   // `account` (o valor que o Mercado Pago devolve no OAuth de marketplace
@@ -74,6 +74,30 @@ export default function MercadoPagoCard({
               </button>
             </form>
           </div>
+
+          <form action={updateMinInstallmentAmount} className="flex flex-col gap-1 border-t border-line pt-3">
+            <label className="text-xs font-semibold" htmlFor="min_installment_amount">
+              Valor mínimo por parcela (cartão de crédito)
+            </label>
+            <p className="text-xs text-muted">
+              O número de parcelas oferecidas ao cliente é calculado automaticamente: total do pedido dividido por
+              este valor (arredondado pra baixo, até 12x). Ex.: mínimo de R$ 50 num pedido de R$ 180 oferece até 3x.
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                id="min_installment_amount"
+                name="min_installment_amount"
+                min="0.01"
+                step="0.01"
+                defaultValue={account.min_installment_amount}
+                className="input w-32"
+              />
+              <button type="submit" className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-black/5">
+                Salvar
+              </button>
+            </div>
+          </form>
         </div>
       ) : (
         <a

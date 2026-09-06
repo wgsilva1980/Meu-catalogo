@@ -37,7 +37,7 @@ export default async function ConfiguracoesPage({
 
   const { data: mercadoPagoAccount } = await supabase
     .from('mercado_pago_accounts')
-    .select('live_mode, connected_at')
+    .select('live_mode, connected_at, min_installment_amount')
     .eq('company_id', active.companyId)
     .maybeSingle()
 

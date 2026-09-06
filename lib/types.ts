@@ -218,6 +218,7 @@ export type MercadoPagoAccount = {
   expires_at: string
   connected_at: string
   updated_at: string
+  min_installment_amount: number
 }
 
 export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'refunded'
