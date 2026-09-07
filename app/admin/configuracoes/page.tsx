@@ -24,22 +24,21 @@ export default async function ConfiguracoesPage({
   const { melhor_envio_erro, melhor_envio_conectado, mercado_pago_erro, mercado_pago_conectado } = await searchParams
 
   const supabase = await createClient()
-  const { data } = await supabase.from('companies').select('*').eq('id', active.companyId).single()
-
-  // Isolado do resto da página: se a migration ainda não rodou, a tabela não
-  // existe e essa consulta falha sozinha — o resto de Configurações continua
-  // funcionando, só o card de integração fica sem mostrar "conectado".
-  const { data: melhorEnvioAccount } = await supabase
-    .from('melhor_envio_accounts')
-    .select('*')
-    .eq('company_id', active.companyId)
-    .maybeSingle()
-
-  const { data: mercadoPagoAccount } = await supabase
-    .from('mercado_pago_accounts')
-    .select('live_mode, connected_at, min_installment_amount')
-    .eq('company_id', active.companyId)
-    .maybeSingle()
+  // Nenhuma das três depende do resultado da outra — rodar em paralelo evita
+  // 3 round-trips sequenciais ao banco toda vez que a página carrega.
+  // Isolado por linha: se a migration de Melhor Envio ou Mercado Pago ainda
+  // não rodou, a tabela não existe e só aquela consulta falha (`data: null`,
+  // sem lançar) — o resto de Configurações continua funcionando, só o card
+  // de integração correspondente fica sem mostrar "conectado".
+  const [{ data }, { data: melhorEnvioAccount }, { data: mercadoPagoAccount }] = await Promise.all([
+    supabase.from('companies').select('*').eq('id', active.companyId).single(),
+    supabase.from('melhor_envio_accounts').select('*').eq('company_id', active.companyId).maybeSingle(),
+    supabase
+      .from('mercado_pago_accounts')
+      .select('live_mode, connected_at, min_installment_amount')
+      .eq('company_id', active.companyId)
+      .maybeSingle(),
+  ])
 
   // Quem está de fato conectado (apelido/e-mail) — busca à parte para não
   // travar a página se a API do Mercado Pago estiver fora do ar.
