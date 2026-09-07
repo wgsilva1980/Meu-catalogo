@@ -129,7 +129,7 @@ export default function CustomerForm({
           onBlur={() => setDocumentError(!isValidCpfCnpj(document))}
           className={`input max-w-xs ${documentError ? 'border-red-500' : ''}`}
         />
-        {documentError && <span className="text-xs font-normal text-red-600">CPF/CNPJ inválido.</span>}
+        {documentError && <span className="text-xs font-normal text-danger">CPF/CNPJ inválido.</span>}
       </Field>
 
       <Card as="section" tight className="flex flex-col gap-3">
@@ -149,8 +149,8 @@ export default function CustomerForm({
           </Field>
           <span role="status" aria-live="polite">
             {cepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
-            {cepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
-            {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+            {cepStatus === 'not-found' && <span className="text-xs text-danger pb-2">CEP não encontrado.</span>}
+            {cepStatus === 'error' && <span className="text-xs text-danger pb-2">Falha ao buscar o CEP.</span>}
           </span>
         </div>
 

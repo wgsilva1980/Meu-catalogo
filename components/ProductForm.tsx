@@ -305,7 +305,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
             Escolher arquivo
           </Button>
         </div>
-        {error && <span className="text-xs text-red-600">{error}</span>}
+        {error && <span className="text-xs text-danger">{error}</span>}
       </div>
 
       <div className="flex flex-col gap-3">

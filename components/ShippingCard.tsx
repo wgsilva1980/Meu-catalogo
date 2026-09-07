@@ -227,7 +227,7 @@ export default function ShippingCard({
 
           <div role="status" aria-live="polite">
             {trackingStatus === 'error' && (
-              <p className="text-xs text-red-600">Falha ao consultar o rastreio. Tente novamente em instantes.</p>
+              <p className="text-xs text-danger">Falha ao consultar o rastreio. Tente novamente em instantes.</p>
             )}
           </div>
 
@@ -270,18 +270,18 @@ export default function ShippingCard({
       </div>
 
       <div role="status" aria-live="polite">
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p className="text-xs text-danger">{error}</p>}
       </div>
 
       {box && (
-        <p className={`text-xs ${box.fits ? 'text-muted' : 'text-amber-600'}`}>
+        <p className={`text-xs ${box.fits ? 'text-muted' : 'text-warning'}`}>
           Caixa: {box.name}
           {!box.fits && ' — os produtos podem não caber nesta caixa; confira antes de gerar a etiqueta.'}
         </p>
       )}
 
       {preferredMissing && (
-        <p className="text-xs text-amber-600">
+        <p className="text-xs text-warning">
           A transportadora padrão não cotou este trajeto. As opções abaixo são alternativas — confira antes de gerar a etiqueta.
         </p>
       )}
@@ -307,7 +307,7 @@ export default function ShippingCard({
           ))}
 
           {needsAgency && (
-            <p className="text-xs text-red-600">
+            <p className="text-xs text-danger">
               A opção selecionada ({selected?.company.name}) exige uma agência de postagem. Em Configurações → Endereço
               da loja, escolha a transportadora {selected?.company.name} e selecione a agência, depois calcule o frete
               de novo.

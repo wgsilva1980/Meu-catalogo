@@ -31,7 +31,7 @@ export default async function CategoriasPage() {
             ) : (
               <form action={deleteCategory}>
                 <input type="hidden" name="id" value={c.id} />
-                <button className="text-xs font-semibold text-red-600">Excluir</button>
+                <button className="text-xs font-semibold text-danger">Excluir</button>
               </form>
             )}
           </div>

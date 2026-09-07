@@ -91,7 +91,7 @@ export default async function PainelPage() {
 }
 
 function StatCard({ num, label, tone }: { num: number; label: string; tone?: 'red' | 'amber' }) {
-  const toneClass = tone === 'red' ? 'text-red-600' : tone === 'amber' ? 'text-amber-600' : ''
+  const toneClass = tone === 'red' ? 'text-danger' : tone === 'amber' ? 'text-warning' : ''
   return (
     <div className="border border-line rounded-lg p-3 bg-surface">
       <div className={`text-2xl font-bold tabular-nums ${toneClass}`}>{num}</div>

@@ -41,7 +41,7 @@ export default async function FormasPagamentoPage() {
             </form>
             <form action={deletePaymentMethod}>
               <input type="hidden" name="id" value={m.id} />
-              <button className="text-xs font-semibold text-red-600">Excluir</button>
+              <button className="text-xs font-semibold text-danger">Excluir</button>
             </form>
           </div>
         ))}

@@ -45,7 +45,7 @@ export default function MercadoPagoCard({
       {account ? (
         <div className="flex flex-col gap-3">
           <Alert variant={liveMode ? 'danger' : 'success'} className="flex items-center gap-2 font-bold">
-            <span className={`w-2 h-2 rounded-full ${liveMode ? 'bg-red-600' : 'bg-green-600'}`} />
+            <span className={`w-2 h-2 rounded-full ${liveMode ? 'bg-danger' : 'bg-success'}`} />
             {liveMode ? 'PRODUÇÃO — cobra dinheiro real' : 'Ambiente de testes — não cobra dinheiro real'}
           </Alert>
 

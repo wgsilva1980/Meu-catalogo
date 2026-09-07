@@ -47,7 +47,7 @@ export default function DeleteOrderButton({
         <TrashIcon className="w-3.5 h-3.5" />
         {isPending ? 'Excluindo…' : 'Excluir'}
       </Button>
-      {error && <p className="text-xs text-red-600 max-w-[16rem] text-right">{error}</p>}
+      {error && <p className="text-xs text-danger max-w-[16rem] text-right">{error}</p>}
     </div>
   )
 }

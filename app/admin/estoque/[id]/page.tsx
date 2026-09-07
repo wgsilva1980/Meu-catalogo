@@ -82,9 +82,9 @@ export default async function EstoqueProdutoPage({
           <p
             className={`text-3xl font-bold tabular-nums ${
               product.stock_quantity <= 0
-                ? 'text-red-600'
+                ? 'text-danger'
                 : product.low_stock_threshold > 0 && product.stock_quantity <= product.low_stock_threshold
-                ? 'text-amber-600'
+                ? 'text-warning'
                 : ''
             }`}
           >
@@ -129,7 +129,7 @@ export default async function EstoqueProdutoPage({
                       {TYPE_LABEL[m.type as StockMovementType]}
                     </Badge>
                   </td>
-                  <td className={`px-3 py-2 text-right tabular-nums font-semibold ${m.delta < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                  <td className={`px-3 py-2 text-right tabular-nums font-semibold ${m.delta < 0 ? 'text-danger' : 'text-success'}`}>
                     {m.delta > 0 ? `+${m.delta}` : m.delta}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">{m.balance_after}</td>

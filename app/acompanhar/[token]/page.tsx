@@ -229,7 +229,7 @@ export default async function AcompanharPedidoPage({
           <Card as="section" tight className="flex flex-col gap-2">
             <h2 className="text-sm font-bold">Pagamento</h2>
             {order.paid_at ? (
-              <p className="text-sm text-green-700 font-semibold">
+              <p className="text-sm text-success font-semibold">
                 Pagamento confirmado em {new Date(order.paid_at).toLocaleDateString('pt-BR')}.
               </p>
             ) : mpAccount?.public_key ? (

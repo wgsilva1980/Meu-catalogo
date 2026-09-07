@@ -73,7 +73,7 @@ export default function TrackingTimeline({
       </div>
 
       {status === 'error' && (
-        <p className="text-xs text-red-600">Não foi possível atualizar agora. Tente novamente em instantes.</p>
+        <p className="text-xs text-danger">Não foi possível atualizar agora. Tente novamente em instantes.</p>
       )}
 
       {data.events.length > 0 ? (

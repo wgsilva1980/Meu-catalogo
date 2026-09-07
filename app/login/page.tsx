@@ -55,7 +55,7 @@ export default function LoginPage() {
           />
         </label>
 
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p className="text-xs text-danger">{error}</p>}
 
         <Button disabled={loading} className="mt-1 disabled:opacity-50">
           {loading ? 'Entrando...' : 'Entrar'}

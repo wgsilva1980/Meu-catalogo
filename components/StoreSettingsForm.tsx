@@ -299,8 +299,8 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           </Field>
           <span role="status" aria-live="polite">
             {originCepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
-            {originCepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
-            {originCepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+            {originCepStatus === 'not-found' && <span className="text-xs text-danger pb-2">CEP não encontrado.</span>}
+            {originCepStatus === 'error' && <span className="text-xs text-danger pb-2">Falha ao buscar o CEP.</span>}
           </span>
         </div>
 
@@ -450,7 +450,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
                 type="button"
                 onClick={() => removeBox(i)}
                 aria-label="Remover caixa"
-                className="input flex items-center justify-center text-red-600 font-bold"
+                className="input flex items-center justify-center text-danger font-bold"
               >
                 ×
               </button>
@@ -509,7 +509,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       </Card>
 
       <div className="flex flex-wrap items-center gap-3 justify-end">
-        {saved && <span className="text-xs text-green-600 font-semibold">Salvo com sucesso!</span>}
+        {saved && <span className="text-xs text-success font-semibold">Salvo com sucesso!</span>}
         <Button type="submit" className="px-5">
           Salvar configurações
         </Button>

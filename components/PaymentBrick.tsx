@@ -116,7 +116,7 @@ export default function PaymentBrick({ token, publicKey, amount, maxInstallments
   return (
     <div className="flex flex-col gap-1">
       <div role="status" aria-live="polite">
-        {formError && <p className="text-xs text-red-600">{formError}</p>}
+        {formError && <p className="text-xs text-danger">{formError}</p>}
       </div>
       <Payment
         // O SDK loga o BIN do cartão no console por padrão quando essa prop

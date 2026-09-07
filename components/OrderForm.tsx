@@ -177,7 +177,7 @@ export default function OrderForm({
                 </select>
               </Field>
               {line.product_id && line.quantity > stockOf(line.product_id) && (
-                <p className="text-xs text-amber-600 font-semibold">
+                <p className="text-xs text-warning font-semibold">
                   Só há {stockOf(line.product_id)} un. em estoque — não será possível confirmar o pedido assim.
                 </p>
               )}
@@ -202,7 +202,7 @@ export default function OrderForm({
                   type="button"
                   onClick={() => removeLine(line.key)}
                   disabled={lines.length === 1}
-                  className="text-xs font-semibold text-red-600 pb-2.5 shrink-0 disabled:opacity-30"
+                  className="text-xs font-semibold text-danger pb-2.5 shrink-0 disabled:opacity-30"
                 >
                   Remover
                 </button>
@@ -335,7 +335,7 @@ export default function OrderForm({
             <span className="text-xs text-muted">Usa o endereço cadastrado do cliente.</span>
           </div>
         )}
-        {motoError && deliveryMethod === 'motoboy' && <p className="text-xs text-red-600">{motoError}</p>}
+        {motoError && deliveryMethod === 'motoboy' && <p className="text-xs text-danger">{motoError}</p>}
         {deliveryMethod === 'melhor_envio' &&
           (order ? (
             <div className="border-t border-line pt-3">

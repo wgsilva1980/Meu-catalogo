@@ -27,7 +27,7 @@ export default function DocumentLookupForm({ slug }: { slug: string }) {
             onChange={() => setError(false)}
             className={`input ${error ? 'border-red-500' : ''}`}
           />
-          {error && <span className="text-xs font-normal text-red-600">CPF/CNPJ inválido.</span>}
+          {error && <span className="text-xs font-normal text-danger">CPF/CNPJ inválido.</span>}
         </label>
         <p className="text-xs text-muted">
           Informe seu CPF para localizarmos seu cadastro, se já tiver um.

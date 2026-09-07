@@ -324,7 +324,7 @@ export default function PublicOrderForm({
                 </Button>
                 <span role="status" aria-live="polite">
                   {quote && (
-                    <span className="text-sm font-semibold text-green-700">
+                    <span className="text-sm font-semibold text-success">
                       Motoboy: {formatPrice(quote.fee)}
                       {quote.distanceKm != null ? ` · ~${quote.distanceKm} km` : ''}
                     </span>
@@ -332,7 +332,7 @@ export default function PublicOrderForm({
                 </span>
               </div>
               <div role="status" aria-live="polite">
-                {quoteError && <p className="text-xs text-red-600">{quoteError}</p>}
+                {quoteError && <p className="text-xs text-danger">{quoteError}</p>}
                 {!quote && !quoteError && (
                   <p className="text-xs text-muted">Calcule a entrega para conseguir avançar com motoboy.</p>
                 )}
@@ -366,7 +366,7 @@ export default function PublicOrderForm({
                 </Button>
               </div>
               <div role="status" aria-live="polite">
-                {meError && <p className="text-xs text-red-600">{meError}</p>}
+                {meError && <p className="text-xs text-danger">{meError}</p>}
                 {meOptions.length === 0 && !meError && (
                   <p className="text-xs text-muted">Calcule o frete para ver as opções de envio.</p>
                 )}
@@ -584,8 +584,8 @@ function AddressFields({
         </Field>
         <span role="status" aria-live="polite">
           {cepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
-          {cepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
-          {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+          {cepStatus === 'not-found' && <span className="text-xs text-danger pb-2">CEP não encontrado.</span>}
+          {cepStatus === 'error' && <span className="text-xs text-danger pb-2">Falha ao buscar o CEP.</span>}
         </span>
       </div>
 

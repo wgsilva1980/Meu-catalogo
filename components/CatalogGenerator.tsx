@@ -79,7 +79,7 @@ export default function CatalogGenerator({ categories }: { categories: Category[
         {loading ? 'Gerando PDF...' : 'Gerar PDF'}
       </Button>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
       {result && (
         <a href={result} target="_blank" rel="noreferrer" className="text-sm font-semibold text-accent underline">
           Baixar catálogo gerado

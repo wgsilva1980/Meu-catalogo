@@ -35,7 +35,7 @@ export default function OrderPdfButton({ orderId }: { orderId: string }) {
           Baixar PDF
         </a>
       )}
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
       <Button type="button" onClick={handleGenerate} disabled={loading} variant="secondary" className="disabled:opacity-50">
         {loading ? 'Gerando PDF...' : 'Gerar PDF'}
       </Button>

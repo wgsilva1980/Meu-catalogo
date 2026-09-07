@@ -14,10 +14,16 @@ import type { HTMLAttributes, ReactNode } from 'react'
 // aria-live explícito.
 export type AlertVariant = 'success' | 'danger' | 'warning'
 
+// Cor crua de Tailwind (bg-green-50/border-green-200/text-green-700 etc.)
+// até a "Raio-X do Catálogo II": ignorava os tokens success/warning/danger
+// que Badge.tsx já usava, então dentro do dark mode (Fase 5) toda mensagem
+// virava uma caixa clara sólida boiando num card escuro — não era só
+// contraste, a cor em si não respondia ao tema. Ver achado P0 dessa
+// segunda auditoria.
 const variantClass: Record<AlertVariant, string> = {
-  success: 'text-green-700 bg-green-50 border-green-200',
-  danger: 'text-red-600 bg-red-50 border-red-200',
-  warning: 'text-amber-700 bg-amber-50 border-amber-200',
+  success: 'text-success bg-success/10 border-success/20',
+  danger: 'text-danger bg-danger/10 border-danger/20',
+  warning: 'text-warning bg-warning/10 border-warning/20',
 }
 
 export type AlertProps = HTMLAttributes<HTMLParagraphElement> & {
