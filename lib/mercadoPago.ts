@@ -188,24 +188,37 @@ export type MercadoPagoAccountDetails = {
 // renovado. Best effort: se a API falhar, devolve null e a tela cai para o
 // que já tem salvo (`account.live_mode`, que pode estar desatualizado).
 export async function getAccountDetails(companyId: string): Promise<MercadoPagoAccountDetails | null> {
-  const account = await getAccount(companyId)
-  if (!account) return null
-  const { accessToken, user: refreshedUser } = await refreshIfNeeded(account)
+  // O comentário acima já promete "best effort: se a API falhar, devolve
+  // null" — mas só `refreshIfNeeded`/`fetchMercadoPagoUser` tinham try/catch
+  // próprio. `getAccount` (cliente admin + credenciais do Mercado Pago) não
+  // tinha nenhuma proteção: qualquer falha aqui (env var ausente no Preview,
+  // API fora do ar, etc.) subia sem tratamento e derrubava a página inteira
+  // de Configurações com um erro de Server Component sem stack trace visível
+  // em produção. Este try/catch cobre a função inteira pra cumprir o que o
+  // comentário já dizia fazer.
+  try {
+    const account = await getAccount(companyId)
+    if (!account) return null
+    const { accessToken, user: refreshedUser } = await refreshIfNeeded(account)
 
-  const user =
-    refreshedUser ??
-    (await fetchMercadoPagoUser(accessToken).catch((err) => {
-      console.error('Falha ao buscar detalhes da conta do Mercado Pago:', err)
-      return null
-    }))
-  if (!user) return null
+    const user =
+      refreshedUser ??
+      (await fetchMercadoPagoUser(accessToken).catch((err) => {
+        console.error('Falha ao buscar detalhes da conta do Mercado Pago:', err)
+        return null
+      }))
+    if (!user) return null
 
-  return {
-    id: user.id || account.mp_user_id,
-    nickname: user.nickname,
-    email: user.email,
-    site_id: user.site_id,
-    live_mode: !user.isTestUser,
+    return {
+      id: user.id || account.mp_user_id,
+      nickname: user.nickname,
+      email: user.email,
+      site_id: user.site_id,
+      live_mode: !user.isTestUser,
+    }
+  } catch (err) {
+    console.error('Falha ao obter detalhes da conta do Mercado Pago:', err)
+    return null
   }
 }
 
