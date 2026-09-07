@@ -6,6 +6,7 @@ import { registerCustomerAndContinue } from './actions'
 import PublicOrderForm from '@/components/PublicOrderForm'
 import DocumentLookupForm from '@/components/DocumentLookupForm'
 import CustomerForm from '@/components/CustomerForm'
+import StoreFooter from '@/components/StoreFooter'
 
 // Sem isso, compartilhar o link do catálogo (o próprio modelo de distribuição
 // do produto: "manda o link pro cliente") gerava uma prévia sem nome nem
@@ -53,7 +54,7 @@ export default async function PedidoPublicoPage({
   const { data: company } = await supabase
     .from('companies')
     .select(
-      'id, name, logo_url, lalamove_enabled, shipping_origin_zip_code, shipping_packages, shipping_package_length_cm, shipping_package_width_cm, shipping_package_height_cm'
+      'id, name, logo_url, phone, email, instagram, website, lalamove_enabled, shipping_origin_zip_code, shipping_packages, shipping_package_length_cm, shipping_package_width_cm, shipping_package_height_cm'
     )
     .eq('slug', slug)
     .eq('active', true)
@@ -198,6 +199,7 @@ export default async function PedidoPublicoPage({
           />
         )}
       </div>
+      <StoreFooter company={company} />
     </main>
   )
 }

@@ -5,6 +5,7 @@ import { getShipmentTracking } from '@/lib/melhorEnvio'
 import { orderDiscountAmount } from '@/lib/orderTotals'
 import TrackingTimeline from '@/components/TrackingTimeline'
 import PaymentBrick from '@/components/PaymentBrick'
+import StoreFooter from '@/components/StoreFooter'
 import { describeMercadoPagoPaymentMethod } from '@/lib/mercadoPago'
 import { toMercadoPagoIdentification } from '@/lib/cpfCnpj'
 import { formatPrice, UUID_RE } from '@/lib/format'
@@ -88,7 +89,7 @@ export default async function AcompanharPedidoPage({
     { data: mpAccount },
     { data: customer },
   ] = await Promise.all([
-    supabase.from('companies').select('name, logo_url').eq('id', order.company_id).single(),
+    supabase.from('companies').select('name, logo_url, phone, email, instagram, website').eq('id', order.company_id).single(),
     supabase.from('sales_order_items').select('product_name, quantity, unit_price, subtotal').eq('order_id', order.id),
     supabase
       .from('shipments')
@@ -260,6 +261,7 @@ export default async function AcompanharPedidoPage({
 
         <p className="text-center text-xs text-muted">Acompanhamento do pedido — {company?.name}</p>
       </div>
+      {company && <StoreFooter company={company} />}
     </main>
   )
 }

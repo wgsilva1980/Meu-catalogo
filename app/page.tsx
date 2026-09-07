@@ -3,10 +3,10 @@ import Link from 'next/link'
 export default function HomePage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-4 text-center px-6">
-      <span className="text-xs uppercase tracking-widest text-accent font-bold">Sistema interno</span>
+      <span className="text-xs uppercase tracking-widest text-accent font-bold">Catálogo & Pedidos</span>
       <h1 className="font-display text-4xl">Meu Catalogo</h1>
       <p className="text-muted max-w-sm text-sm leading-relaxed">
-        Gerador de catálogos em PDF para a equipe comercial enviar aos clientes.
+        Monte seu catálogo, receba pedidos e acompanhe pagamento e entrega — sem planilha.
       </p>
       <Link href="/login" className="btn btn-primary px-5 py-3">
         Acessar painel

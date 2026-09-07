@@ -15,10 +15,10 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'Meu Catalogo — Painel',
-  description: 'Sistema interno de geração de catálogos em PDF',
+  description: 'Monte seu catálogo, receba pedidos e acompanhe pagamento e entrega — sem planilha.',
   openGraph: {
     title: 'Meu Catalogo',
-    description: 'Sistema interno de geração de catálogos em PDF',
+    description: 'Monte seu catálogo, receba pedidos e acompanhe pagamento e entrega — sem planilha.',
     siteName: 'Meu Catalogo',
     locale: 'pt_BR',
     type: 'website',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary',
     title: 'Meu Catalogo',
-    description: 'Sistema interno de geração de catálogos em PDF',
+    description: 'Monte seu catálogo, receba pedidos e acompanhe pagamento e entrega — sem planilha.',
   },
 }
 

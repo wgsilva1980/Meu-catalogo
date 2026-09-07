@@ -681,6 +681,9 @@ function ProductCard({
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted text-xs text-center p-2">Sem foto</div>
         )}
+        {product.promo_note && (
+          <span className="badge badge-sm badge-promo absolute top-1.5 left-1.5 shadow-sm">{product.promo_note}</span>
+        )}
       </div>
       <div className="flex flex-col gap-2 p-2.5">
         <div className="min-w-0">

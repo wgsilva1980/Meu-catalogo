@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import CustomerForm from '@/components/CustomerForm'
+import StoreFooter from '@/components/StoreFooter'
 import { submitPublicCustomer } from './actions'
 
 // Sem isso, compartilhar o link de cadastro (WhatsApp, etc.) gerava uma
@@ -42,7 +43,7 @@ export default async function CadastroPublicoPage({
   const supabase = createAdminClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name, logo_url')
+    .select('id, name, logo_url, phone, email, instagram, website')
     .eq('slug', slug)
     .eq('active', true)
     .single()
@@ -76,6 +77,7 @@ export default async function CadastroPublicoPage({
           />
         )}
       </div>
+      <StoreFooter company={company} />
     </main>
   )
 }

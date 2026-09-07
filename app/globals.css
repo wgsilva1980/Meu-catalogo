@@ -69,4 +69,13 @@
   .badge-neutral {
     @apply bg-black/5 text-muted;
   }
+  /* Token declarado no Tailwind config e nunca consumido em nenhuma tela
+     (achado P3 do "Raio-X do Catálogo") — a única promoção real do produto
+     (products.promo_note) não tinha destaque nenhum na vitrine pública.
+     Sólido (não o tint 10% dos outros badges) porque este fica sobre foto
+     de produto, não sobre card branco — branco sobre `promo` mede só
+     3.34:1 (reprova texto pequeno), `ink` sobre `promo` mede 5.28:1. */
+  .badge-promo {
+    @apply bg-promo text-ink;
+  }
 }
