@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { registerAdjustment, registerEntry, registerExit, updateThreshold } from '@/app/admin/estoque/actions'
+import Card from '@/components/Card'
+import Button from '@/components/Button'
 
 type Tab = 'entrada' | 'saida' | 'ajuste'
 
@@ -24,7 +26,7 @@ export default function StockMovementForms({
   const [tab, setTab] = useState<Tab>('entrada')
 
   return (
-    <section className="flex flex-col gap-4 card-tight">
+    <Card as="section" tight className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <button
@@ -118,11 +120,11 @@ export default function StockMovementForms({
             />
           </Field>
         </div>
-        <button type="submit" className="btn btn-secondary">
+        <Button type="submit" variant="secondary">
           Salvar mínimo
-        </button>
+        </Button>
       </form>
-    </section>
+    </Card>
   )
 }
 
@@ -138,9 +140,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function Submit({ children }: { children: ReactNode }) {
   return (
     <div>
-      <button type="submit" className="btn btn-primary">
-        {children}
-      </button>
+      <Button type="submit">{children}</Button>
     </div>
   )
 }

@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import CustomerForm from '@/components/CustomerForm'
 import StoreHeader from '@/components/StoreHeader'
 import StoreFooter from '@/components/StoreFooter'
+import Card from '@/components/Card'
+import Alert from '@/components/Alert'
 import { submitPublicCustomer } from './actions'
 
 // Sem isso, compartilhar o link de cadastro (WhatsApp, etc.) gerava uma
@@ -55,16 +57,16 @@ export default async function CadastroPublicoPage({
     <>
       <StoreHeader company={company} />
       <main className="min-h-screen flex flex-col items-center px-6 py-10 gap-8">
-        <div className="w-full max-w-lg card flex flex-col gap-4">
+        <Card className="w-full max-w-lg flex flex-col gap-4">
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="font-display text-title">Cadastro</h1>
             <p className="text-sm text-muted">Cadastre-se para receber o catálogo de {company.name} e fazer pedidos.</p>
           </div>
 
           {sucesso ? (
-            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <Alert variant="success" center>
               Cadastro recebido com sucesso! Em breve entraremos em contato.
-            </p>
+            </Alert>
           ) : (
             <CustomerForm
               action={submitPublicCustomer}
@@ -75,7 +77,7 @@ export default async function CadastroPublicoPage({
               honeypot
             />
           )}
-        </div>
+        </Card>
         <StoreFooter company={company} />
       </main>
     </>

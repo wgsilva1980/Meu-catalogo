@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import { deleteCustomer } from './actions'
 import { PencilIcon, TrashIcon } from '@/components/icons'
+import Button from '@/components/Button'
 
 export default async function ClientesPage({
   searchParams,
@@ -26,9 +26,9 @@ export default async function ClientesPage({
           <h1 className="font-display text-2xl">Clientes</h1>
           <p className="text-sm text-muted">Cadastro de clientes da loja</p>
         </div>
-        <Link href="/admin/clientes/novo" className="btn btn-primary whitespace-nowrap">
+        <Button href="/admin/clientes/novo" className="whitespace-nowrap">
           + Novo cliente
-        </Link>
+        </Button>
       </div>
 
       <form className="max-w-sm">
@@ -51,24 +51,16 @@ export default async function ClientesPage({
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
-              <Link
-                href={`/admin/clientes/${c.id}`}
-                title="Editar cliente"
-                className="btn btn-sm btn-ghost-accent"
-              >
+              <Button href={`/admin/clientes/${c.id}`} title="Editar cliente" variant="ghost-accent" size="sm">
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar
-              </Link>
+              </Button>
               <form action={deleteCustomer}>
                 <input type="hidden" name="id" value={c.id} />
-                <button
-                  type="submit"
-                  title="Excluir cliente"
-                  className="btn btn-sm btn-danger"
-                >
+                <Button type="submit" title="Excluir cliente" variant="danger" size="sm">
                   <TrashIcon className="w-3.5 h-3.5" />
                   Excluir
-                </button>
+                </Button>
               </form>
             </div>
           </div>

@@ -1,4 +1,7 @@
 import { disconnectMercadoPago, updateMinInstallmentAmount } from '@/app/admin/configuracoes/mercado-pago/actions'
+import Card from '@/components/Card'
+import Button from '@/components/Button'
+import Alert from '@/components/Alert'
 import type { MercadoPagoAccount } from '@/lib/types'
 import type { MercadoPagoAccountDetails } from '@/lib/mercadoPago'
 
@@ -19,7 +22,7 @@ export default function MercadoPagoCard({
 }) {
   const liveMode = details?.live_mode ?? account?.live_mode ?? false
   return (
-    <section className="flex flex-col gap-3 card-tight">
+    <Card as="section" tight className="flex flex-col gap-3">
       <div>
         <h2 className="text-sm font-bold">Mercado Pago</h2>
         <p className="text-xs text-muted">
@@ -28,31 +31,31 @@ export default function MercadoPagoCard({
         </p>
       </div>
 
-      {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}
+      {error && (
+        <Alert variant="danger" size="sm">
+          {error}
+        </Alert>
+      )}
       {justConnected && !error && (
-        <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
+        <Alert variant="success" size="sm">
           Conta conectada com sucesso!
-        </p>
+        </Alert>
       )}
 
       {account ? (
         <div className="flex flex-col gap-3">
-          <div
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold ${
-              liveMode ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
-            }`}
-          >
+          <Alert variant={liveMode ? 'danger' : 'success'} className="flex items-center gap-2 font-bold">
             <span className={`w-2 h-2 rounded-full ${liveMode ? 'bg-red-600' : 'bg-green-600'}`} />
             {liveMode ? 'PRODUÇÃO — cobra dinheiro real' : 'Ambiente de testes — não cobra dinheiro real'}
-          </div>
+          </Alert>
 
           {!liveMode && (
-            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <Alert variant="warning" size="sm">
               Essa é uma conta de teste do Mercado Pago. Clientes reais não conseguem pagar com ela — o checkout
               mostra o erro <strong>&quot;Não é possível pagar com Mercado Pago&quot;</strong> para quem tentar pagar
               com uma conta ou cartão de verdade. Só use para testar com um comprador de teste. Antes de mandar o
               link de pagamento para um cliente de verdade, desconecte e conecte a conta real da loja.
-            </p>
+            </Alert>
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -66,12 +69,9 @@ export default function MercadoPagoCard({
               </p>
             </div>
             <form action={disconnectMercadoPago}>
-              <button
-                type="submit"
-                className="btn btn-sm btn-danger"
-              >
+              <Button type="submit" variant="danger" size="sm">
                 Desconectar
-              </button>
+              </Button>
             </form>
           </div>
 
@@ -93,20 +93,17 @@ export default function MercadoPagoCard({
                 defaultValue={account.min_installment_amount}
                 className="input w-32"
               />
-              <button type="submit" className="btn btn-sm btn-secondary hover:bg-black/5">
+              <Button type="submit" variant="secondary" size="sm" className="hover:bg-black/5">
                 Salvar
-              </button>
+              </Button>
             </div>
           </form>
         </div>
       ) : (
-        <a
-          href="/admin/configuracoes/mercado-pago/connect"
-          className="btn btn-primary w-fit"
-        >
+        <Button href="/admin/configuracoes/mercado-pago/connect" className="w-fit">
           Conectar Mercado Pago
-        </a>
+        </Button>
       )}
-    </section>
+    </Card>
   )
 }

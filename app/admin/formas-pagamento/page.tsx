@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import type { PaymentMethod } from '@/lib/types'
 import { addPaymentMethod, deletePaymentMethod, togglePaymentMethod } from './actions'
+import Button from '@/components/Button'
 
 export default async function FormasPagamentoPage() {
   const active = await resolveActiveCompany()
@@ -49,9 +50,7 @@ export default async function FormasPagamentoPage() {
 
       <form action={addPaymentMethod} className="flex gap-2">
         <input name="name" required maxLength={60} placeholder="Nova forma de pagamento" className="input flex-1" />
-        <button className="btn btn-primary whitespace-nowrap">
-          Adicionar
-        </button>
+        <Button className="whitespace-nowrap">Adicionar</Button>
       </form>
     </div>
   )

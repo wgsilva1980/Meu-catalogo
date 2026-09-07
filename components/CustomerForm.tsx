@@ -4,6 +4,8 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { saveCustomer } from '@/app/admin/clientes/actions'
 import { isValidCpfCnpj } from '@/lib/cpfCnpj'
+import Card from '@/components/Card'
+import Button from '@/components/Button'
 import type { Customer } from '@/lib/types'
 
 type ViaCepResponse = {
@@ -130,7 +132,7 @@ export default function CustomerForm({
         {documentError && <span className="text-xs font-normal text-red-600">CPF/CNPJ inválido.</span>}
       </Field>
 
-      <section className="flex flex-col gap-3 card-tight">
+      <Card as="section" tight className="flex flex-col gap-3">
         <h2 className="text-sm font-bold">Endereço</h2>
 
         <div className="flex items-end gap-3">
@@ -178,7 +180,7 @@ export default function CustomerForm({
             <input name="state" value={state} onChange={(e) => setState(e.target.value.toUpperCase())} maxLength={2} className="input" />
           </Field>
         </div>
-      </section>
+      </Card>
 
       <Field label="Observações">
         <textarea name="notes" defaultValue={customer?.notes ?? ''} className="input h-20" />
@@ -186,9 +188,11 @@ export default function CustomerForm({
 
       <div className="flex flex-wrap gap-2 justify-end mt-2">
         {cancelHref && (
-          <a href={cancelHref} className="btn btn-secondary">Cancelar</a>
+          <Button href={cancelHref} variant="secondary">
+            Cancelar
+          </Button>
         )}
-        <button type="submit" className="btn btn-primary">{submitLabel}</button>
+        <Button type="submit">{submitLabel}</Button>
       </div>
     </form>
   )

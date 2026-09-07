@@ -10,6 +10,9 @@ import {
   resetUserPassword,
   removeUser,
 } from '../actions'
+import Button from '@/components/Button'
+import Badge from '@/components/Badge'
+import Alert from '@/components/Alert'
 
 export default async function EditarEmpresaPage({
   params,
@@ -82,9 +85,9 @@ export default async function EditarEmpresaPage({
             </Field>
           </div>
 
-          <button type="submit" className="btn btn-primary mt-2">
+          <Button type="submit" className="mt-2">
             Salvar
-          </button>
+          </Button>
         </form>
       </div>
 
@@ -94,7 +97,11 @@ export default async function EditarEmpresaPage({
           <p className="text-sm text-muted">Logins com acesso ao painel desta empresa</p>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <Alert variant="danger" size="sm">
+            {error}
+          </Alert>
+        )}
 
         <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
           {users.map((u) => {
@@ -108,16 +115,8 @@ export default async function EditarEmpresaPage({
                   </p>
                 </div>
 
-                <span
-                  className={`badge ${u.role === 'owner' ? 'bg-accent/10 text-accent' : 'badge-neutral'}`}
-                >
-                  {u.role === 'owner' ? 'Dono' : 'Equipe'}
-                </span>
-                <span
-                  className={`badge ${u.banned ? 'badge-danger' : 'badge-success'}`}
-                >
-                  {u.banned ? 'Desativado' : 'Ativo'}
-                </span>
+                <Badge variant={u.role === 'owner' ? 'accent' : 'neutral'}>{u.role === 'owner' ? 'Dono' : 'Equipe'}</Badge>
+                <Badge variant={u.banned ? 'danger' : 'success'}>{u.banned ? 'Desativado' : 'Ativo'}</Badge>
 
                 <div className="flex items-center gap-2 flex-wrap shrink-0 ml-auto sm:ml-0">
                   <form action={updateUserRole} className="flex items-center gap-1">
@@ -136,13 +135,9 @@ export default async function EditarEmpresaPage({
                     <input type="hidden" name="user_id" value={u.id} />
                     <input type="hidden" name="company_id" value={company.id} />
                     <input type="hidden" name="active" value={(!!u.banned).toString()} />
-                    <button
-                      type="submit"
-                      disabled={isSelf}
-                      className="btn btn-sm btn-ghost disabled:opacity-30"
-                    >
+                    <Button type="submit" variant="ghost" size="sm" disabled={isSelf} className="disabled:opacity-30">
                       {u.banned ? 'Ativar' : 'Desativar'}
-                    </button>
+                    </Button>
                   </form>
 
                   <details>
@@ -169,13 +164,9 @@ export default async function EditarEmpresaPage({
                   <form action={removeUser}>
                     <input type="hidden" name="user_id" value={u.id} />
                     <input type="hidden" name="company_id" value={company.id} />
-                    <button
-                      type="submit"
-                      disabled={isSelf}
-                      className="btn btn-sm btn-danger disabled:opacity-30"
-                    >
+                    <Button type="submit" variant="danger" size="sm" disabled={isSelf} className="disabled:opacity-30">
                       Remover
-                    </button>
+                    </Button>
                   </form>
                 </div>
               </div>
@@ -201,9 +192,9 @@ export default async function EditarEmpresaPage({
               </select>
             </Field>
           </div>
-          <button type="submit" className="btn btn-primary self-end">
+          <Button type="submit" className="self-end">
             Criar usuário
-          </button>
+          </Button>
         </form>
       </div>
     </div>

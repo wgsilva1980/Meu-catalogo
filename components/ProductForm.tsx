@@ -4,6 +4,8 @@ import { useRef, useState } from 'react'
 import type { DragEvent, ReactNode } from 'react'
 import Image from 'next/image'
 import { saveProduct } from '@/app/admin/produtos/actions'
+import Card from '@/components/Card'
+import Button from '@/components/Button'
 import type { Category, Product } from '@/lib/types'
 
 async function resizeIfNeeded(blob: Blob, maxDimension = 2000): Promise<Blob> {
@@ -282,22 +284,26 @@ export default function ProductForm({ categories, product }: { categories: Categ
         />
 
         <div className="flex flex-wrap gap-2">
-          <button
+          <Button
             type="button"
             onClick={() => cameraInputRef.current?.click()}
             disabled={busy}
-            className="btn btn-sm btn-secondary disabled:opacity-50"
+            variant="secondary"
+            size="sm"
+            className="disabled:opacity-50"
           >
             📷 Tirar foto
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
-            className="btn btn-sm btn-secondary disabled:opacity-50"
+            variant="secondary"
+            size="sm"
+            className="disabled:opacity-50"
           >
             Escolher arquivo
-          </button>
+          </Button>
         </div>
         {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
@@ -345,7 +351,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
           </Field>
         </div>
 
-        <section className="flex flex-col gap-3 card-tight">
+        <Card as="section" tight className="flex flex-col gap-3">
           <div>
             <h2 className="text-sm font-bold">Estoque</h2>
             <p className="text-xs text-muted">
@@ -386,9 +392,9 @@ export default function ProductForm({ categories, product }: { categories: Categ
               </Field>
             </div>
           )}
-        </section>
+        </Card>
 
-        <section className="flex flex-col gap-3 card-tight">
+        <Card as="section" tight className="flex flex-col gap-3">
           <div>
             <h2 className="text-sm font-bold">Envio</h2>
             <p className="text-xs text-muted">Usado no futuro para calcular o frete. Deixe em branco se ainda não souber.</p>
@@ -416,11 +422,13 @@ export default function ProductForm({ categories, product }: { categories: Categ
               <input name="height_cm" type="number" step="0.1" min="0" defaultValue={product?.height_cm ?? ''} className="input" />
             </Field>
           </div>
-        </section>
+        </Card>
 
         <div className="flex flex-wrap gap-2 justify-end mt-2">
-          <a href="/admin/produtos" className="btn btn-secondary">Cancelar</a>
-          <button type="submit" className="btn btn-primary">Salvar produto</button>
+          <Button href="/admin/produtos" variant="secondary">
+            Cancelar
+          </Button>
+          <Button type="submit">Salvar produto</Button>
         </div>
       </div>
     </form>

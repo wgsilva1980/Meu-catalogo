@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Button from '@/components/Button'
 
 export default function CopyLinkField({ url }: { url: string }) {
   const [copied, setCopied] = useState(false)
@@ -14,13 +15,9 @@ export default function CopyLinkField({ url }: { url: string }) {
   return (
     <div className="flex flex-wrap gap-2">
       <input readOnly value={url} className="input flex-1 min-w-0" onFocus={(e) => e.target.select()} />
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="btn btn-secondary whitespace-nowrap"
-      >
+      <Button type="button" onClick={handleCopy} variant="secondary" className="whitespace-nowrap">
         {copied ? 'Copiado!' : 'Copiar link'}
-      </button>
+      </Button>
     </div>
   )
 }

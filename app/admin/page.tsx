@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
+import Button from '@/components/Button'
 
 export default async function PainelPage() {
   const active = await resolveActiveCompany()
@@ -66,12 +66,10 @@ export default async function PainelPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Link href="/admin/produtos/novo" className="btn btn-primary">
-          + Novo produto
-        </Link>
-        <Link href="/admin/catalogo" className="btn btn-secondary">
+        <Button href="/admin/produtos/novo">+ Novo produto</Button>
+        <Button href="/admin/catalogo" variant="secondary">
           Gerar catálogo
-        </Link>
+        </Button>
       </div>
 
       <div>

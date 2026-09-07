@@ -6,6 +6,7 @@ import CopyLinkField from '@/components/CopyLinkField'
 import MelhorEnvioCard from '@/components/MelhorEnvioCard'
 import MercadoPagoCard from '@/components/MercadoPagoCard'
 import { getAccountDetails } from '@/lib/mercadoPago'
+import Card from '@/components/Card'
 import type { Company } from '@/lib/types'
 
 export default async function ConfiguracoesPage({
@@ -69,24 +70,24 @@ export default async function ConfiguracoesPage({
       <StoreSettingsForm settings={settings} />
 
       {publicSignupUrl && (
-        <section className="flex flex-col gap-2 card-tight">
+        <Card as="section" tight className="flex flex-col gap-2">
           <h2 className="text-sm font-bold">Link de auto-cadastro</h2>
           <p className="text-xs text-muted">
             Compartilhe este link com seus clientes para que eles se cadastrem diretamente no sistema.
           </p>
           <CopyLinkField url={publicSignupUrl} />
-        </section>
+        </Card>
       )}
 
       {publicOrderUrl && (
-        <section className="flex flex-col gap-2 card-tight">
+        <Card as="section" tight className="flex flex-col gap-2">
           <h2 className="text-sm font-bold">Link de pedido</h2>
           <p className="text-xs text-muted">
             Compartilhe este link para que seus clientes montem e enviem o próprio pedido, sem precisar de cadastro
             prévio. O pedido entra como rascunho para você revisar e confirmar.
           </p>
           <CopyLinkField url={publicOrderUrl} />
-        </section>
+        </Card>
       )}
 
       <MelhorEnvioCard account={melhorEnvioAccount ?? null} error={melhor_envio_erro} justConnected={melhor_envio_conectado === '1'} />

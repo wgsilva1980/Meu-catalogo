@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { saveStoreSettings } from '@/app/admin/configuracoes/actions'
+import Card from '@/components/Card'
+import Button from '@/components/Button'
+import Alert from '@/components/Alert'
 import type { Company } from '@/lib/types'
 
 type ViaCepResponse = {
@@ -202,7 +205,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       <input type="hidden" name="logo_url" value={logoUrl} />
 
       {/* Logo */}
-      <section className="flex flex-col gap-3 card-tight">
+      <Card as="section" tight className="flex flex-col gap-3">
         <h2 className="text-sm font-bold">Logo da loja</h2>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="w-24 h-24 border border-dashed border-line rounded-lg overflow-hidden bg-paper flex items-center justify-center text-muted text-xs text-center p-2 shrink-0">
@@ -225,10 +228,10 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
             <span className="text-xs text-muted">JPG ou PNG. Recomendado: fundo transparente (PNG).</span>
           </div>
         </div>
-      </section>
+      </Card>
 
       {/* Dados da loja */}
-      <section className="flex flex-col gap-3 card-tight">
+      <Card as="section" tight className="flex flex-col gap-3">
         <h2 className="text-sm font-bold">Dados da loja</h2>
 
         <Field label="Nome da loja">
@@ -255,10 +258,10 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
             <input name="website" defaultValue={settings.website ?? ''} placeholder="https://..." className="input" />
           </Field>
         </div>
-      </section>
+      </Card>
 
       {/* Endereço da loja */}
-      <section className="flex flex-col gap-3 card-tight">
+      <Card as="section" tight className="flex flex-col gap-3">
         <div>
           <h2 className="text-sm font-bold">Endereço da loja</h2>
           <p className="text-xs text-muted">
@@ -452,10 +455,10 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
             cadastrados.
           </p>
         </div>
-      </section>
+      </Card>
 
       {/* Motoboy (Lalamove) */}
-      <section className="flex flex-col gap-3 card-tight">
+      <Card as="section" tight className="flex flex-col gap-3">
         <div>
           <h2 className="text-sm font-bold">Entrega por motoboy (Lalamove)</h2>
           <p className="text-xs text-muted">
@@ -465,10 +468,10 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
           </p>
         </div>
         {lalamoveColumnMissing && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <Alert variant="warning" size="sm">
             Esta opção ainda não pode ser salva neste ambiente: rode a migration
             <code> supabase/migration_lalamove.sql</code> no Supabase.
-          </p>
+          </Alert>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Oferecer motoboy no link de pedido">
@@ -496,13 +499,13 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
             </select>
           </Field>
         </div>
-      </section>
+      </Card>
 
       <div className="flex flex-wrap items-center gap-3 justify-end">
         {saved && <span className="text-xs text-green-600 font-semibold">Salvo com sucesso!</span>}
-        <button type="submit" className="btn btn-primary px-5">
+        <Button type="submit" className="px-5">
           Salvar configurações
-        </button>
+        </Button>
       </div>
     </form>
   )

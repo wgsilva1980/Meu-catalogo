@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Button from '@/components/Button'
 
 export default function OrderPdfButton({ orderId }: { orderId: string }) {
   const [loading, setLoading] = useState(false)
@@ -35,14 +36,9 @@ export default function OrderPdfButton({ orderId }: { orderId: string }) {
         </a>
       )}
       {error && <span className="text-xs text-red-600">{error}</span>}
-      <button
-        type="button"
-        onClick={handleGenerate}
-        disabled={loading}
-        className="btn btn-secondary disabled:opacity-50"
-      >
+      <Button type="button" onClick={handleGenerate} disabled={loading} variant="secondary" className="disabled:opacity-50">
         {loading ? 'Gerando PDF...' : 'Gerar PDF'}
-      </button>
+      </Button>
     </div>
   )
 }

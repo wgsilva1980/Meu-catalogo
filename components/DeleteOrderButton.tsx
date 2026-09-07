@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { TrashIcon } from '@/components/icons'
+import Button from '@/components/Button'
 import type { DeleteOrderResult } from '@/app/admin/pedidos/actions'
 
 // Confirma antes de excluir (irreversível) e mostra que o pedido está sendo
@@ -34,16 +35,18 @@ export default function DeleteOrderButton({
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <button
+      <Button
         type="button"
         onClick={handleClick}
         disabled={isPending || Boolean(disabledReason)}
         title={disabledReason ?? 'Excluir pedido'}
-        className="btn btn-sm btn-danger disabled:hover:bg-transparent disabled:cursor-not-allowed"
+        variant="danger"
+        size="sm"
+        className="disabled:hover:bg-transparent disabled:cursor-not-allowed"
       >
         <TrashIcon className="w-3.5 h-3.5" />
         {isPending ? 'Excluindo…' : 'Excluir'}
-      </button>
+      </Button>
       {error && <p className="text-xs text-red-600 max-w-[16rem] text-right">{error}</p>}
     </div>
   )

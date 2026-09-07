@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { createCompany } from '../actions'
+import Button from '@/components/Button'
+import Alert from '@/components/Alert'
 
 export default async function NovaEmpresaPage({
   searchParams,
@@ -15,7 +17,11 @@ export default async function NovaEmpresaPage({
         <p className="text-sm text-muted">Cria a empresa e o primeiro login (dono)</p>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <Alert variant="danger" size="sm">
+          {error}
+        </Alert>
+      )}
 
       <form action={createCompany} className="flex flex-col gap-3">
         <Field label="Nome da empresa">
@@ -27,9 +33,9 @@ export default async function NovaEmpresaPage({
         <Field label="Senha">
           <input name="password" type="password" required minLength={6} className="input" />
         </Field>
-        <button type="submit" className="btn btn-primary mt-2">
+        <Button type="submit" className="mt-2">
           Criar empresa
-        </button>
+        </Button>
       </form>
     </div>
   )

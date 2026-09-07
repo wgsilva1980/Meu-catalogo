@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Button from '@/components/Button'
 
 export default function FillWeightButton({ pendingCount }: { pendingCount: number }) {
   const router = useRouter()
@@ -35,14 +36,16 @@ export default function FillWeightButton({ pendingCount }: { pendingCount: numbe
 
   return (
     <div className="flex flex-col gap-1.5 items-end">
-      <button
+      <Button
         type="button"
         onClick={handleClick}
         disabled={busy || pendingCount === 0}
-        className="btn btn-sm btn-secondary whitespace-nowrap disabled:opacity-50"
+        variant="secondary"
+        size="sm"
+        className="whitespace-nowrap disabled:opacity-50"
       >
         {busy ? 'Lendo rótulos com IA...' : `Preencher peso com IA (${pendingCount} pendente${pendingCount === 1 ? '' : 's'})`}
-      </button>
+      </Button>
       {result && <p className="text-xs text-muted max-w-xs text-right">{result}</p>}
     </div>
   )

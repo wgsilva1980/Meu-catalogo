@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { TrashIcon } from '@/components/icons'
+import Button from '@/components/Button'
 import type { DeleteProductResult } from '@/app/admin/produtos/actions'
 
 // Mesmo padrão de components/DeleteOrderButton.tsx: confirma antes de excluir
@@ -32,16 +33,18 @@ export default function DeleteProductButton({
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <button
+      <Button
         type="button"
         onClick={handleClick}
         disabled={isPending}
         title="Excluir produto"
-        className="btn btn-sm btn-danger disabled:cursor-not-allowed"
+        variant="danger"
+        size="sm"
+        className="disabled:cursor-not-allowed"
       >
         <TrashIcon className="w-3.5 h-3.5" />
         {isPending ? 'Excluindo…' : 'Excluir'}
-      </button>
+      </Button>
       {error && <p className="text-xs text-red-600 max-w-[16rem] text-right">{error}</p>}
     </div>
   )

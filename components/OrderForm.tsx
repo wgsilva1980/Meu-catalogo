@@ -4,6 +4,8 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { saveOrder } from '@/app/admin/pedidos/actions'
 import ShippingCard from '@/components/ShippingCard'
+import Card from '@/components/Card'
+import Button from '@/components/Button'
 import { orderTotal } from '@/lib/orderTotals'
 import { formatPrice } from '@/lib/format'
 import type {
@@ -145,7 +147,7 @@ export default function OrderForm({
         </Field>
       </div>
 
-      <section className="flex flex-col gap-3 card-tight">
+      <Card as="section" tight className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold">Produtos</h2>
           <button type="button" onClick={addLine} className="text-xs font-semibold text-accent">
@@ -231,9 +233,9 @@ export default function OrderForm({
             <span>{formatPrice(total)}</span>
           </div>
         </div>
-      </section>
+      </Card>
 
-      <section className="flex flex-col gap-3 card-tight">
+      <Card as="section" tight className="flex flex-col gap-3">
         <h2 className="text-sm font-bold">Pagamento e desconto</h2>
         <Field label="Forma de pagamento">
           <select
@@ -287,9 +289,9 @@ export default function OrderForm({
             .
           </p>
         )}
-      </section>
+      </Card>
 
-      <section className="flex flex-col gap-3 card-tight">
+      <Card as="section" tight className="flex flex-col gap-3">
         <h2 className="text-sm font-bold">Entrega</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Método">
@@ -320,14 +322,16 @@ export default function OrderForm({
         </div>
         {order && deliveryMethod === 'motoboy' && (
           <div className="flex flex-wrap items-center gap-3">
-            <button
+            <Button
               type="button"
               onClick={recalcMotoboy}
               disabled={motoStatus === 'loading'}
-              className="btn btn-sm btn-secondary disabled:opacity-50"
+              variant="secondary"
+              size="sm"
+              className="disabled:opacity-50"
             >
               {motoStatus === 'loading' ? 'Cotando...' : 'Cotar motoboy (Lalamove)'}
-            </button>
+            </Button>
             <span className="text-xs text-muted">Usa o endereço cadastrado do cliente.</span>
           </div>
         )}
@@ -342,19 +346,17 @@ export default function OrderForm({
               Salve o pedido para liberar a cotação e a geração da etiqueta do Melhor Envio.
             </p>
           ))}
-      </section>
+      </Card>
 
       <Field label="Observações">
         <textarea name="notes" defaultValue={order?.notes ?? ''} className="input h-20" />
       </Field>
 
       <div className="flex flex-wrap gap-2 justify-end mt-2">
-        <a href="/admin/pedidos" className="btn btn-secondary">
+        <Button href="/admin/pedidos" variant="secondary">
           Cancelar
-        </a>
-        <button type="submit" className="btn btn-primary">
-          Salvar pedido
-        </button>
+        </Button>
+        <Button type="submit">Salvar pedido</Button>
       </div>
     </form>
   )

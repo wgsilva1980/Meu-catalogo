@@ -7,6 +7,9 @@ import OrderPdfButton from '@/components/OrderPdfButton'
 import DeliveryCard from '@/components/DeliveryCard'
 import CopyLinkField from '@/components/CopyLinkField'
 import { CheckIcon, AlertIcon, XIcon } from '@/components/icons'
+import Badge from '@/components/Badge'
+import Alert from '@/components/Alert'
+import Card from '@/components/Card'
 
 export default async function EditarPedidoPage({
   params,
@@ -53,25 +56,26 @@ export default async function EditarPedidoPage({
           <div className="flex items-center gap-2">
             <h1 className="font-display text-2xl">Pedido #{order.number}</h1>
             {order.paid_at && (
-              <span className="badge badge-sm badge-success">
+              <Badge variant="success" size="sm">
                 <CheckIcon className="w-3 h-3" />
                 Pago
-              </span>
+              </Badge>
             )}
             {order.status === 'confirmado' && order.paid_at && !order.stock_committed && (
-              <span
-                className="badge badge-sm badge-warning"
+              <Badge
+                variant="warning"
+                size="sm"
                 title="O pagamento foi aprovado mas o estoque não pôde ser baixado automaticamente — provavelmente faltou saldo na hora. Dê entrada no estoque e confirme o pedido de novo."
               >
                 <AlertIcon className="w-3 h-3" />
                 Revisar estoque
-              </span>
+              </Badge>
             )}
             {(payment?.status === 'refunded' || payment?.status === 'cancelled') && (
-              <span className="badge badge-sm badge-danger">
+              <Badge variant="danger" size="sm">
                 <XIcon className="w-3 h-3" />
                 {payment.status === 'refunded' ? 'Estornado' : 'Pagamento cancelado'}
-              </span>
+              </Badge>
             )}
           </div>
           <p className="text-sm text-muted">Editar pedido</p>
@@ -79,15 +83,12 @@ export default async function EditarPedidoPage({
         <OrderPdfButton orderId={order.id} />
       </div>
       {erro === 'estoque' && (
-        <p className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
-          Estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Dê entrada no estoque ou reduza a quantidade antes de confirmar.
-        </p>
+        <Alert variant="danger">
+          Estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Dê entrada no estoque ou reduza a quantidade antes de
+          confirmar.
+        </Alert>
       )}
-      {salvo === '1' && !erro && (
-        <p className="rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm px-3 py-2">
-          Pedido salvo.
-        </p>
-      )}
+      {salvo === '1' && !erro && <Alert variant="success">Pedido salvo.</Alert>}
       <OrderForm
         order={order}
         items={items ?? []}
@@ -106,13 +107,13 @@ export default async function EditarPedidoPage({
         />
       )}
       {trackingUrl && (
-        <section className="flex flex-col gap-2 card-tight">
+        <Card as="section" tight className="flex flex-col gap-2">
           <h2 className="text-sm font-bold">Link de acompanhamento do cliente</h2>
           <p className="text-xs text-muted">
             Envie para o cliente acompanhar o status do pedido e o rastreio da entrega, sem login.
           </p>
           <CopyLinkField url={trackingUrl} />
-        </section>
+        </Card>
       )}
     </div>
   )

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import CustomerForm from '@/components/CustomerForm'
+import Badge, { type BadgeVariant } from '@/components/Badge'
+import Alert from '@/components/Alert'
 import type { OrderStatus } from '@/lib/types'
 
 const statusLabel: Record<OrderStatus, string> = {
@@ -11,10 +13,13 @@ const statusLabel: Record<OrderStatus, string> = {
   cancelado: 'Cancelado',
 }
 
-const statusClass: Record<OrderStatus, string> = {
-  rascunho: 'bg-black/5 text-muted',
-  confirmado: 'bg-green-100 text-green-700',
-  cancelado: 'bg-red-100 text-red-700',
+// Achada durante a Fase 3 (Componentes) do plano de redesign: essa tela
+// tinha ficado de fora da centralização de badge de status feita antes
+// (achado P1) — ainda montava a cor à mão em vez de usar .badge-*.
+const statusVariant: Record<OrderStatus, BadgeVariant> = {
+  rascunho: 'neutral',
+  confirmado: 'success',
+  cancelado: 'danger',
 }
 
 export default async function EditarClientePage({
@@ -52,11 +57,7 @@ export default async function EditarClientePage({
         <h1 className="font-display text-2xl">Editar cliente</h1>
         <p className="text-sm text-muted">{customer.name}</p>
       </div>
-      {erro === 'cpf' && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
-          CPF/CNPJ inválido. Confira os números digitados.
-        </p>
-      )}
+      {erro === 'cpf' && <Alert variant="danger">CPF/CNPJ inválido. Confira os números digitados.</Alert>}
       <CustomerForm customer={customer} />
 
       <div>
@@ -72,9 +73,9 @@ export default async function EditarClientePage({
                 <p className="font-semibold truncate">#{o.number}</p>
                 <p className="text-xs text-muted truncate">{new Date(o.created_at).toLocaleDateString('pt-BR')}</p>
               </div>
-              <span className={`px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${statusClass[o.status as OrderStatus]}`}>
+              <Badge variant={statusVariant[o.status as OrderStatus]} className="whitespace-nowrap">
                 {statusLabel[o.status as OrderStatus]}
-              </span>
+              </Badge>
               <div className="font-bold tabular-nums text-sm whitespace-nowrap">
                 R$ {Number(o.total).toFixed(2).replace('.', ',')}
               </div>

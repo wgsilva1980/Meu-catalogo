@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import type { StockMovementType } from '@/lib/types'
 import StockMovementForms from '@/components/StockMovementForms'
+import Alert from '@/components/Alert'
+import Badge, { type BadgeVariant } from '@/components/Badge'
 
 const OK_MESSAGES: Record<string, string> = {
   entrada: 'Entrada registrada.',
@@ -25,10 +27,13 @@ const TYPE_LABEL: Record<StockMovementType, string> = {
   ajuste: 'Ajuste',
 }
 
-const TYPE_CLASS: Record<StockMovementType, string> = {
-  entrada: 'bg-green-100 text-green-700',
-  saida: 'bg-red-100 text-red-700',
-  ajuste: 'bg-black/5 text-muted',
+// Mesma lacuna encontrada em app/admin/clientes/[id]: badge de status
+// montado à mão em vez de usar .badge-* (achado P1). Migrado junto na
+// Fase 3 (Componentes).
+const TYPE_VARIANT: Record<StockMovementType, BadgeVariant> = {
+  entrada: 'success',
+  saida: 'danger',
+  ajuste: 'neutral',
 }
 
 export default async function EstoqueProdutoPage({
@@ -91,14 +96,8 @@ export default async function EstoqueProdutoPage({
         </div>
       </div>
 
-      {ok && OK_MESSAGES[ok] && (
-        <p className="rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm px-3 py-2">{OK_MESSAGES[ok]}</p>
-      )}
-      {erro && (
-        <p className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
-          {ERRO_MESSAGES[erro] ?? ERRO_MESSAGES.falha}
-        </p>
-      )}
+      {ok && OK_MESSAGES[ok] && <Alert variant="success">{OK_MESSAGES[ok]}</Alert>}
+      {erro && <Alert variant="danger">{ERRO_MESSAGES[erro] ?? ERRO_MESSAGES.falha}</Alert>}
 
       <StockMovementForms
         productId={product.id}
@@ -126,9 +125,9 @@ export default async function EstoqueProdutoPage({
                     {new Date(m.created_at).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="px-3 py-2">
-                    <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${TYPE_CLASS[m.type as StockMovementType]}`}>
+                    <Badge variant={TYPE_VARIANT[m.type as StockMovementType]} size="sm">
                       {TYPE_LABEL[m.type as StockMovementType]}
-                    </span>
+                    </Badge>
                   </td>
                   <td className={`px-3 py-2 text-right tabular-nums font-semibold ${m.delta < 0 ? 'text-red-600' : 'text-green-700'}`}>
                     {m.delta > 0 ? `+${m.delta}` : m.delta}

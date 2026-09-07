@@ -1,5 +1,6 @@
 import type { DeliveryAddress, DeliveryMethod, LalamoveQuote } from '@/lib/types'
 import { formatPrice } from '@/lib/format'
+import Card from '@/components/Card'
 
 const METHOD_LABEL: Record<DeliveryMethod, string> = {
   retirada: 'Retirar na loja',
@@ -37,7 +38,7 @@ export default function DeliveryCard({
     : null
 
   return (
-    <section className="flex flex-col gap-2 card-tight">
+    <Card as="section" tight className="flex flex-col gap-2">
       <h2 className="text-sm font-bold">Entrega escolhida pelo cliente</h2>
       <p className="text-sm">
         <span className="font-semibold">{METHOD_LABEL[method]}</span>
@@ -51,6 +52,6 @@ export default function DeliveryCard({
           {quote.quotedAt && ` · ${new Date(quote.quotedAt).toLocaleString('pt-BR')}`}
         </p>
       )}
-    </section>
+    </Card>
   )
 }

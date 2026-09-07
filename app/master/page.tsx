@@ -1,7 +1,8 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { impersonateCompany, toggleCompanyActive } from './actions'
 import { PencilIcon } from '@/components/icons'
+import Button from '@/components/Button'
+import Badge from '@/components/Badge'
 
 export default async function MasterPage() {
   const supabase = await createClient()
@@ -14,12 +15,9 @@ export default async function MasterPage() {
           <h1 className="font-display text-2xl">Empresas</h1>
           <p className="text-sm text-muted">Todas as empresas cadastradas na plataforma</p>
         </div>
-        <Link
-          href="/master/nova"
-          className="btn btn-primary whitespace-nowrap"
-        >
+        <Button href="/master/nova" className="whitespace-nowrap">
           + Nova empresa
-        </Link>
+        </Button>
       </div>
 
       <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
@@ -29,36 +27,24 @@ export default async function MasterPage() {
               <p className="font-semibold truncate">{c.name}</p>
               <p className="text-xs text-muted truncate">{c.products?.[0]?.count ?? 0} produtos</p>
             </div>
-            <span className={`badge ${c.active ? 'badge-success' : 'badge-danger'}`}>
-              {c.active ? 'Ativa' : 'Inativa'}
-            </span>
+            <Badge variant={c.active ? 'success' : 'danger'}>{c.active ? 'Ativa' : 'Inativa'}</Badge>
             <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0 flex-wrap">
               <form action={impersonateCompany}>
                 <input type="hidden" name="company_id" value={c.id} />
-                <button
-                  type="submit"
-                  className="btn btn-sm btn-ghost-accent"
-                >
+                <Button type="submit" variant="ghost-accent" size="sm">
                   Entrar como
-                </button>
+                </Button>
               </form>
-              <Link
-                href={`/master/${c.id}`}
-                title="Editar empresa"
-                className="btn btn-sm btn-ghost"
-              >
+              <Button href={`/master/${c.id}`} title="Editar empresa" variant="ghost" size="sm">
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar
-              </Link>
+              </Button>
               <form action={toggleCompanyActive}>
                 <input type="hidden" name="company_id" value={c.id} />
                 <input type="hidden" name="active" value={(!c.active).toString()} />
-                <button
-                  type="submit"
-                  className="btn btn-sm btn-ghost"
-                >
+                <Button type="submit" variant="ghost" size="sm">
                   {c.active ? 'Desativar' : 'Ativar'}
-                </button>
+                </Button>
               </form>
             </div>
           </div>

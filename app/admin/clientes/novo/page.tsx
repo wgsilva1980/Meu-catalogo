@@ -1,5 +1,6 @@
 import { resolveActiveCompany } from '@/lib/company'
 import CustomerForm from '@/components/CustomerForm'
+import Alert from '@/components/Alert'
 
 export default async function NovoClientePage({
   searchParams,
@@ -16,11 +17,7 @@ export default async function NovoClientePage({
         <h1 className="font-display text-2xl">Cadastro de cliente</h1>
         <p className="text-sm text-muted">Novo cliente</p>
       </div>
-      {erro === 'cpf' && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
-          CPF/CNPJ inválido. Confira os números digitados.
-        </p>
-      )}
+      {erro === 'cpf' && <Alert variant="danger">CPF/CNPJ inválido. Confira os números digitados.</Alert>}
       <CustomerForm />
     </div>
   )

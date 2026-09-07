@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import { addCategory, deleteCategory } from './actions'
+import Button from '@/components/Button'
 
 export default async function CategoriasPage() {
   const active = await resolveActiveCompany()
@@ -40,7 +41,7 @@ export default async function CategoriasPage() {
 
       <form action={addCategory} className="flex gap-2">
         <input name="name" required placeholder="Nova categoria personalizada" className="input flex-1" />
-        <button className="btn btn-primary whitespace-nowrap">Adicionar</button>
+        <Button className="whitespace-nowrap">Adicionar</Button>
       </form>
     </div>
   )

@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import Card from '@/components/Card'
+import Button from '@/components/Button'
 import type { Shipment } from '@/lib/types'
 
 type QuoteOption = {
@@ -55,8 +58,6 @@ export default function ShippingCard({
   // dispensa a moldura própria.
   bare?: boolean
 }) {
-  const wrap = (gap: 'gap-2' | 'gap-3') =>
-    bare ? `flex flex-col ${gap}` : `flex flex-col ${gap} card-tight`
   const [options, setOptions] = useState<QuoteOption[]>([])
   const [selected, setSelected] = useState<QuoteOption | null>(null)
   const [loading, setLoading] = useState(false)
@@ -165,7 +166,7 @@ export default function ShippingCard({
 
   if (!connected) {
     return (
-      <section className={wrap('gap-2')}>
+      <Wrap bare={bare} gap="gap-2">
         <h2 className="text-sm font-bold">Frete</h2>
         <p className="text-xs text-muted">
           Conecte sua conta do Melhor Envio em{' '}
@@ -174,7 +175,7 @@ export default function ShippingCard({
           </a>{' '}
           para calcular frete e gerar etiquetas.
         </p>
-      </section>
+      </Wrap>
     )
   }
 
@@ -186,7 +187,7 @@ export default function ShippingCard({
     const price = shipment?.price ?? (selected ? Number(selected.price) : 0)
     const code = tracking?.code ?? null
     return (
-      <section className={wrap('gap-2')}>
+      <Wrap bare={bare} gap="gap-2">
         <h2 className="text-sm font-bold">Frete</h2>
         <p className="text-sm">
           Etiqueta gerada — {serviceName} · R$ {Number(price ?? 0).toFixed(2).replace('.', ',')}
@@ -253,22 +254,17 @@ export default function ShippingCard({
             )
           )}
         </div>
-      </section>
+      </Wrap>
     )
   }
 
   return (
-    <section className={wrap('gap-3')}>
+    <Wrap bare={bare} gap="gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold">Frete</h2>
-        <button
-          type="button"
-          onClick={handleCalculate}
-          disabled={loading}
-          className="btn btn-sm btn-secondary disabled:opacity-50"
-        >
+        <Button type="button" onClick={handleCalculate} disabled={loading} variant="secondary" size="sm" className="disabled:opacity-50">
           {loading ? 'Calculando...' : 'Calcular frete'}
-        </button>
+        </Button>
       </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -314,17 +310,24 @@ export default function ShippingCard({
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={handlePurchase}
-            disabled={!selected || purchasing || needsAgency}
-            className="btn btn-primary disabled:opacity-50 w-fit mt-1"
-          >
+          <Button type="button" onClick={handlePurchase} disabled={!selected || purchasing || needsAgency} className="disabled:opacity-50 w-fit mt-1">
             {purchasing ? 'Gerando etiqueta...' : 'Comprar e gerar etiqueta'}
-          </button>
+          </Button>
           <p className="text-xs text-muted">Isso debita o valor do frete da sua carteira do Melhor Envio.</p>
         </div>
       )}
-    </section>
+    </Wrap>
+  )
+}
+
+// Quando renderizado dentro de outro card (seção "Entrega" do pedido, ver
+// OrderForm), `bare` dispensa a moldura própria pra não aninhar card dentro
+// de card.
+function Wrap({ bare, gap, children }: { bare: boolean; gap: 'gap-2' | 'gap-3'; children: ReactNode }) {
+  if (bare) return <section className={`flex flex-col ${gap}`}>{children}</section>
+  return (
+    <Card as="section" tight className={`flex flex-col ${gap}`}>
+      {children}
+    </Card>
   )
 }

@@ -1,10 +1,11 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import type { Product } from '@/lib/types'
 import StockFilterBar from '@/components/StockFilterBar'
+import Alert from '@/components/Alert'
+import Button from '@/components/Button'
 
 const OK_MESSAGES: Record<string, string> = {
   entrada: 'Entrada registrada.',
@@ -67,14 +68,8 @@ export default async function EstoquePage({
         <p className="text-sm text-muted">Saldo por produto, entradas, baixas e ajustes</p>
       </div>
 
-      {ok && OK_MESSAGES[ok] && (
-        <p className="rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm px-3 py-2">{OK_MESSAGES[ok]}</p>
-      )}
-      {erro && (
-        <p className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
-          {ERRO_MESSAGES[erro] ?? ERRO_MESSAGES.falha}
-        </p>
-      )}
+      {ok && OK_MESSAGES[ok] && <Alert variant="success">{OK_MESSAGES[ok]}</Alert>}
+      {erro && <Alert variant="danger">{ERRO_MESSAGES[erro] ?? ERRO_MESSAGES.falha}</Alert>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard num={summary.skus} label="Produtos" />
@@ -112,12 +107,9 @@ export default async function EstoquePage({
                 {p.stock_quantity ?? 0} un.
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
-                <Link
-                  href={`/admin/estoque/${p.id}`}
-                  className="btn btn-sm btn-ghost-accent"
-                >
+                <Button href={`/admin/estoque/${p.id}`} variant="ghost-accent" size="sm">
                   Movimentar
-                </Link>
+                </Button>
               </div>
             </div>
           )

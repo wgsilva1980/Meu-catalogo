@@ -6,6 +6,9 @@ import Image from 'next/image'
 import { submitPublicOrder } from '@/app/pedido/[slug]/actions'
 import type { Category, Customer, DeliveryMethod, Product } from '@/lib/types'
 import { formatAddress, formatPrice, isValidZipCode } from '@/lib/format'
+import Card from '@/components/Card'
+import Button from '@/components/Button'
+import Badge from '@/components/Badge'
 
 type ViaCepResponse = {
   erro?: boolean
@@ -249,7 +252,7 @@ export default function PublicOrderForm({
       </section>
 
       <section className={`flex flex-col gap-4 ${step === 2 ? '' : 'hidden'}`}>
-        <section className="flex flex-col gap-3 card-tight">
+        <Card as="section" tight className="flex flex-col gap-3">
           <h2 className="text-sm font-bold">Entrega</h2>
           <input type="hidden" name="delivery_method" value={method} />
 
@@ -307,14 +310,16 @@ export default function PublicOrderForm({
           {method === 'motoboy' && (
             <div className="flex flex-col gap-3 border-t border-line pt-3">
               <div className="flex flex-wrap items-center gap-3">
-                <button
+                <Button
                   type="button"
                   onClick={calculateMoto}
                   disabled={!canCalculate}
-                  className="btn btn-sm btn-secondary disabled:opacity-50"
+                  variant="secondary"
+                  size="sm"
+                  className="disabled:opacity-50"
                 >
                   {quoteStatus === 'loading' ? 'Calculando...' : 'Calcular entrega'}
-                </button>
+                </Button>
                 {quote && (
                   <span className="text-sm font-semibold text-green-700">
                     Motoboy: {formatPrice(quote.fee)}
@@ -343,14 +348,16 @@ export default function PublicOrderForm({
           {method === 'melhor_envio' && (
             <div className="flex flex-col gap-3 border-t border-line pt-3">
               <div className="flex flex-wrap items-center gap-3">
-                <button
+                <Button
                   type="button"
                   onClick={calculateMelhorEnvio}
                   disabled={!canCalculateMe}
-                  className="btn btn-sm btn-secondary disabled:opacity-50"
+                  variant="secondary"
+                  size="sm"
+                  className="disabled:opacity-50"
                 >
                   {meStatus === 'loading' ? 'Calculando...' : 'Calcular frete'}
-                </button>
+                </Button>
               </div>
               {meError && <p className="text-xs text-red-600">{meError}</p>}
               {meOptions.length === 0 && !meError && (
@@ -388,14 +395,14 @@ export default function PublicOrderForm({
               )}
             </div>
           )}
-        </section>
+        </Card>
 
         <CartSummary itemCount={itemCount} productsTotal={productsTotal} deliveryFee={deliveryFee} deliveryLabel={method === 'motoboy' ? 'Entrega (motoboy)' : method === 'melhor_envio' ? 'Frete' : undefined} />
       </section>
 
       <section className={`flex flex-col gap-4 ${step === 3 ? '' : 'hidden'}`}>
         {paymentMethods.length > 0 && (
-          <section className="flex flex-col gap-3 card-tight">
+          <Card as="section" tight className="flex flex-col gap-3">
             <h2 className="text-sm font-bold">Forma de pagamento</h2>
             <Field label="Como você prefere pagar?">
               <select name="payment_method_id" defaultValue="" className="input">
@@ -407,11 +414,11 @@ export default function PublicOrderForm({
                 ))}
               </select>
             </Field>
-          </section>
+          </Card>
         )}
 
         {foundCustomer ? (
-          <section className="flex flex-col gap-2 card-tight">
+          <Card as="section" tight className="flex flex-col gap-2">
             <input type="hidden" name="customer_id" value={foundCustomer.id} />
             <h2 className="text-sm font-bold">Seus dados</h2>
             <p className="text-sm">
@@ -423,9 +430,9 @@ export default function PublicOrderForm({
             <Field label="Observações">
               <textarea name="notes" className="input h-20" />
             </Field>
-          </section>
+          </Card>
         ) : (
-          <section className="flex flex-col gap-3 card-tight">
+          <Card as="section" tight className="flex flex-col gap-3">
             <h2 className="text-sm font-bold">Seus dados</h2>
             {typedDocument && <input type="hidden" name="document" value={typedDocument} />}
             <Field label="Nome">
@@ -442,7 +449,7 @@ export default function PublicOrderForm({
             <Field label="Observações">
               <textarea name="notes" className="input h-20" />
             </Field>
-          </section>
+          </Card>
         )}
 
         <CartSummary itemCount={itemCount} productsTotal={productsTotal} deliveryFee={deliveryFee} deliveryLabel={method === 'motoboy' ? 'Entrega (motoboy)' : method === 'melhor_envio' ? 'Frete' : undefined} />
@@ -450,36 +457,27 @@ export default function PublicOrderForm({
 
       <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
         {step > 1 ? (
-          <button
-            type="button"
-            onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
-            className="btn btn-secondary"
-          >
+          <Button type="button" onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)} variant="secondary">
             Voltar
-          </button>
+          </Button>
         ) : (
           <span />
         )}
 
         {step < 3 ? (
-          <button
+          <Button
             key="continue"
             type="button"
             onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)}
             disabled={step === 1 ? !canAdvanceToDelivery : !canAdvanceToPayment}
-            className="btn btn-primary disabled:opacity-40"
+            className="disabled:opacity-40"
           >
             Continuar
-          </button>
+          </Button>
         ) : (
-          <button
-            key="submit"
-            type="submit"
-            disabled={blockSubmit}
-            className="btn btn-primary disabled:opacity-40"
-          >
+          <Button key="submit" type="submit" disabled={blockSubmit} className="disabled:opacity-40">
             Enviar pedido
-          </button>
+          </Button>
         )}
       </div>
     </form>
@@ -682,7 +680,9 @@ function ProductCard({
           <div className="absolute inset-0 flex items-center justify-center text-muted text-xs text-center p-2">Sem foto</div>
         )}
         {product.promo_note && (
-          <span className="badge badge-sm badge-promo absolute top-1.5 left-1.5 shadow-sm">{product.promo_note}</span>
+          <Badge variant="promo" size="sm" className="absolute top-1.5 left-1.5 shadow-sm">
+            {product.promo_note}
+          </Badge>
         )}
       </div>
       <div className="flex flex-col gap-2 p-2.5">

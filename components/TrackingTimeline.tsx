@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Button from '@/components/Button'
 
 export type TrackingEvent = { date: string | null; description: string | null; location: string | null }
 export type TrackingData = { code: string | null; status: string | null; events: TrackingEvent[] }
@@ -66,14 +67,9 @@ export default function TrackingTimeline({
             <span className="text-muted">Código de rastreio ainda não disponível.</span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={status === 'loading'}
-          className="btn btn-sm btn-secondary disabled:opacity-50"
-        >
+        <Button type="button" onClick={refresh} disabled={status === 'loading'} variant="secondary" size="sm" className="disabled:opacity-50">
           {status === 'loading' ? 'Atualizando...' : 'Atualizar'}
-        </button>
+        </Button>
       </div>
 
       {status === 'error' && (

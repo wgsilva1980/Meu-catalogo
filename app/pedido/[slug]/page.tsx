@@ -8,6 +8,8 @@ import DocumentLookupForm from '@/components/DocumentLookupForm'
 import CustomerForm from '@/components/CustomerForm'
 import StoreHeader from '@/components/StoreHeader'
 import StoreFooter from '@/components/StoreFooter'
+import Card from '@/components/Card'
+import Alert from '@/components/Alert'
 
 // Sem isso, compartilhar o link do catálogo (o próprio modelo de distribuição
 // do produto: "manda o link pro cliente") gerava uma prévia sem nome nem
@@ -144,7 +146,7 @@ export default async function PedidoPublicoPage({
     <>
       <StoreHeader company={company} />
       <main className="min-h-screen flex flex-col items-center px-4 py-10 gap-8">
-        <div className="w-full max-w-2xl card flex flex-col gap-4">
+        <Card className="w-full max-w-2xl flex flex-col gap-4">
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="font-display text-title">Monte seu pedido</h1>
             <p className="text-sm text-muted">
@@ -154,9 +156,9 @@ export default async function PedidoPublicoPage({
 
           {sucesso ? (
             <div className="flex flex-col gap-3">
-              <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              <Alert variant="success" center>
                 Pedido {numero ? `#${numero} ` : ''}recebido com sucesso! Em breve entraremos em contato.
-              </p>
+              </Alert>
               {token && (
                 <a
                   href={`/acompanhar/${token}`}
@@ -199,7 +201,7 @@ export default async function PedidoPublicoPage({
               paymentMethods={paymentMethods ?? []}
             />
           )}
-        </div>
+        </Card>
         <StoreFooter company={company} />
       </main>
     </>

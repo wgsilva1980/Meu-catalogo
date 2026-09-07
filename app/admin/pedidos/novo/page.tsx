@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import OrderForm from '@/components/OrderForm'
+import Alert from '@/components/Alert'
 
 export default async function NovoPedidoPage({
   searchParams,
@@ -25,9 +26,10 @@ export default async function NovoPedidoPage({
         <p className="text-sm text-muted">Registrar venda para um cliente</p>
       </div>
       {erro === 'estoque' && (
-        <p className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
-          Estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Salve como rascunho ou dê entrada no estoque antes de confirmar.
-        </p>
+        <Alert variant="danger">
+          Estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Salve como rascunho ou dê entrada no estoque antes de
+          confirmar.
+        </Alert>
       )}
       <OrderForm customers={customers ?? []} products={products ?? []} paymentMethods={paymentMethods ?? []} />
     </div>

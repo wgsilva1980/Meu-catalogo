@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import ProductFilterBar from './ProductFilterBar'
@@ -8,6 +7,7 @@ import { deleteProduct } from './actions'
 import { PencilIcon } from '@/components/icons'
 import FillWeightButton from '@/components/FillWeightButton'
 import DeleteProductButton from '@/components/DeleteProductButton'
+import Button from '@/components/Button'
 
 export default async function ProdutosPage({
   searchParams,
@@ -52,9 +52,9 @@ export default async function ProdutosPage({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <FillWeightButton pendingCount={pendingWeightCount ?? 0} />
-          <Link href="/admin/produtos/novo" className="btn btn-primary whitespace-nowrap">
+          <Button href="/admin/produtos/novo" className="whitespace-nowrap">
             + Novo produto
-          </Link>
+          </Button>
         </div>
       </div>
 
@@ -81,14 +81,10 @@ export default async function ProdutosPage({
               R$ {Number(p.price).toFixed(2).replace('.', ',')}
             </div>
             <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
-              <Link
-                href={`/admin/produtos/${p.id}`}
-                title="Editar produto"
-                className="btn btn-sm btn-ghost-accent"
-              >
+              <Button href={`/admin/produtos/${p.id}`} title="Editar produto" variant="ghost-accent" size="sm">
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar
-              </Link>
+              </Button>
               <DeleteProductButton productId={p.id} productName={p.name} deleteProduct={deleteProduct} />
             </div>
           </div>

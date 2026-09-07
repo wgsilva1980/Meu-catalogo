@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { isValidCpfCnpj } from '@/lib/cpfCnpj'
+import Button from '@/components/Button'
 
 export default function DocumentLookupForm({ slug }: { slug: string }) {
   const [error, setError] = useState(false)
@@ -31,9 +32,7 @@ export default function DocumentLookupForm({ slug }: { slug: string }) {
         <p className="text-xs text-muted">
           Informe seu CPF para localizarmos seu cadastro, se já tiver um.
         </p>
-        <button type="submit" className="btn btn-primary">
-          Continuar
-        </button>
+        <Button type="submit">Continuar</Button>
       </form>
       <a href={`/pedido/${slug}?documento=skip`} className="text-xs text-muted underline text-center">
         Não tenho CPF, continuar sem informar

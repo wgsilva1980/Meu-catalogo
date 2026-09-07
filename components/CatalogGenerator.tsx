@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Button from '@/components/Button'
 import type { Category } from '@/lib/types'
 
 export default function CatalogGenerator({ categories }: { categories: Category[] }) {
@@ -69,13 +70,14 @@ export default function CatalogGenerator({ categories }: { categories: Category[
         </div>
       )}
 
-      <button
+      <Button
+        type="button"
         onClick={handleGenerate}
         disabled={loading || (mode === 'selection' && selected.length === 0)}
-        className="btn btn-primary disabled:opacity-50"
+        className="disabled:opacity-50"
       >
         {loading ? 'Gerando PDF...' : 'Gerar PDF'}
-      </button>
+      </Button>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
       {result && (

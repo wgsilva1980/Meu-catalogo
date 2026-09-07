@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Button from '@/components/Button'
 
 export default function HomePage() {
   return (
@@ -8,9 +8,9 @@ export default function HomePage() {
       <p className="text-muted max-w-sm text-sm leading-relaxed">
         Monte seu catálogo, receba pedidos e acompanhe pagamento e entrega — sem planilha.
       </p>
-      <Link href="/login" className="btn btn-primary px-5 py-3">
+      <Button href="/login" className="px-5 py-3">
         Acessar painel
-      </Link>
+      </Button>
       <p className="text-xs text-muted mt-4">© {new Date().getFullYear()} Meu Catalogo</p>
     </main>
   )

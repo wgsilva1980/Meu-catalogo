@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { useRouter } from 'next/navigation'
 import { initMercadoPago, Payment, StatusScreen } from '@mercadopago/sdk-react'
+import Alert from '@/components/Alert'
 
 type Props = {
   token: string
@@ -97,9 +98,10 @@ export default function PaymentBrick({ token, publicKey, amount, maxInstallments
         />
         <div role="status" aria-live="polite">
           {pixExpired && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-              Paramos de checar automaticamente. Se você já pagou, atualize a página — se ainda não, o código pode ter expirado.
-            </p>
+            <Alert variant="warning" size="sm" center>
+              Paramos de checar automaticamente. Se você já pagou, atualize a página — se ainda não, o código pode ter
+              expirado.
+            </Alert>
           )}
         </div>
         {result.status === 'rejected' && (

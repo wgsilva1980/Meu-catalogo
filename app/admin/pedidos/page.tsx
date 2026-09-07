@@ -1,9 +1,11 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import { deleteOrder, updateOrderStatus } from './actions'
 import DeleteOrderButton from '@/components/DeleteOrderButton'
 import { PencilIcon, ClockIcon, CheckIcon, XIcon, AlertIcon } from '@/components/icons'
+import Button from '@/components/Button'
+import Badge, { type BadgeVariant } from '@/components/Badge'
+import Alert from '@/components/Alert'
 import type { OrderStatus } from '@/lib/types'
 
 const statusLabel: Record<OrderStatus, string> = {
@@ -12,10 +14,10 @@ const statusLabel: Record<OrderStatus, string> = {
   cancelado: 'Cancelado',
 }
 
-const statusClass: Record<OrderStatus, string> = {
-  rascunho: 'badge-neutral',
-  confirmado: 'badge-success',
-  cancelado: 'badge-danger',
+const statusVariant: Record<OrderStatus, BadgeVariant> = {
+  rascunho: 'neutral',
+  confirmado: 'success',
+  cancelado: 'danger',
 }
 
 // Cor sozinha não é sinal suficiente (daltonismo, leitor de tela) — cada
@@ -66,16 +68,16 @@ export default async function PedidosPage({
           <h1 className="font-display text-2xl">Pedidos</h1>
           <p className="text-sm text-muted">Registro de vendas para clientes cadastrados</p>
         </div>
-        <Link href="/admin/pedidos/novo" className="btn btn-primary whitespace-nowrap">
+        <Button href="/admin/pedidos/novo" className="whitespace-nowrap">
           + Novo pedido
-        </Link>
+        </Button>
       </div>
 
       {erro === 'estoque' && (
-        <p className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
+        <Alert variant="danger">
           {pedido ? `Pedido #${pedido}: ` : ''}
           estoque insuficiente{faltam ? ` para: ${faltam}` : ''}. Dê entrada no estoque antes de confirmar.
-        </p>
+        </Alert>
       )}
 
       <form className="flex flex-col sm:flex-row gap-3 max-w-lg">
@@ -93,9 +95,9 @@ export default async function PedidosPage({
             <option value="confirmado">Confirmado</option>
             <option value="cancelado">Cancelado</option>
           </select>
-          <button type="submit" className="btn btn-secondary whitespace-nowrap">
+          <Button type="submit" variant="secondary" className="whitespace-nowrap">
             Filtrar
-          </button>
+          </Button>
         </div>
       </form>
 
@@ -108,27 +110,28 @@ export default async function PedidosPage({
               </p>
               <p className="text-xs text-muted truncate">{new Date(o.created_at).toLocaleDateString('pt-BR')}</p>
             </div>
-            <span className={`badge badge-sm ${statusClass[o.status as OrderStatus]}`}>
+            <Badge variant={statusVariant[o.status as OrderStatus]} size="sm">
               {(() => {
                 const StatusIcon = statusIcon[o.status as OrderStatus]
                 return <StatusIcon className="w-3 h-3" />
               })()}
               {statusLabel[o.status as OrderStatus]}
-            </span>
+            </Badge>
             {o.status === 'confirmado' && o.paid_at && !o.stock_committed && (
-              <span
-                className="badge badge-sm badge-warning"
+              <Badge
+                variant="warning"
+                size="sm"
                 title="O pagamento foi aprovado mas o estoque não pôde ser baixado automaticamente — provavelmente faltou saldo na hora."
               >
                 <AlertIcon className="w-3 h-3" />
                 Revisar estoque
-              </span>
+              </Badge>
             )}
             {(paymentStatusByOrder.get(o.id) === 'refunded' || paymentStatusByOrder.get(o.id) === 'cancelled') && (
-              <span className="badge badge-sm badge-danger">
+              <Badge variant="danger" size="sm">
                 <XIcon className="w-3 h-3" />
                 {paymentStatusByOrder.get(o.id) === 'refunded' ? 'Estornado' : 'Pagamento cancelado'}
-              </span>
+              </Badge>
             )}
             <div className="font-bold tabular-nums text-sm whitespace-nowrap">
               R$ {Number(o.total).toFixed(2).replace('.', ',')}
@@ -138,22 +141,15 @@ export default async function PedidosPage({
                 <form action={updateOrderStatus}>
                   <input type="hidden" name="id" value={o.id} />
                   <input type="hidden" name="status" value="confirmado" />
-                  <button
-                    type="submit"
-                    className="btn btn-sm btn-ghost-success"
-                  >
+                  <Button type="submit" variant="ghost-success" size="sm">
                     Confirmar
-                  </button>
+                  </Button>
                 </form>
               )}
-              <Link
-                href={`/admin/pedidos/${o.id}`}
-                title="Editar pedido"
-                className="btn btn-sm btn-ghost-accent"
-              >
+              <Button href={`/admin/pedidos/${o.id}`} title="Editar pedido" variant="ghost-accent" size="sm">
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar
-              </Link>
+              </Button>
               <DeleteOrderButton
                 orderId={o.id}
                 orderNumber={o.number}

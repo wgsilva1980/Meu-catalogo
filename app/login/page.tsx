@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Button from '@/components/Button'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -56,9 +57,9 @@ export default function LoginPage() {
 
         {error && <p className="text-xs text-red-600">{error}</p>}
 
-        <button disabled={loading} className="btn btn-primary mt-1 disabled:opacity-50">
+        <Button disabled={loading} className="mt-1 disabled:opacity-50">
           {loading ? 'Entrando...' : 'Entrar'}
-        </button>
+        </Button>
 
         <p className="text-xs text-muted text-center mt-1">
           Acesso restrito à equipe. Contas criadas pelo administrador.
