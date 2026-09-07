@@ -5,6 +5,7 @@ import { getShipmentTracking } from '@/lib/melhorEnvio'
 import { orderDiscountAmount } from '@/lib/orderTotals'
 import TrackingTimeline from '@/components/TrackingTimeline'
 import PaymentBrick from '@/components/PaymentBrick'
+import StoreHeader from '@/components/StoreHeader'
 import StoreFooter from '@/components/StoreFooter'
 import { describeMercadoPagoPaymentMethod } from '@/lib/mercadoPago'
 import { toMercadoPagoIdentification } from '@/lib/cpfCnpj'
@@ -151,16 +152,13 @@ export default async function AcompanharPedidoPage({
   }
 
   return (
-    <main className="min-h-screen flex items-start justify-center px-4 py-10 bg-paper">
-      <div className="w-full max-w-xl card flex flex-col gap-5">
-        <div className="flex flex-col items-center gap-2 text-center">
-          {company?.logo_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={company.logo_url} alt={company?.name ?? ''} className="h-12 object-contain" />
-          )}
-          <span className="text-xs uppercase tracking-widest text-accent font-bold">Acompanhamento</span>
-          <h1 className="font-display text-title">{company?.name}</h1>
-        </div>
+    <>
+      {company && <StoreHeader company={company} />}
+      <main className="min-h-screen flex flex-col items-center px-4 py-10 gap-8 bg-paper">
+        <div className="w-full max-w-xl card flex flex-col gap-5">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="font-display text-title">Acompanhamento do pedido</h1>
+          </div>
 
         {novo === '1' && (
           <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
@@ -270,9 +268,9 @@ export default async function AcompanharPedidoPage({
           </section>
         )}
 
-        <p className="text-center text-xs text-muted">Acompanhamento do pedido — {company?.name}</p>
-      </div>
-      {company && <StoreFooter company={company} />}
-    </main>
+        </div>
+        {company && <StoreFooter company={company} />}
+      </main>
+    </>
   )
 }

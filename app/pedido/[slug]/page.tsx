@@ -6,6 +6,7 @@ import { registerCustomerAndContinue } from './actions'
 import PublicOrderForm from '@/components/PublicOrderForm'
 import DocumentLookupForm from '@/components/DocumentLookupForm'
 import CustomerForm from '@/components/CustomerForm'
+import StoreHeader from '@/components/StoreHeader'
 import StoreFooter from '@/components/StoreFooter'
 
 // Sem isso, compartilhar o link do catálogo (o próprio modelo de distribuição
@@ -140,67 +141,67 @@ export default async function PedidoPublicoPage({
   }
 
   return (
-    <main className="min-h-screen flex items-start justify-center px-4 py-10">
-      <div className="w-full max-w-2xl card flex flex-col gap-4">
-        <div className="flex flex-col items-center gap-2 text-center">
-          {company.logo_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={company.logo_url} alt={company.name} className="h-12 object-contain" />
-          )}
-          <span className="text-xs uppercase tracking-widest text-accent font-bold">Seu pedido</span>
-          <h1 className="font-display text-title">{company.name}</h1>
-          <p className="text-sm text-muted">Monte seu pedido abaixo. Entraremos em contato para confirmar.</p>
-        </div>
-
-        {sucesso ? (
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-              Pedido {numero ? `#${numero} ` : ''}recebido com sucesso! Em breve entraremos em contato.
-            </p>
-            {token && (
-              <a
-                href={`/acompanhar/${token}`}
-                className="text-sm font-semibold text-accent underline text-center"
-              >
-                Acompanhar meu pedido
-              </a>
-            )}
-          </div>
-        ) : !identified ? (
-          <DocumentLookupForm slug={slug} />
-        ) : !foundCustomer ? (
-          <div className="flex flex-col gap-3">
+    <>
+      <StoreHeader company={company} />
+      <main className="min-h-screen flex flex-col items-center px-4 py-10 gap-8">
+        <div className="w-full max-w-2xl card flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="font-display text-title">Monte seu pedido</h1>
             <p className="text-sm text-muted">
-              {erro === 'cpf'
-                ? 'CPF/CNPJ inválido. Confira os números digitados.'
-                : digits
-                ? 'Não encontramos um cadastro com esse CPF. Complete seus dados para continuar.'
-                : 'Complete seu cadastro para continuar o pedido.'}
+              Escolha os produtos de {company.name} abaixo. Entraremos em contato para confirmar.
             </p>
-            <CustomerForm
-              action={registerCustomerAndContinue}
-              hiddenFields={{ slug }}
-              submitLabel="Continuar para o pedido"
-              cancelHref={null}
-              requirePhone
-              honeypot
-              defaultDocument={digits || undefined}
-            />
           </div>
-        ) : (
-          <PublicOrderForm
-            slug={slug}
-            categories={categories ?? []}
-            products={products ?? []}
-            foundCustomer={foundCustomer}
-            typedDocument={digits || null}
-            motoboyEnabled={Boolean(company.lalamove_enabled)}
-            melhorEnvioEnabled={melhorEnvioEnabled}
-            paymentMethods={paymentMethods ?? []}
-          />
-        )}
-      </div>
-      <StoreFooter company={company} />
-    </main>
+
+          {sucesso ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                Pedido {numero ? `#${numero} ` : ''}recebido com sucesso! Em breve entraremos em contato.
+              </p>
+              {token && (
+                <a
+                  href={`/acompanhar/${token}`}
+                  className="text-sm font-semibold text-accent underline text-center"
+                >
+                  Acompanhar meu pedido
+                </a>
+              )}
+            </div>
+          ) : !identified ? (
+            <DocumentLookupForm slug={slug} />
+          ) : !foundCustomer ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-muted">
+                {erro === 'cpf'
+                  ? 'CPF/CNPJ inválido. Confira os números digitados.'
+                  : digits
+                  ? 'Não encontramos um cadastro com esse CPF. Complete seus dados para continuar.'
+                  : 'Complete seu cadastro para continuar o pedido.'}
+              </p>
+              <CustomerForm
+                action={registerCustomerAndContinue}
+                hiddenFields={{ slug }}
+                submitLabel="Continuar para o pedido"
+                cancelHref={null}
+                requirePhone
+                honeypot
+                defaultDocument={digits || undefined}
+              />
+            </div>
+          ) : (
+            <PublicOrderForm
+              slug={slug}
+              categories={categories ?? []}
+              products={products ?? []}
+              foundCustomer={foundCustomer}
+              typedDocument={digits || null}
+              motoboyEnabled={Boolean(company.lalamove_enabled)}
+              melhorEnvioEnabled={melhorEnvioEnabled}
+              paymentMethods={paymentMethods ?? []}
+            />
+          )}
+        </div>
+        <StoreFooter company={company} />
+      </main>
+    </>
   )
 }
