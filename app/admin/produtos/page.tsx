@@ -4,8 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import ProductFilterBar from './ProductFilterBar'
 import { deleteProduct } from './actions'
-import { PencilIcon, TrashIcon } from '@/components/icons'
+import { PencilIcon } from '@/components/icons'
 import FillWeightButton from '@/components/FillWeightButton'
+import DeleteProductButton from '@/components/DeleteProductButton'
 
 export default async function ProdutosPage({
   searchParams,
@@ -88,17 +89,7 @@ export default async function ProdutosPage({
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar
               </Link>
-              <form action={deleteProduct}>
-                <input type="hidden" name="id" value={p.id} />
-                <button
-                  type="submit"
-                  title="Excluir produto"
-                  className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
-                >
-                  <TrashIcon className="w-3.5 h-3.5" />
-                  Excluir
-                </button>
-              </form>
+              <DeleteProductButton productId={p.id} productName={p.name} deleteProduct={deleteProduct} />
             </div>
           </div>
         ))}

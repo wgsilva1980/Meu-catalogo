@@ -7,7 +7,11 @@ const config: Config = {
       colors: {
         ink: '#12182A',
         paper: '#F4F5F1',
-        accent: '#FF5A36',
+        // Escurecido de #FF5A36 pra passar contraste AA (4.5:1) como texto/
+        // botão sobre branco e sobre paper — o tom original reprovava a
+        // 3.10:1 (branco sobre accent), abaixo do mínimo pra texto normal.
+        // Ver "Raio-X do Catálogo", achado P0.
+        accent: '#BE4A1B',
         muted: '#5B6472',
         line: '#DEDCD4',
         promo: '#C97A17',

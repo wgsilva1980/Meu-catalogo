@@ -87,12 +87,29 @@ export async function saveProduct(formData: FormData) {
   redirect('/admin/produtos')
 }
 
-export async function deleteProduct(formData: FormData) {
+export type DeleteProductResult = { ok: true } | { ok: false; error: string }
+
+// `sales_order_items.product_id` é `on delete restrict` (migration_sales_orders.sql)
+// — apagar um produto com pedido vinculado sempre falhava aqui, só que em
+// silêncio: o erro do Postgres era ignorado e a tela simplesmente não
+// mudava, sem explicar por quê. Agora a falha vira uma mensagem pro lojista.
+export async function deleteProduct(formData: FormData): Promise<DeleteProductResult> {
   const active = await resolveActiveCompany()
-  if (!active.ok) return
+  if (!active.ok) return { ok: false, error: 'Não autorizado.' }
 
   const supabase = await createClient()
   const id = formData.get('id') as string
-  await supabase.from('products').delete().eq('id', id).eq('company_id', active.companyId)
+
+  const { error } = await supabase.from('products').delete().eq('id', id).eq('company_id', active.companyId)
+  if (error) {
+    console.error('Falha ao excluir produto:', error)
+    return {
+      ok: false,
+      error: 'Este produto já tem pedidos vinculados e não pode ser excluído. Marque como indisponível em vez de excluir.',
+    }
+  }
+
   revalidatePath('/admin/produtos')
+  revalidatePath('/admin/estoque')
+  return { ok: true }
 }
