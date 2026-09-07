@@ -8,7 +8,7 @@ export default function HomePage() {
       <p className="text-muted max-w-sm text-sm leading-relaxed">
         Gerador de catálogos em PDF para a equipe comercial enviar aos clientes.
       </p>
-      <Link href="/login" className="bg-accent text-white rounded-lg px-5 py-3 text-sm font-bold">
+      <Link href="/login" className="btn btn-primary px-5 py-3">
         Acessar painel
       </Link>
       <p className="text-xs text-muted mt-4">© {new Date().getFullYear()} Meu Catalogo</p>

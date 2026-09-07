@@ -49,7 +49,7 @@ export default async function FormasPagamentoPage() {
 
       <form action={addPaymentMethod} className="flex gap-2">
         <input name="name" required maxLength={60} placeholder="Nova forma de pagamento" className="input flex-1" />
-        <button className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap">
+        <button className="btn btn-primary whitespace-nowrap">
           Adicionar
         </button>
       </form>

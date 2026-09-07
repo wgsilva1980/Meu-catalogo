@@ -15,9 +15,9 @@ export const runtime = 'nodejs'
 export const revalidate = 60
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  rascunho: { label: 'Aguardando confirmação', cls: 'bg-amber-100 text-amber-700' },
-  confirmado: { label: 'Confirmado', cls: 'bg-green-100 text-green-700' },
-  cancelado: { label: 'Cancelado', cls: 'bg-red-100 text-red-700' },
+  rascunho: { label: 'Aguardando confirmação', cls: 'badge-warning' },
+  confirmado: { label: 'Confirmado', cls: 'badge-success' },
+  cancelado: { label: 'Cancelado', cls: 'badge-danger' },
 }
 
 const DELIVERY_LABEL: Record<DeliveryMethod, string> = {
@@ -97,7 +97,7 @@ export default async function AcompanharPedidoPage({
   )
   const deliveryFee = Number(order.delivery_fee ?? 0)
   const deliveryMethod = (order.delivery_method ?? 'a_combinar') as DeliveryMethod
-  const status = STATUS_LABEL[order.status] ?? { label: order.status, cls: 'bg-black/5 text-muted' }
+  const status = STATUS_LABEL[order.status] ?? { label: order.status, cls: 'badge-neutral' }
   const date = new Date(order.created_at).toLocaleDateString('pt-BR')
 
   let tracking: { code: string | null; status: string | null; events: { date: string | null; description: string | null; location: string | null }[] } = {
@@ -115,7 +115,7 @@ export default async function AcompanharPedidoPage({
 
   return (
     <main className="min-h-screen flex items-start justify-center px-4 py-10 bg-paper">
-      <div className="w-full max-w-xl bg-white border border-line rounded-2xl p-6 flex flex-col gap-5">
+      <div className="w-full max-w-xl card flex flex-col gap-5">
         <div className="flex flex-col items-center gap-2 text-center">
           {company?.logo_url && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -135,7 +135,7 @@ export default async function AcompanharPedidoPage({
             <div className="font-display text-lg">Pedido #{order.number}</div>
             <div className="text-xs text-muted">{date}</div>
           </div>
-          <span className={`text-xs font-bold px-3 py-1 rounded-full ${status.cls}`}>{status.label}</span>
+          <span className={`badge ${status.cls}`}>{status.label}</span>
         </div>
 
         <section className="flex flex-col gap-2">
@@ -183,7 +183,7 @@ export default async function AcompanharPedidoPage({
         </section>
 
         {Number(order.total) > 0 && (Boolean(order.paid_at) || Boolean(mpAccount?.public_key) || Boolean(payment)) && (
-          <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+          <section className="flex flex-col gap-2 card-tight">
             <h2 className="text-sm font-bold">Pagamento</h2>
             {order.paid_at ? (
               <p className="text-sm text-green-700 font-semibold">
@@ -219,7 +219,7 @@ export default async function AcompanharPedidoPage({
         )}
 
         {(shipment?.melhor_envio_id || tracking.code) && (
-          <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+          <section className="flex flex-col gap-2 card-tight">
             <h2 className="text-sm font-bold">Rastreio da entrega</h2>
             <TrackingTimeline initial={tracking} refreshUrl={`/api/acompanhar/${token}/rastreio`} />
           </section>

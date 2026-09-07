@@ -37,7 +37,7 @@ export default function DeliveryCard({
     : null
 
   return (
-    <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+    <section className="flex flex-col gap-2 card-tight">
       <h2 className="text-sm font-bold">Entrega escolhida pelo cliente</h2>
       <p className="text-sm">
         <span className="font-semibold">{METHOD_LABEL[method]}</span>

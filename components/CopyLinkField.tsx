@@ -17,7 +17,7 @@ export default function CopyLinkField({ url }: { url: string }) {
       <button
         type="button"
         onClick={handleCopy}
-        className="border border-line rounded-lg px-4 py-2 text-sm font-semibold whitespace-nowrap"
+        className="btn btn-secondary whitespace-nowrap"
       >
         {copied ? 'Copiado!' : 'Copiar link'}
       </button>

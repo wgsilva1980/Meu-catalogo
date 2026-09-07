@@ -130,7 +130,7 @@ export default function CustomerForm({
         {documentError && <span className="text-xs font-normal text-red-600">CPF/CNPJ inválido.</span>}
       </Field>
 
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+      <section className="flex flex-col gap-3 card-tight">
         <h2 className="text-sm font-bold">Endereço</h2>
 
         <div className="flex items-end gap-3">
@@ -184,9 +184,9 @@ export default function CustomerForm({
 
       <div className="flex flex-wrap gap-2 justify-end mt-2">
         {cancelHref && (
-          <a href={cancelHref} className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">Cancelar</a>
+          <a href={cancelHref} className="btn btn-secondary">Cancelar</a>
         )}
-        <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">{submitLabel}</button>
+        <button type="submit" className="btn btn-primary">{submitLabel}</button>
       </div>
     </form>
   )

@@ -37,7 +37,7 @@ export default function DeleteProductButton({
         onClick={handleClick}
         disabled={isPending}
         title="Excluir produto"
-        className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="btn btn-sm btn-danger disabled:cursor-not-allowed"
       >
         <TrashIcon className="w-3.5 h-3.5" />
         {isPending ? 'Excluindo…' : 'Excluir'}

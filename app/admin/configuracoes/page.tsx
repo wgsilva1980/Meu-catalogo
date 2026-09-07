@@ -69,7 +69,7 @@ export default async function ConfiguracoesPage({
       <StoreSettingsForm settings={settings} />
 
       {publicSignupUrl && (
-        <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+        <section className="flex flex-col gap-2 card-tight">
           <h2 className="text-sm font-bold">Link de auto-cadastro</h2>
           <p className="text-xs text-muted">
             Compartilhe este link com seus clientes para que eles se cadastrem diretamente no sistema.
@@ -79,7 +79,7 @@ export default async function ConfiguracoesPage({
       )}
 
       {publicOrderUrl && (
-        <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+        <section className="flex flex-col gap-2 card-tight">
           <h2 className="text-sm font-bold">Link de pedido</h2>
           <p className="text-xs text-muted">
             Compartilhe este link para que seus clientes montem e enviem o próprio pedido, sem precisar de cadastro

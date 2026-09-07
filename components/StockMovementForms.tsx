@@ -24,7 +24,7 @@ export default function StockMovementForms({
   const [tab, setTab] = useState<Tab>('entrada')
 
   return (
-    <section className="flex flex-col gap-4 border border-line rounded-xl p-4">
+    <section className="flex flex-col gap-4 card-tight">
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <button
@@ -118,7 +118,7 @@ export default function StockMovementForms({
             />
           </Field>
         </div>
-        <button type="submit" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">
+        <button type="submit" className="btn btn-secondary">
           Salvar mínimo
         </button>
       </form>
@@ -138,7 +138,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function Submit({ children }: { children: ReactNode }) {
   return (
     <div>
-      <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">
+      <button type="submit" className="btn btn-primary">
         {children}
       </button>
     </div>

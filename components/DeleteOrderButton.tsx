@@ -39,7 +39,7 @@ export default function DeleteOrderButton({
         onClick={handleClick}
         disabled={isPending || Boolean(disabledReason)}
         title={disabledReason ?? 'Excluir pedido'}
-        className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+        className="btn btn-sm btn-danger disabled:hover:bg-transparent disabled:cursor-not-allowed"
       >
         <TrashIcon className="w-3.5 h-3.5" />
         {isPending ? 'Excluindo…' : 'Excluir'}

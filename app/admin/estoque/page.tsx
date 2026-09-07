@@ -114,7 +114,7 @@ export default async function EstoquePage({
               <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
                 <Link
                   href={`/admin/estoque/${p.id}`}
-                  className="inline-flex items-center rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-accent hover:bg-accent/5"
+                  className="btn btn-sm btn-ghost-accent"
                 >
                   Movimentar
                 </Link>

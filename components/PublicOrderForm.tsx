@@ -270,7 +270,7 @@ export default function PublicOrderForm({
       </section>
 
       <section className={`flex flex-col gap-4 ${step === 2 ? '' : 'hidden'}`}>
-        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+        <section className="flex flex-col gap-3 card-tight">
           <h2 className="text-sm font-bold">Entrega</h2>
           <input type="hidden" name="delivery_method" value={method} />
 
@@ -332,7 +332,7 @@ export default function PublicOrderForm({
                   type="button"
                   onClick={calculateMoto}
                   disabled={!canCalculate}
-                  className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                  className="btn btn-sm btn-secondary disabled:opacity-50"
                 >
                   {quoteStatus === 'loading' ? 'Calculando...' : 'Calcular entrega'}
                 </button>
@@ -368,7 +368,7 @@ export default function PublicOrderForm({
                   type="button"
                   onClick={calculateMelhorEnvio}
                   disabled={!canCalculateMe}
-                  className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                  className="btn btn-sm btn-secondary disabled:opacity-50"
                 >
                   {meStatus === 'loading' ? 'Calculando...' : 'Calcular frete'}
                 </button>
@@ -416,7 +416,7 @@ export default function PublicOrderForm({
 
       <section className={`flex flex-col gap-4 ${step === 3 ? '' : 'hidden'}`}>
         {paymentMethods.length > 0 && (
-          <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+          <section className="flex flex-col gap-3 card-tight">
             <h2 className="text-sm font-bold">Forma de pagamento</h2>
             <Field label="Como você prefere pagar?">
               <select name="payment_method_id" defaultValue="" className="input">
@@ -432,7 +432,7 @@ export default function PublicOrderForm({
         )}
 
         {foundCustomer ? (
-          <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+          <section className="flex flex-col gap-2 card-tight">
             <input type="hidden" name="customer_id" value={foundCustomer.id} />
             <h2 className="text-sm font-bold">Seus dados</h2>
             <p className="text-sm">
@@ -446,7 +446,7 @@ export default function PublicOrderForm({
             </Field>
           </section>
         ) : (
-          <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+          <section className="flex flex-col gap-3 card-tight">
             <h2 className="text-sm font-bold">Seus dados</h2>
             {typedDocument && <input type="hidden" name="document" value={typedDocument} />}
             <Field label="Nome">
@@ -474,7 +474,7 @@ export default function PublicOrderForm({
           <button
             type="button"
             onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
-            className="border border-line rounded-lg px-4 py-2 text-sm font-semibold"
+            className="btn btn-secondary"
           >
             Voltar
           </button>
@@ -488,7 +488,7 @@ export default function PublicOrderForm({
             type="button"
             onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)}
             disabled={step === 1 ? !canAdvanceToDelivery : !canAdvanceToPayment}
-            className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40"
+            className="btn btn-primary disabled:opacity-40"
           >
             Continuar
           </button>
@@ -497,7 +497,7 @@ export default function PublicOrderForm({
             key="submit"
             type="submit"
             disabled={blockSubmit}
-            className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40"
+            className="btn btn-primary disabled:opacity-40"
           >
             Enviar pedido
           </button>

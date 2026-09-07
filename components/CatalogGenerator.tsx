@@ -72,7 +72,7 @@ export default function CatalogGenerator({ categories }: { categories: Category[
       <button
         onClick={handleGenerate}
         disabled={loading || (mode === 'selection' && selected.length === 0)}
-        className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-50"
+        className="btn btn-primary disabled:opacity-50"
       >
         {loading ? 'Gerando PDF...' : 'Gerar PDF'}
       </button>

@@ -31,7 +31,7 @@ export default function DocumentLookupForm({ slug }: { slug: string }) {
         <p className="text-xs text-muted">
           Informe seu CPF para localizarmos seu cadastro, se já tiver um.
         </p>
-        <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">
+        <button type="submit" className="btn btn-primary">
           Continuar
         </button>
       </form>

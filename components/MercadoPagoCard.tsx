@@ -19,7 +19,7 @@ export default function MercadoPagoCard({
 }) {
   const liveMode = details?.live_mode ?? account?.live_mode ?? false
   return (
-    <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+    <section className="flex flex-col gap-3 card-tight">
       <div>
         <h2 className="text-sm font-bold">Mercado Pago</h2>
         <p className="text-xs text-muted">
@@ -68,7 +68,7 @@ export default function MercadoPagoCard({
             <form action={disconnectMercadoPago}>
               <button
                 type="submit"
-                className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                className="btn btn-sm btn-danger"
               >
                 Desconectar
               </button>
@@ -93,7 +93,7 @@ export default function MercadoPagoCard({
                 defaultValue={account.min_installment_amount}
                 className="input w-32"
               />
-              <button type="submit" className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-black/5">
+              <button type="submit" className="btn btn-sm btn-secondary hover:bg-black/5">
                 Salvar
               </button>
             </div>
@@ -102,7 +102,7 @@ export default function MercadoPagoCard({
       ) : (
         <a
           href="/admin/configuracoes/mercado-pago/connect"
-          className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold w-fit"
+          className="btn btn-primary w-fit"
         >
           Conectar Mercado Pago
         </a>

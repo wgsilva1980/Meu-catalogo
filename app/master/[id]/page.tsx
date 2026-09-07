@@ -82,7 +82,7 @@ export default async function EditarEmpresaPage({
             </Field>
           </div>
 
-          <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold mt-2">
+          <button type="submit" className="btn btn-primary mt-2">
             Salvar
           </button>
         </form>
@@ -109,16 +109,12 @@ export default async function EditarEmpresaPage({
                 </div>
 
                 <span
-                  className={`text-xs font-semibold rounded-full px-2.5 py-1 whitespace-nowrap ${
-                    u.role === 'owner' ? 'bg-accent/10 text-accent' : 'bg-black/5 text-muted'
-                  }`}
+                  className={`badge ${u.role === 'owner' ? 'bg-accent/10 text-accent' : 'badge-neutral'}`}
                 >
                   {u.role === 'owner' ? 'Dono' : 'Equipe'}
                 </span>
                 <span
-                  className={`text-xs font-semibold rounded-full px-2.5 py-1 whitespace-nowrap ${
-                    u.banned ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                  }`}
+                  className={`badge ${u.banned ? 'badge-danger' : 'badge-success'}`}
                 >
                   {u.banned ? 'Desativado' : 'Ativo'}
                 </span>
@@ -143,14 +139,14 @@ export default async function EditarEmpresaPage({
                     <button
                       type="submit"
                       disabled={isSelf}
-                      className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-black/5 disabled:opacity-30"
+                      className="btn btn-sm btn-ghost disabled:opacity-30"
                     >
                       {u.banned ? 'Ativar' : 'Desativar'}
                     </button>
                   </form>
 
                   <details>
-                    <summary className="cursor-pointer list-none inline-block rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-black/5">
+                    <summary className="cursor-pointer list-none inline-block btn btn-sm btn-ghost">
                       Redefinir senha
                     </summary>
                     <form action={resetUserPassword} className="flex items-center gap-2 mt-2">
@@ -176,7 +172,7 @@ export default async function EditarEmpresaPage({
                     <button
                       type="submit"
                       disabled={isSelf}
-                      className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-30"
+                      className="btn btn-sm btn-danger disabled:opacity-30"
                     >
                       Remover
                     </button>
@@ -188,7 +184,7 @@ export default async function EditarEmpresaPage({
           {users.length === 0 && <p className="p-4 text-sm text-muted">Nenhum usuário cadastrado ainda.</p>}
         </div>
 
-        <form action={createCompanyUser} className="flex flex-col gap-3 border border-line rounded-xl p-4">
+        <form action={createCompanyUser} className="flex flex-col gap-3 card-tight">
           <input type="hidden" name="company_id" value={company.id} />
           <h3 className="text-sm font-bold">+ Adicionar usuário</h3>
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_8rem] gap-3">
@@ -205,7 +201,7 @@ export default async function EditarEmpresaPage({
               </select>
             </Field>
           </div>
-          <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold self-end">
+          <button type="submit" className="btn btn-primary self-end">
             Criar usuário
           </button>
         </form>

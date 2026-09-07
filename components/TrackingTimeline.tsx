@@ -70,7 +70,7 @@ export default function TrackingTimeline({
           type="button"
           onClick={refresh}
           disabled={status === 'loading'}
-          className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+          className="btn btn-sm btn-secondary disabled:opacity-50"
         >
           {status === 'loading' ? 'Atualizando...' : 'Atualizar'}
         </button>

@@ -16,7 +16,7 @@ export default async function MasterPage() {
         </div>
         <Link
           href="/master/nova"
-          className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap"
+          className="btn btn-primary whitespace-nowrap"
         >
           + Nova empresa
         </Link>
@@ -29,11 +29,7 @@ export default async function MasterPage() {
               <p className="font-semibold truncate">{c.name}</p>
               <p className="text-xs text-muted truncate">{c.products?.[0]?.count ?? 0} produtos</p>
             </div>
-            <span
-              className={`text-xs font-semibold rounded-full px-2.5 py-1 whitespace-nowrap ${
-                c.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}
-            >
+            <span className={`badge ${c.active ? 'badge-success' : 'badge-danger'}`}>
               {c.active ? 'Ativa' : 'Inativa'}
             </span>
             <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0 flex-wrap">
@@ -41,7 +37,7 @@ export default async function MasterPage() {
                 <input type="hidden" name="company_id" value={c.id} />
                 <button
                   type="submit"
-                  className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-accent hover:bg-accent/5"
+                  className="btn btn-sm btn-ghost-accent"
                 >
                   Entrar como
                 </button>
@@ -49,7 +45,7 @@ export default async function MasterPage() {
               <Link
                 href={`/master/${c.id}`}
                 title="Editar empresa"
-                className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-black/5"
+                className="btn btn-sm btn-ghost"
               >
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar
@@ -59,7 +55,7 @@ export default async function MasterPage() {
                 <input type="hidden" name="active" value={(!c.active).toString()} />
                 <button
                   type="submit"
-                  className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-black/5"
+                  className="btn btn-sm btn-ghost"
                 >
                   {c.active ? 'Desativar' : 'Ativar'}
                 </button>

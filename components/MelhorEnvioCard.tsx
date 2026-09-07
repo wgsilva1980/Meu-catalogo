@@ -11,7 +11,7 @@ export default function MelhorEnvioCard({
   justConnected?: boolean
 }) {
   return (
-    <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+    <section className="flex flex-col gap-3 card-tight">
       <div>
         <h2 className="text-sm font-bold">Melhor Envio</h2>
         <p className="text-xs text-muted">Conecte para calcular frete e gerar etiquetas direto dos pedidos.</p>
@@ -33,7 +33,7 @@ export default function MelhorEnvioCard({
             </span>
           </div>
           <form action={disconnectMelhorEnvio}>
-            <button type="submit" className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">
+            <button type="submit" className="btn btn-sm btn-danger">
               Desconectar
             </button>
           </form>
@@ -41,7 +41,7 @@ export default function MelhorEnvioCard({
       ) : (
         <a
           href="/admin/configuracoes/melhor-envio/connect"
-          className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold w-fit"
+          className="btn btn-primary w-fit"
         >
           Conectar Melhor Envio
         </a>

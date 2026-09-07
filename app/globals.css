@@ -13,4 +13,60 @@
   .input {
     @apply border border-line rounded-lg px-3 py-2 text-sm bg-white w-full;
   }
+
+  /* Botão, card e badge existiam antes só como combinações de utilitárias
+     coladas (bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold...)
+     repetidas à mão em ~25 arquivos — qualquer ajuste de marca (raio, peso,
+     cor) exigia caçar cada ocorrência. Centralizados aqui do mesmo jeito que
+     .input já fazia, uma mudança na classe muda o produto inteiro. */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap transition-colors disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .btn-sm {
+    @apply px-2.5 py-1.5 text-xs font-semibold gap-1;
+  }
+  .btn-primary {
+    @apply bg-accent text-white hover:bg-accent/90;
+  }
+  .btn-secondary {
+    @apply border border-line text-ink hover:bg-black/5;
+  }
+  .btn-danger {
+    @apply border border-line text-red-600 hover:bg-red-50;
+  }
+  .btn-ghost {
+    @apply border border-line text-muted hover:bg-black/5;
+  }
+  .btn-ghost-accent {
+    @apply border border-line text-accent hover:bg-accent/5;
+  }
+  .btn-ghost-success {
+    @apply border border-line text-green-700 hover:bg-green-50;
+  }
+
+  .card {
+    @apply bg-white border border-line rounded-2xl p-6;
+  }
+  .card-tight {
+    @apply bg-white border border-line rounded-xl p-4;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold whitespace-nowrap;
+  }
+  .badge-sm {
+    @apply px-2 py-0.5;
+  }
+  .badge-success {
+    @apply bg-success/10 text-success;
+  }
+  .badge-warning {
+    @apply bg-amber-100 text-amber-700;
+  }
+  .badge-danger {
+    @apply bg-red-100 text-red-700;
+  }
+  .badge-neutral {
+    @apply bg-black/5 text-muted;
+  }
 }

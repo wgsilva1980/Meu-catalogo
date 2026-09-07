@@ -13,9 +13,9 @@ const statusLabel: Record<OrderStatus, string> = {
 }
 
 const statusClass: Record<OrderStatus, string> = {
-  rascunho: 'bg-black/5 text-muted',
-  confirmado: 'bg-green-100 text-green-700',
-  cancelado: 'bg-red-100 text-red-700',
+  rascunho: 'badge-neutral',
+  confirmado: 'badge-success',
+  cancelado: 'badge-danger',
 }
 
 export default async function PedidosPage({
@@ -58,7 +58,7 @@ export default async function PedidosPage({
           <h1 className="font-display text-2xl">Pedidos</h1>
           <p className="text-sm text-muted">Registro de vendas para clientes cadastrados</p>
         </div>
-        <Link href="/admin/pedidos/novo" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap">
+        <Link href="/admin/pedidos/novo" className="btn btn-primary whitespace-nowrap">
           + Novo pedido
         </Link>
       </div>
@@ -85,7 +85,7 @@ export default async function PedidosPage({
             <option value="confirmado">Confirmado</option>
             <option value="cancelado">Cancelado</option>
           </select>
-          <button type="submit" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold whitespace-nowrap">
+          <button type="submit" className="btn btn-secondary whitespace-nowrap">
             Filtrar
           </button>
         </div>
@@ -100,19 +100,19 @@ export default async function PedidosPage({
               </p>
               <p className="text-xs text-muted truncate">{new Date(o.created_at).toLocaleDateString('pt-BR')}</p>
             </div>
-            <span className={`px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${statusClass[o.status as OrderStatus]}`}>
+            <span className={`badge badge-sm ${statusClass[o.status as OrderStatus]}`}>
               {statusLabel[o.status as OrderStatus]}
             </span>
             {o.status === 'confirmado' && o.paid_at && !o.stock_committed && (
               <span
-                className="px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap bg-amber-100 text-amber-700"
+                className="badge badge-sm badge-warning"
                 title="O pagamento foi aprovado mas o estoque não pôde ser baixado automaticamente — provavelmente faltou saldo na hora."
               >
                 Revisar estoque
               </span>
             )}
             {(paymentStatusByOrder.get(o.id) === 'refunded' || paymentStatusByOrder.get(o.id) === 'cancelled') && (
-              <span className="px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap bg-red-100 text-red-700">
+              <span className="badge badge-sm badge-danger">
                 {paymentStatusByOrder.get(o.id) === 'refunded' ? 'Estornado' : 'Pagamento cancelado'}
               </span>
             )}
@@ -126,7 +126,7 @@ export default async function PedidosPage({
                   <input type="hidden" name="status" value="confirmado" />
                   <button
                     type="submit"
-                    className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-50"
+                    className="btn btn-sm btn-ghost-success"
                   >
                     Confirmar
                   </button>
@@ -135,7 +135,7 @@ export default async function PedidosPage({
               <Link
                 href={`/admin/pedidos/${o.id}`}
                 title="Editar pedido"
-                className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-accent hover:bg-accent/5"
+                className="btn btn-sm btn-ghost-accent"
               >
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar

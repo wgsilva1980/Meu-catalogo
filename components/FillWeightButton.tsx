@@ -39,7 +39,7 @@ export default function FillWeightButton({ pendingCount }: { pendingCount: numbe
         type="button"
         onClick={handleClick}
         disabled={busy || pendingCount === 0}
-        className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap disabled:opacity-50"
+        className="btn btn-sm btn-secondary whitespace-nowrap disabled:opacity-50"
       >
         {busy ? 'Lendo rótulos com IA...' : `Preencher peso com IA (${pendingCount} pendente${pendingCount === 1 ? '' : 's'})`}
       </button>

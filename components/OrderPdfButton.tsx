@@ -39,7 +39,7 @@ export default function OrderPdfButton({ orderId }: { orderId: string }) {
         type="button"
         onClick={handleGenerate}
         disabled={loading}
-        className="border border-line rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50"
+        className="btn btn-secondary disabled:opacity-50"
       >
         {loading ? 'Gerando PDF...' : 'Gerar PDF'}
       </button>

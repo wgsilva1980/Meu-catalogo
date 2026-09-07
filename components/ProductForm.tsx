@@ -286,7 +286,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
             type="button"
             onClick={() => cameraInputRef.current?.click()}
             disabled={busy}
-            className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+            className="btn btn-sm btn-secondary disabled:opacity-50"
           >
             📷 Tirar foto
           </button>
@@ -294,7 +294,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
-            className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+            className="btn btn-sm btn-secondary disabled:opacity-50"
           >
             Escolher arquivo
           </button>
@@ -345,7 +345,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
           </Field>
         </div>
 
-        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+        <section className="flex flex-col gap-3 card-tight">
           <div>
             <h2 className="text-sm font-bold">Estoque</h2>
             <p className="text-xs text-muted">
@@ -388,7 +388,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
           )}
         </section>
 
-        <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+        <section className="flex flex-col gap-3 card-tight">
           <div>
             <h2 className="text-sm font-bold">Envio</h2>
             <p className="text-xs text-muted">Usado no futuro para calcular o frete. Deixe em branco se ainda não souber.</p>
@@ -419,8 +419,8 @@ export default function ProductForm({ categories, product }: { categories: Categ
         </section>
 
         <div className="flex flex-wrap gap-2 justify-end mt-2">
-          <a href="/admin/produtos" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">Cancelar</a>
-          <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">Salvar produto</button>
+          <a href="/admin/produtos" className="btn btn-secondary">Cancelar</a>
+          <button type="submit" className="btn btn-primary">Salvar produto</button>
         </div>
       </div>
     </form>

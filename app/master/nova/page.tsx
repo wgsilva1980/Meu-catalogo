@@ -27,7 +27,7 @@ export default async function NovaEmpresaPage({
         <Field label="Senha">
           <input name="password" type="password" required minLength={6} className="input" />
         </Field>
-        <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold mt-2">
+        <button type="submit" className="btn btn-primary mt-2">
           Criar empresa
         </button>
       </form>

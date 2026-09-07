@@ -114,7 +114,7 @@ export default async function PedidoPublicoPage({
 
   return (
     <main className="min-h-screen flex items-start justify-center px-4 py-10">
-      <div className="w-full max-w-2xl bg-white border border-line rounded-2xl p-6 flex flex-col gap-4">
+      <div className="w-full max-w-2xl card flex flex-col gap-4">
         <div className="flex flex-col items-center gap-2 text-center">
           {company.logo_url && (
             // eslint-disable-next-line @next/next/no-img-element

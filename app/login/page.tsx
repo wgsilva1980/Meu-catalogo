@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6">
-      <form onSubmit={handleSubmit} className="w-full max-w-xs bg-white border border-line rounded-2xl p-6 flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="w-full max-w-xs card flex flex-col gap-3">
         <span className="font-display text-lg">Meu Catalogo</span>
         <h1 className="text-sm font-bold text-muted -mt-2 mb-1">Entrar no painel</h1>
 
@@ -56,7 +56,7 @@ export default function LoginPage() {
 
         {error && <p className="text-xs text-red-600">{error}</p>}
 
-        <button disabled={loading} className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold mt-1 disabled:opacity-50">
+        <button disabled={loading} className="btn btn-primary mt-1 disabled:opacity-50">
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
 

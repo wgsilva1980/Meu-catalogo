@@ -25,7 +25,7 @@ export default async function CadastroPublicoPage({
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-10">
-      <div className="w-full max-w-lg bg-white border border-line rounded-2xl p-6 flex flex-col gap-4">
+      <div className="w-full max-w-lg card flex flex-col gap-4">
         <div className="flex flex-col items-center gap-2 text-center">
           {company.logo_url && (
             // eslint-disable-next-line @next/next/no-img-element

@@ -51,7 +51,7 @@ export default async function ProdutosPage({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <FillWeightButton pendingCount={pendingWeightCount ?? 0} />
-          <Link href="/admin/produtos/novo" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap">
+          <Link href="/admin/produtos/novo" className="btn btn-primary whitespace-nowrap">
             + Novo produto
           </Link>
         </div>
@@ -84,7 +84,7 @@ export default async function ProdutosPage({
               <Link
                 href={`/admin/produtos/${p.id}`}
                 title="Editar produto"
-                className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-accent hover:bg-accent/5"
+                className="btn btn-sm btn-ghost-accent"
               >
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar

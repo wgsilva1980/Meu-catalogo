@@ -26,7 +26,7 @@ export default async function ClientesPage({
           <h1 className="font-display text-2xl">Clientes</h1>
           <p className="text-sm text-muted">Cadastro de clientes da loja</p>
         </div>
-        <Link href="/admin/clientes/novo" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap">
+        <Link href="/admin/clientes/novo" className="btn btn-primary whitespace-nowrap">
           + Novo cliente
         </Link>
       </div>
@@ -54,7 +54,7 @@ export default async function ClientesPage({
               <Link
                 href={`/admin/clientes/${c.id}`}
                 title="Editar cliente"
-                className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-accent hover:bg-accent/5"
+                className="btn btn-sm btn-ghost-accent"
               >
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar
@@ -64,7 +64,7 @@ export default async function ClientesPage({
                 <button
                   type="submit"
                   title="Excluir cliente"
-                  className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                  className="btn btn-sm btn-danger"
                 >
                   <TrashIcon className="w-3.5 h-3.5" />
                   Excluir

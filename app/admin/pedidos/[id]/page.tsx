@@ -52,18 +52,18 @@ export default async function EditarPedidoPage({
           <div className="flex items-center gap-2">
             <h1 className="font-display text-2xl">Pedido #{order.number}</h1>
             {order.paid_at && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Pago</span>
+              <span className="badge badge-sm badge-success">Pago</span>
             )}
             {order.status === 'confirmado' && order.paid_at && !order.stock_committed && (
               <span
-                className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700"
+                className="badge badge-sm badge-warning"
                 title="O pagamento foi aprovado mas o estoque não pôde ser baixado automaticamente — provavelmente faltou saldo na hora. Dê entrada no estoque e confirme o pedido de novo."
               >
                 Revisar estoque
               </span>
             )}
             {(payment?.status === 'refunded' || payment?.status === 'cancelled') && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+              <span className="badge badge-sm badge-danger">
                 {payment.status === 'refunded' ? 'Estornado' : 'Pagamento cancelado'}
               </span>
             )}
@@ -100,7 +100,7 @@ export default async function EditarPedidoPage({
         />
       )}
       {trackingUrl && (
-        <section className="flex flex-col gap-2 border border-line rounded-xl p-4">
+        <section className="flex flex-col gap-2 card-tight">
           <h2 className="text-sm font-bold">Link de acompanhamento do cliente</h2>
           <p className="text-xs text-muted">
             Envie para o cliente acompanhar o status do pedido e o rastreio da entrega, sem login.

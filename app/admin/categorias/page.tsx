@@ -40,7 +40,7 @@ export default async function CategoriasPage() {
 
       <form action={addCategory} className="flex gap-2">
         <input name="name" required placeholder="Nova categoria personalizada" className="input flex-1" />
-        <button className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap">Adicionar</button>
+        <button className="btn btn-primary whitespace-nowrap">Adicionar</button>
       </form>
     </div>
   )

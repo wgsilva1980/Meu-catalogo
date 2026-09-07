@@ -145,7 +145,7 @@ export default function OrderForm({
         </Field>
       </div>
 
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+      <section className="flex flex-col gap-3 card-tight">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold">Produtos</h2>
           <button type="button" onClick={addLine} className="text-xs font-semibold text-accent">
@@ -233,7 +233,7 @@ export default function OrderForm({
         </div>
       </section>
 
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+      <section className="flex flex-col gap-3 card-tight">
         <h2 className="text-sm font-bold">Pagamento e desconto</h2>
         <Field label="Forma de pagamento">
           <select
@@ -289,7 +289,7 @@ export default function OrderForm({
         )}
       </section>
 
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+      <section className="flex flex-col gap-3 card-tight">
         <h2 className="text-sm font-bold">Entrega</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Método">
@@ -324,7 +324,7 @@ export default function OrderForm({
               type="button"
               onClick={recalcMotoboy}
               disabled={motoStatus === 'loading'}
-              className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+              className="btn btn-sm btn-secondary disabled:opacity-50"
             >
               {motoStatus === 'loading' ? 'Cotando...' : 'Cotar motoboy (Lalamove)'}
             </button>
@@ -349,10 +349,10 @@ export default function OrderForm({
       </Field>
 
       <div className="flex flex-wrap gap-2 justify-end mt-2">
-        <a href="/admin/pedidos" className="border border-line rounded-lg px-4 py-2 text-sm font-semibold">
+        <a href="/admin/pedidos" className="btn btn-secondary">
           Cancelar
         </a>
-        <button type="submit" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">
+        <button type="submit" className="btn btn-primary">
           Salvar pedido
         </button>
       </div>

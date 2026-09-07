@@ -66,10 +66,10 @@ export default async function PainelPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Link href="/admin/produtos/novo" className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold">
+        <Link href="/admin/produtos/novo" className="btn btn-primary">
           + Novo produto
         </Link>
-        <Link href="/admin/catalogo" className="border border-line rounded-lg px-4 py-2 text-sm font-bold">
+        <Link href="/admin/catalogo" className="btn btn-secondary">
           Gerar catálogo
         </Link>
       </div>

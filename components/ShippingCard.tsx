@@ -56,7 +56,7 @@ export default function ShippingCard({
   bare?: boolean
 }) {
   const wrap = (gap: 'gap-2' | 'gap-3') =>
-    bare ? `flex flex-col ${gap}` : `flex flex-col ${gap} border border-line rounded-xl p-4`
+    bare ? `flex flex-col ${gap}` : `flex flex-col ${gap} card-tight`
   const [options, setOptions] = useState<QuoteOption[]>([])
   const [selected, setSelected] = useState<QuoteOption | null>(null)
   const [loading, setLoading] = useState(false)
@@ -265,7 +265,7 @@ export default function ShippingCard({
           type="button"
           onClick={handleCalculate}
           disabled={loading}
-          className="border border-line rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+          className="btn btn-sm btn-secondary disabled:opacity-50"
         >
           {loading ? 'Calculando...' : 'Calcular frete'}
         </button>
@@ -318,7 +318,7 @@ export default function ShippingCard({
             type="button"
             onClick={handlePurchase}
             disabled={!selected || purchasing || needsAgency}
-            className="bg-accent text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-50 w-fit mt-1"
+            className="btn btn-primary disabled:opacity-50 w-fit mt-1"
           >
             {purchasing ? 'Gerando etiqueta...' : 'Comprar e gerar etiqueta'}
           </button>

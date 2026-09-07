@@ -202,7 +202,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       <input type="hidden" name="logo_url" value={logoUrl} />
 
       {/* Logo */}
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+      <section className="flex flex-col gap-3 card-tight">
         <h2 className="text-sm font-bold">Logo da loja</h2>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="w-24 h-24 border border-dashed border-line rounded-lg overflow-hidden bg-paper flex items-center justify-center text-muted text-xs text-center p-2 shrink-0">
@@ -228,7 +228,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       </section>
 
       {/* Dados da loja */}
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+      <section className="flex flex-col gap-3 card-tight">
         <h2 className="text-sm font-bold">Dados da loja</h2>
 
         <Field label="Nome da loja">
@@ -258,7 +258,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       </section>
 
       {/* Endereço da loja */}
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+      <section className="flex flex-col gap-3 card-tight">
         <div>
           <h2 className="text-sm font-bold">Endereço da loja</h2>
           <p className="text-xs text-muted">
@@ -453,7 +453,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       </section>
 
       {/* Motoboy (Lalamove) */}
-      <section className="flex flex-col gap-3 border border-line rounded-xl p-4">
+      <section className="flex flex-col gap-3 card-tight">
         <div>
           <h2 className="text-sm font-bold">Entrega por motoboy (Lalamove)</h2>
           <p className="text-xs text-muted">
@@ -498,7 +498,7 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
 
       <div className="flex flex-wrap items-center gap-3 justify-end">
         {saved && <span className="text-xs text-green-600 font-semibold">Salvo com sucesso!</span>}
-        <button type="submit" className="bg-accent text-white rounded-lg px-5 py-2 text-sm font-bold">
+        <button type="submit" className="btn btn-primary px-5">
           Salvar configurações
         </button>
       </div>
