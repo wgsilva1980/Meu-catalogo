@@ -1,6 +1,7 @@
 import type { Company, Customer, SalesOrder, SalesOrderItem } from '@/lib/types'
 import { orderDiscountAmount } from '@/lib/orderTotals'
 import { formatPrice } from '@/lib/format'
+import { FRAUNCES_600_FONT_FACE } from '@/lib/pdf/fraunces'
 
 const statusLabel: Record<string, string> = {
   rascunho: 'Rascunho',
@@ -159,14 +160,19 @@ export function buildOrderHtml({
 // #BE4A1B é o mesmo accent corrigido no app (achado P0 do "Raio-X do
 // Catálogo" original) — este PDF tem CSS próprio, à parte de
 // app/globals.css, então não herdava a correção sozinho (achado P1 da
-// segunda auditoria). Georgia continua a fonte de título: é o mesmo
-// fallback que o app usa quando Fraunces não carrega.
+// segunda auditoria).
+//
+// .brand agora usa Fraunces de verdade (lib/pdf/fraunces.ts, embutido como
+// data: URI) — achado P3 da terceira auditoria. font-weight caiu de 700
+// pra 600 porque só embuti esse peso (o mesmo que o app usa nos títulos);
+// 600 num display serif a 22px já lê como bem forte, não precisa do 700.
 const orderCss = `
+  ${FRAUNCES_600_FONT_FACE}
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; color: #12182A; }
   .page { width: 210mm; min-height: 297mm; padding: 20mm 18mm; display: flex; flex-direction: column; gap: 16px; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #12182A; padding-bottom: 12px; }
-  .brand { font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 700; }
+  .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 600; }
   .muted { color: #5B6472; font-size: 12px; margin-top: 2px; }
   .order-meta { text-align: right; }
   .order-num { font-size: 16px; font-weight: 700; }

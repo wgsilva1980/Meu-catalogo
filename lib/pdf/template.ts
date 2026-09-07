@@ -1,5 +1,6 @@
 import type { Category, Company, Product } from '@/lib/types'
 import { formatPrice } from '@/lib/format'
+import { FRAUNCES_600_FONT_FACE } from '@/lib/pdf/fraunces'
 
 type CategoryWithProducts = Category & { products: Product[] }
 
@@ -169,11 +170,15 @@ export function buildCatalogHtml({
 // Catálogo" original — o #FF5A36 antigo reprovava contraste). O PDF é
 // gerado à parte (HTML próprio pro Puppeteer, sem os tokens de
 // app/globals.css), então não herdava a correção sozinho — ver achado P1
-// da segunda auditoria. Georgia continua a fonte de título aqui: é
-// exatamente o fallback que o próprio app usa quando Fraunces não carrega
-// (tailwind.config.ts), então já é consistente sem precisar embutir uma
-// fonte variável no HTML renderizado pelo Puppeteer.
+// da segunda auditoria.
+//
+// .brand/.cat-name agora usam Fraunces de verdade (lib/pdf/fraunces.ts,
+// embutido como data: URI) em vez de só cair no fallback Georgia — achado
+// P3 da terceira auditoria. .sub (o subtítulo em itálico) continua em
+// Georgia: só baixei o peso 600 normal do Fraunces, e um itálico sintético
+// em cima dele ficaria pior que o itálico de verdade que Georgia já tem.
 const catalogCss = `
+  ${FRAUNCES_600_FONT_FACE}
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; color: #12182A; }
   .page { width: 210mm; height: 297mm; page-break-after: always; position: relative; display: flex; flex-direction: column; }
@@ -182,7 +187,7 @@ const catalogCss = `
   .eyebrow { color: rgba(255,255,255,0.75); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
   .cover-body { padding: 18mm; flex: 1; display: flex; flex-direction: column; }
   .cover-logo { max-height: 26mm; max-width: 70mm; object-fit: contain; margin-bottom: 8mm; }
-  .brand { font-family: Georgia, 'Times New Roman', serif; font-size: 40px; margin: 0; }
+  .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-weight: 600; font-size: 40px; margin: 0; }
   .sub { font-family: Georgia, 'Times New Roman', serif; font-style: italic; color: #5B6472; font-size: 16px; margin: 6px 0 0; }
   .cover-title { margin-top: auto; }
   .title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -194,7 +199,7 @@ const catalogCss = `
   .catpage-body { flex: 1; display: flex; flex-direction: column; gap: 14px; }
   .cat-header { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 2px solid #12182A; padding-bottom: 8px; }
   .cat-eyebrow { font-size: 11px; color: #BE4A1B; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
-  .cat-name { font-family: Georgia, 'Times New Roman', serif; font-size: 22px; margin: 2px 0 0; }
+  .cat-name { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-weight: 600; font-size: 22px; margin: 2px 0 0; }
   .cat-count { font-size: 11px; color: #5B6472; }
   .prod-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #E4E1D9; }
   .prod-img { width: 18mm; height: 18mm; border-radius: 4px; background: #F4F5F1; border: 1px solid #E4E1D9; flex-shrink: 0; overflow: hidden; }
