@@ -114,6 +114,48 @@ export function DocumentDownloadIcon({ className }: { className?: string }) {
   )
 }
 
+// Ícones dos badges de status (pedido/pagamento) — antes disso o único
+// sinal era a cor de fundo, que some pra quem não distingue cor bem e não
+// aparece de jeito nenhum pra quem usa leitor de tela. Ver "Raio-X do
+// Catálogo", quick win "Ícone junto de cor nos badges de status".
+export function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className={className} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    </svg>
+  )
+}
+
+export function ClockIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="8.25" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4.5l3 2" />
+    </svg>
+  )
+}
+
+export function XIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className={className} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  )
+}
+
+export function AlertIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className={className} aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 3.5 2.5 20h19L12 3.5Z"
+      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9.5v4M12 16.5h.01" />
+    </svg>
+  )
+}
+
 export function SlidersIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className} aria-hidden="true">

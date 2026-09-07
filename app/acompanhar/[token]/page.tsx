@@ -10,16 +10,19 @@ import { describeMercadoPagoPaymentMethod } from '@/lib/mercadoPago'
 import { toMercadoPagoIdentification } from '@/lib/cpfCnpj'
 import { formatPrice, UUID_RE } from '@/lib/format'
 import type { DeliveryMethod, DiscountType } from '@/lib/types'
+import { ClockIcon, CheckIcon, XIcon } from '@/components/icons'
 
 export const runtime = 'nodejs'
 // Cache leve por link: evita bater na API do Melhor Envio a cada refresh do
 // cliente. O botão "Atualizar" busca o rastreio fresco pela rota de API.
 export const revalidate = 60
 
-const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  rascunho: { label: 'Aguardando confirmação', cls: 'badge-warning' },
-  confirmado: { label: 'Confirmado', cls: 'badge-success' },
-  cancelado: { label: 'Cancelado', cls: 'badge-danger' },
+// Cor sozinha não é sinal suficiente (daltonismo, leitor de tela) — cada
+// status do pedido ganha um ícone próprio ao lado do texto.
+const STATUS_LABEL: Record<string, { label: string; cls: string; Icon: typeof ClockIcon }> = {
+  rascunho: { label: 'Aguardando confirmação', cls: 'badge-warning', Icon: ClockIcon },
+  confirmado: { label: 'Confirmado', cls: 'badge-success', Icon: CheckIcon },
+  cancelado: { label: 'Cancelado', cls: 'badge-danger', Icon: XIcon },
 }
 
 const DELIVERY_LABEL: Record<DeliveryMethod, string> = {
@@ -131,7 +134,7 @@ export default async function AcompanharPedidoPage({
   )
   const deliveryFee = Number(order.delivery_fee ?? 0)
   const deliveryMethod = (order.delivery_method ?? 'a_combinar') as DeliveryMethod
-  const status = STATUS_LABEL[order.status] ?? { label: order.status, cls: 'badge-neutral' }
+  const status = STATUS_LABEL[order.status] ?? { label: order.status, cls: 'badge-neutral', Icon: ClockIcon }
   const date = new Date(order.created_at).toLocaleDateString('pt-BR')
 
   let tracking: { code: string | null; status: string | null; events: { date: string | null; description: string | null; location: string | null }[] } = {
@@ -169,7 +172,10 @@ export default async function AcompanharPedidoPage({
             <div className="font-display text-lg">Pedido #{order.number}</div>
             <div className="text-xs text-muted">{date}</div>
           </div>
-          <span className={`badge ${status.cls}`}>{status.label}</span>
+          <span className={`badge ${status.cls}`}>
+            <status.Icon className="w-3.5 h-3.5" />
+            {status.label}
+          </span>
         </div>
 
         <section className="flex flex-col gap-2">
@@ -224,7 +230,11 @@ export default async function AcompanharPedidoPage({
                 Pagamento confirmado em {new Date(order.paid_at).toLocaleDateString('pt-BR')}.
               </p>
             ) : mpAccount?.public_key ? (
-              <>
+              // Moldura própria (não só o card-tight genérico da seção) —
+              // é literalmente onde o cartão é digitado, merece se destacar
+              // do resto da tela em vez de se misturar com qualquer outro
+              // bloco de texto.
+              <div className="border-2 border-accent/20 rounded-xl p-3 flex flex-col gap-2">
                 <p className="text-sm text-muted">Total a pagar: {formatPrice(Number(order.total))}</p>
                 <PaymentBrick
                   token={token}
@@ -245,7 +255,7 @@ export default async function AcompanharPedidoPage({
                     identification: toMercadoPagoIdentification(customer?.document),
                   }}
                 />
-              </>
+              </div>
             ) : (
               <p className="text-sm text-muted">Combine o pagamento diretamente com a loja.</p>
             )}

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import { deleteOrder, updateOrderStatus } from './actions'
 import DeleteOrderButton from '@/components/DeleteOrderButton'
-import { PencilIcon } from '@/components/icons'
+import { PencilIcon, ClockIcon, CheckIcon, XIcon, AlertIcon } from '@/components/icons'
 import type { OrderStatus } from '@/lib/types'
 
 const statusLabel: Record<OrderStatus, string> = {
@@ -16,6 +16,14 @@ const statusClass: Record<OrderStatus, string> = {
   rascunho: 'badge-neutral',
   confirmado: 'badge-success',
   cancelado: 'badge-danger',
+}
+
+// Cor sozinha não é sinal suficiente (daltonismo, leitor de tela) — cada
+// status de pedido/pagamento ganha um ícone próprio ao lado do texto.
+const statusIcon: Record<OrderStatus, typeof ClockIcon> = {
+  rascunho: ClockIcon,
+  confirmado: CheckIcon,
+  cancelado: XIcon,
 }
 
 export default async function PedidosPage({
@@ -101,6 +109,10 @@ export default async function PedidosPage({
               <p className="text-xs text-muted truncate">{new Date(o.created_at).toLocaleDateString('pt-BR')}</p>
             </div>
             <span className={`badge badge-sm ${statusClass[o.status as OrderStatus]}`}>
+              {(() => {
+                const StatusIcon = statusIcon[o.status as OrderStatus]
+                return <StatusIcon className="w-3 h-3" />
+              })()}
               {statusLabel[o.status as OrderStatus]}
             </span>
             {o.status === 'confirmado' && o.paid_at && !o.stock_committed && (
@@ -108,11 +120,13 @@ export default async function PedidosPage({
                 className="badge badge-sm badge-warning"
                 title="O pagamento foi aprovado mas o estoque não pôde ser baixado automaticamente — provavelmente faltou saldo na hora."
               >
+                <AlertIcon className="w-3 h-3" />
                 Revisar estoque
               </span>
             )}
             {(paymentStatusByOrder.get(o.id) === 'refunded' || paymentStatusByOrder.get(o.id) === 'cancelled') && (
               <span className="badge badge-sm badge-danger">
+                <XIcon className="w-3 h-3" />
                 {paymentStatusByOrder.get(o.id) === 'refunded' ? 'Estornado' : 'Pagamento cancelado'}
               </span>
             )}

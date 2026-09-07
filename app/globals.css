@@ -10,8 +10,12 @@
 }
 
 @layer components {
+  /* focus-visible (não :focus puro) pra só aparecer em navegação por
+     teclado, sem mudar o clique de mouse — o único foco que o produto
+     tinha antes disso era o azul padrão do navegador. Ver "Raio-X do
+     Catálogo", quick win "Foco visível customizado nos inputs". */
   .input {
-    @apply border border-line rounded-lg px-3 py-2 text-sm bg-white w-full;
+    @apply border border-line rounded-lg px-3 py-2 text-sm bg-white w-full outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:border-accent;
   }
 
   /* Botão, card e badge existiam antes só como combinações de utilitárias

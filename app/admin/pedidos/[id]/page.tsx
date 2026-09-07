@@ -6,6 +6,7 @@ import OrderForm from '@/components/OrderForm'
 import OrderPdfButton from '@/components/OrderPdfButton'
 import DeliveryCard from '@/components/DeliveryCard'
 import CopyLinkField from '@/components/CopyLinkField'
+import { CheckIcon, AlertIcon, XIcon } from '@/components/icons'
 
 export default async function EditarPedidoPage({
   params,
@@ -52,18 +53,23 @@ export default async function EditarPedidoPage({
           <div className="flex items-center gap-2">
             <h1 className="font-display text-2xl">Pedido #{order.number}</h1>
             {order.paid_at && (
-              <span className="badge badge-sm badge-success">Pago</span>
+              <span className="badge badge-sm badge-success">
+                <CheckIcon className="w-3 h-3" />
+                Pago
+              </span>
             )}
             {order.status === 'confirmado' && order.paid_at && !order.stock_committed && (
               <span
                 className="badge badge-sm badge-warning"
                 title="O pagamento foi aprovado mas o estoque não pôde ser baixado automaticamente — provavelmente faltou saldo na hora. Dê entrada no estoque e confirme o pedido de novo."
               >
+                <AlertIcon className="w-3 h-3" />
                 Revisar estoque
               </span>
             )}
             {(payment?.status === 'refunded' || payment?.status === 'cancelled') && (
               <span className="badge badge-sm badge-danger">
+                <XIcon className="w-3 h-3" />
                 {payment.status === 'refunded' ? 'Estornado' : 'Pagamento cancelado'}
               </span>
             )}
