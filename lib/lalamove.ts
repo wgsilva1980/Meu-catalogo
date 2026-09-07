@@ -95,10 +95,23 @@ function toGeoPoint(rawLat: unknown, rawLng: unknown): GeoPoint | null {
   return { lat, lng }
 }
 
+// As 4 chamadas de geocodificação abaixo só variam em como montar a URL/
+// headers e como extrair o ponto do JSON — o fetch e o try/catch/log em
+// volta eram repetidos 4 vezes. `run` faz a parte específica do provedor;
+// aqui só fica o esqueleto comum (erro de rede vira null, não exceção).
+async function withGeocodeErrorLogging(providerName: string, run: () => Promise<GeoPoint | null>): Promise<GeoPoint | null> {
+  try {
+    return await run()
+  } catch (err) {
+    console.error(`Geocodificação ${providerName} falhou:`, err)
+    return null
+  }
+}
+
 async function geocodeViaGoogle(digits: string, addressLine?: string): Promise<GeoPoint | null> {
   const googleKey = process.env.GOOGLE_MAPS_API_KEY?.trim()
   if (!googleKey || (!addressLine && !digits)) return null
-  try {
+  return withGeocodeErrorLogging('Google', async () => {
     const query = [addressLine, digits && `CEP ${digits}`, 'Brasil'].filter(Boolean).join(', ')
     const url = new URL('https://maps.googleapis.com/maps/api/geocode/json')
     url.searchParams.set('address', query)
@@ -110,29 +123,23 @@ async function geocodeViaGoogle(digits: string, addressLine?: string): Promise<G
       results: Array<{ geometry: { location: { lat: number; lng: number } } }>
     }
     const loc = data.results?.[0]?.geometry?.location
-    if (data.status === 'OK' && loc) return toGeoPoint(loc.lat, loc.lng)
-  } catch (err) {
-    console.error('Geocodificação Google falhou:', err)
-  }
-  return null
+    return data.status === 'OK' && loc ? toGeoPoint(loc.lat, loc.lng) : null
+  })
 }
 
 async function geocodeViaAwesomeApi(digits: string): Promise<GeoPoint | null> {
   if (digits.length !== 8) return null
-  try {
+  return withGeocodeErrorLogging('AwesomeAPI', async () => {
     const res = await fetch(`https://cep.awesomeapi.com.br/json/${digits}`, { cache: 'no-store' })
     if (!res.ok) return null
     const data = (await res.json()) as { lat?: string; lng?: string }
     return toGeoPoint(data.lat, data.lng)
-  } catch (err) {
-    console.error('Geocodificação AwesomeAPI falhou:', err)
-    return null
-  }
+  })
 }
 
 async function geocodeViaBrasilApi(digits: string): Promise<GeoPoint | null> {
   if (digits.length !== 8) return null
-  try {
+  return withGeocodeErrorLogging('BrasilAPI', async () => {
     const res = await fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`, { cache: 'no-store' })
     if (!res.ok) return null
     const data = (await res.json()) as {
@@ -140,10 +147,7 @@ async function geocodeViaBrasilApi(digits: string): Promise<GeoPoint | null> {
     }
     const coords = data.location?.coordinates
     return coords ? toGeoPoint(coords.latitude, coords.longitude) : null
-  } catch (err) {
-    console.error('Geocodificação BrasilAPI falhou:', err)
-    return null
-  }
+  })
 }
 
 // Último recurso: Nominatim (OpenStreetMap). Cobre praticamente qualquer CEP/
@@ -156,7 +160,7 @@ async function geocodeViaNominatim(digits: string, addressLine?: string): Promis
     attempts.push({ postalcode: `${digits.slice(0, 5)}-${digits.slice(5)}`, country: 'Brazil' })
   }
   for (const params of attempts) {
-    try {
+    const point = await withGeocodeErrorLogging('Nominatim', async () => {
       const url = new URL('https://nominatim.openstreetmap.org/search')
       url.searchParams.set('format', 'jsonv2')
       url.searchParams.set('limit', '1')
@@ -165,14 +169,12 @@ async function geocodeViaNominatim(digits: string, addressLine?: string): Promis
         cache: 'no-store',
         headers: { 'User-Agent': 'meu-catalogo/1.0 (pedido motoboy geocoding)' },
       })
-      if (!res.ok) continue
+      if (!res.ok) return null
       const data = (await res.json()) as Array<{ lat?: string; lon?: string }>
       const hit = data?.[0]
-      const point = hit ? toGeoPoint(hit.lat, hit.lon) : null
-      if (point) return point
-    } catch (err) {
-      console.error('Geocodificação Nominatim falhou:', err)
-    }
+      return hit ? toGeoPoint(hit.lat, hit.lon) : null
+    })
+    if (point) return point
   }
   return null
 }
