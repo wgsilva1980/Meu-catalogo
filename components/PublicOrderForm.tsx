@@ -576,9 +576,11 @@ function AddressFields({
             className="input max-w-[10rem]"
           />
         </Field>
-        {cepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
-        {cepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
-        {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+        <span role="status" aria-live="polite">
+          {cepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
+          {cepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
+          {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_7rem] gap-3">
@@ -671,7 +673,7 @@ function ProductCard({
         {product.image_url ? (
           <Image
             src={product.image_url}
-            alt={product.name}
+            alt={`${product.name} — ${product.brand}`}
             fill
             sizes="(min-width: 640px) 200px, 45vw"
             className="object-cover"

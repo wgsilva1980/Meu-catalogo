@@ -1,7 +1,33 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import CustomerForm from '@/components/CustomerForm'
 import { submitPublicCustomer } from './actions'
+
+// Sem isso, compartilhar o link de cadastro (WhatsApp, etc.) gerava uma
+// prévia genérica sem nome nem logo da loja — ver "Raio-X do Catálogo",
+// achado P2.
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const supabase = createAdminClient()
+  const { data: company } = await supabase
+    .from('companies')
+    .select('name, logo_url')
+    .eq('slug', slug)
+    .eq('active', true)
+    .single()
+
+  if (!company) return {}
+
+  const title = `Cadastro — ${company.name}`
+  const description = 'Cadastre-se para receber o catálogo e fazer pedidos.'
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: company.logo_url ? [company.logo_url] : undefined },
+    twitter: { card: 'summary', title, description, images: company.logo_url ? [company.logo_url] : undefined },
+  }
+}
 
 export default async function CadastroPublicoPage({
   params,

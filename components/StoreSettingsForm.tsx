@@ -287,9 +287,11 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
               className="input max-w-[10rem]"
             />
           </Field>
-          {originCepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
-          {originCepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
-          {originCepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+          <span role="status" aria-live="polite">
+            {originCepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
+            {originCepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
+            {originCepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_8rem] gap-3">

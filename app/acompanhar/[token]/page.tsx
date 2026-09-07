@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getShipmentTracking } from '@/lib/melhorEnvio'
@@ -25,6 +26,38 @@ const DELIVERY_LABEL: Record<DeliveryMethod, string> = {
   motoboy: 'Entrega por motoboy',
   a_combinar: 'Entrega a combinar',
   melhor_envio: 'Envio por transportadora',
+}
+
+// Sem isso, o link de acompanhamento (que o cliente às vezes repassa, ex.:
+// pra combinar a entrega com outra pessoa) gerava uma prévia sem nome nem
+// logo da loja — ver "Raio-X do Catálogo", achado P2.
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params
+  if (!UUID_RE.test(token)) return {}
+
+  const supabase = createAdminClient()
+  const { data: order } = await supabase
+    .from('sales_orders')
+    .select('company_id')
+    .eq('public_token', token)
+    .maybeSingle()
+  if (!order) return {}
+
+  const { data: company } = await supabase
+    .from('companies')
+    .select('name, logo_url')
+    .eq('id', order.company_id)
+    .single()
+  if (!company) return {}
+
+  const title = `Acompanhar pedido — ${company.name}`
+  const description = `Status do pedido e do pagamento em ${company.name}.`
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: company.logo_url ? [company.logo_url] : undefined },
+    twitter: { card: 'summary', title, description, images: company.logo_url ? [company.logo_url] : undefined },
+  }
 }
 
 export default async function AcompanharPedidoPage({

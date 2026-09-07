@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveShippingBoxes } from '@/lib/melhorEnvio'
@@ -5,6 +6,31 @@ import { registerCustomerAndContinue } from './actions'
 import PublicOrderForm from '@/components/PublicOrderForm'
 import DocumentLookupForm from '@/components/DocumentLookupForm'
 import CustomerForm from '@/components/CustomerForm'
+
+// Sem isso, compartilhar o link do catálogo (o próprio modelo de distribuição
+// do produto: "manda o link pro cliente") gerava uma prévia sem nome nem
+// logo da loja — ver "Raio-X do Catálogo", achado P2.
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const supabase = createAdminClient()
+  const { data: company } = await supabase
+    .from('companies')
+    .select('name, logo_url')
+    .eq('slug', slug)
+    .eq('active', true)
+    .single()
+
+  if (!company) return {}
+
+  const title = `Catálogo — ${company.name}`
+  const description = `Monte seu pedido de ${company.name} e acompanhe a entrega.`
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: company.logo_url ? [company.logo_url] : undefined },
+    twitter: { card: 'summary', title, description, images: company.logo_url ? [company.logo_url] : undefined },
+  }
+}
 
 export default async function PedidoPublicoPage({
   params,

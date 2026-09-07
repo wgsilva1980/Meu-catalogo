@@ -66,7 +66,9 @@ export default async function ProdutosPage({
         {(products ?? []).map((p: any) => (
           <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <div className="relative w-10 h-10 rounded-md bg-paper border border-line shrink-0 overflow-hidden">
-              {p.image_url && <Image src={p.image_url} alt={p.name} fill sizes="40px" className="object-cover" />}
+              {p.image_url && (
+                <Image src={p.image_url} alt={`${p.name} — ${p.brand}`} fill sizes="40px" className="object-cover" />
+              )}
             </div>
             <div className="flex-1 min-w-0 basis-full sm:basis-0">
               <p className="font-semibold truncate">{p.name}</p>

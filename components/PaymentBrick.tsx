@@ -95,11 +95,13 @@ export default function PaymentBrick({ token, publicKey, amount, maxInstallments
           // Só roda no cliente (depois de `ready`), então `window` existe.
           customization={{ backUrls: { return: `${window.location.origin}/acompanhar/${token}` } }}
         />
-        {pixExpired && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-            Paramos de checar automaticamente. Se você já pagou, atualize a página — se ainda não, o código pode ter expirado.
-          </p>
-        )}
+        <div role="status" aria-live="polite">
+          {pixExpired && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+              Paramos de checar automaticamente. Se você já pagou, atualize a página — se ainda não, o código pode ter expirado.
+            </p>
+          )}
+        </div>
         {result.status === 'rejected' && (
           <button type="button" onClick={() => setResult(null)} className="text-xs text-muted underline text-center">
             Tentar com outro pagamento
@@ -111,7 +113,9 @@ export default function PaymentBrick({ token, publicKey, amount, maxInstallments
 
   return (
     <div className="flex flex-col gap-1">
-      {formError && <p className="text-xs text-red-600">{formError}</p>}
+      <div role="status" aria-live="polite">
+        {formError && <p className="text-xs text-red-600">{formError}</p>}
+      </div>
       <Payment
         // O SDK loga o BIN do cartão no console por padrão quando essa prop
         // não é passada (`onBinChangeDefault` em @mercadopago/sdk-react) — só

@@ -145,9 +145,11 @@ export default function CustomerForm({
               className="input max-w-[10rem]"
             />
           </Field>
-          {cepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
-          {cepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
-          {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+          <span role="status" aria-live="polite">
+            {cepStatus === 'loading' && <span className="text-xs text-muted pb-2">Buscando endereço...</span>}
+            {cepStatus === 'not-found' && <span className="text-xs text-red-600 pb-2">CEP não encontrado.</span>}
+            {cepStatus === 'error' && <span className="text-xs text-red-600 pb-2">Falha ao buscar o CEP.</span>}
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_8rem] gap-3">

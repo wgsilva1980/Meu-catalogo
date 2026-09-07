@@ -3,17 +3,28 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import SignOutButton from '@/components/SignOutButton'
+import {
+  HomeIcon,
+  CubeIcon,
+  LayersIcon,
+  TagIcon,
+  UsersIcon,
+  ClipboardIcon,
+  CreditCardIcon,
+  DocumentDownloadIcon,
+  SlidersIcon,
+} from '@/components/icons'
 
 const items = [
-  { href: '/admin', label: 'Painel' },
-  { href: '/admin/produtos', label: 'Produtos' },
-  { href: '/admin/estoque', label: 'Estoque' },
-  { href: '/admin/categorias', label: 'Categorias' },
-  { href: '/admin/clientes', label: 'Clientes' },
-  { href: '/admin/pedidos', label: 'Pedidos' },
-  { href: '/admin/formas-pagamento', label: 'Formas de pagamento' },
-  { href: '/admin/catalogo', label: 'Gerar catálogo' },
-  { href: '/admin/configuracoes', label: 'Configurações' },
+  { href: '/admin', label: 'Painel', Icon: HomeIcon },
+  { href: '/admin/produtos', label: 'Produtos', Icon: CubeIcon },
+  { href: '/admin/estoque', label: 'Estoque', Icon: LayersIcon },
+  { href: '/admin/categorias', label: 'Categorias', Icon: TagIcon },
+  { href: '/admin/clientes', label: 'Clientes', Icon: UsersIcon },
+  { href: '/admin/pedidos', label: 'Pedidos', Icon: ClipboardIcon },
+  { href: '/admin/formas-pagamento', label: 'Formas de pagamento', Icon: CreditCardIcon },
+  { href: '/admin/catalogo', label: 'Gerar catálogo', Icon: DocumentDownloadIcon },
+  { href: '/admin/configuracoes', label: 'Configurações', Icon: SlidersIcon },
 ]
 
 export default function AdminSidebar({ email, companyName }: { email: string; companyName: string }) {
@@ -33,10 +44,11 @@ export default function AdminSidebar({ email, companyName }: { email: string; co
             <Link
               key={item.href}
               href={item.href}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${
                 active ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-black/5'
               }`}
             >
+              <item.Icon className="w-4 h-4 shrink-0" />
               {item.label}
             </Link>
           )

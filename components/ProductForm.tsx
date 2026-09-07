@@ -252,7 +252,7 @@ export default function ProductForm({ categories, product }: { categories: Categ
           {busy ? (
             <span>{status}</span>
           ) : imageUrl ? (
-            <Image src={imageUrl} alt="" fill sizes="(min-width: 640px) 320px, 45vw" className="object-contain" />
+            <Image src={imageUrl} alt={name || 'Foto do produto'} fill sizes="(min-width: 640px) 320px, 45vw" className="object-contain" />
           ) : (
             <span>Toque para escolher uma foto, ou arraste um arquivo aqui (JPG ou PNG).<br />O fundo é removido e a imagem é ajustada automaticamente.</span>
           )}
