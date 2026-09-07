@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { fraunces, sourceSans3 } from '@/lib/fonts'
 import './globals.css'
 
 // process.env.VERCEL_URL/VERCEL_PROJECT_PRODUCTION_URL são preenchidos
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={`${fraunces.variable} ${sourceSans3.variable}`}>
       <body>{children}</body>
     </html>
   )

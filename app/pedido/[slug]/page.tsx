@@ -148,7 +148,7 @@ export default async function PedidoPublicoPage({
             <img src={company.logo_url} alt={company.name} className="h-12 object-contain" />
           )}
           <span className="text-xs uppercase tracking-widest text-accent font-bold">Seu pedido</span>
-          <h1 className="font-display text-lg">{company.name}</h1>
+          <h1 className="font-display text-title">{company.name}</h1>
           <p className="text-sm text-muted">Monte seu pedido abaixo. Entraremos em contato para confirmar.</p>
         </div>
 

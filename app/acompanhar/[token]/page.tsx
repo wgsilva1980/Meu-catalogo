@@ -159,7 +159,7 @@ export default async function AcompanharPedidoPage({
             <img src={company.logo_url} alt={company?.name ?? ''} className="h-12 object-contain" />
           )}
           <span className="text-xs uppercase tracking-widest text-accent font-bold">Acompanhamento</span>
-          <h1 className="font-display text-lg">{company?.name}</h1>
+          <h1 className="font-display text-title">{company?.name}</h1>
         </div>
 
         {novo === '1' && (
