@@ -451,9 +451,9 @@ export default function PublicOrderForm({
             <p className="text-sm">
               Cadastro encontrado: <span className="font-semibold">{foundCustomer.name}</span>
             </p>
-            <a href={`/pedido/${slug}`} className="text-xs text-accent underline w-fit">
+            <Button href={`/pedido/${slug}`} variant="ghost" size="sm" className="w-fit">
               Não é você? Buscar outro CPF
-            </a>
+            </Button>
             <Field label="Observações">
               <textarea name="notes" className="input h-20" />
             </Field>
