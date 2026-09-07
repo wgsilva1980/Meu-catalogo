@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
@@ -64,11 +65,8 @@ export default async function ProdutosPage({
       <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
         {(products ?? []).map((p: any) => (
           <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
-            <div className="w-10 h-10 rounded-md bg-paper border border-line shrink-0 overflow-hidden">
-              {p.image_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.image_url} className="w-full h-full object-cover" alt="" />
-              )}
+            <div className="relative w-10 h-10 rounded-md bg-paper border border-line shrink-0 overflow-hidden">
+              {p.image_url && <Image src={p.image_url} alt={p.name} fill sizes="40px" className="object-cover" />}
             </div>
             <div className="flex-1 min-w-0 basis-full sm:basis-0">
               <p className="font-semibold truncate">{p.name}</p>

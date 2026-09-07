@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import type { DragEvent, ReactNode } from 'react'
+import Image from 'next/image'
 import { saveProduct } from '@/app/admin/produtos/actions'
 import type { Category, Product } from '@/lib/types'
 
@@ -244,15 +245,14 @@ export default function ProductForm({ categories, product }: { categories: Categ
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => !busy && fileInputRef.current?.click()}
-          className={`aspect-square border border-dashed rounded-lg overflow-hidden bg-paper flex items-center justify-center text-muted text-xs text-center p-3 transition-colors ${
+          className={`relative aspect-square border border-dashed rounded-lg overflow-hidden bg-paper flex items-center justify-center text-muted text-xs text-center p-3 transition-colors ${
             busy ? 'cursor-wait' : 'cursor-pointer'
           } ${dragOver ? 'border-accent bg-accent/5' : 'border-line'}`}
         >
           {busy ? (
             <span>{status}</span>
           ) : imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="w-full h-full object-contain" />
+            <Image src={imageUrl} alt="" fill sizes="(min-width: 640px) 320px, 45vw" className="object-contain" />
           ) : (
             <span>Toque para escolher uma foto, ou arraste um arquivo aqui (JPG ou PNG).<br />O fundo é removido e a imagem é ajustada automaticamente.</span>
           )}

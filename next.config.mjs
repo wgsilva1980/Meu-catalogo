@@ -11,6 +11,15 @@ const nextConfig = {
     },
   },
   serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  // Fotos de produto e logo vêm do Storage do Supabase (buckets "produtos"
+  // e "assets"), hospedado em <project-ref>.supabase.co — o wildcard cobre
+  // tanto o projeto de sandbox quanto o de produção sem precisar fixar os
+  // dois refs aqui.
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },
+    ],
+  },
   outputFileTracingIncludes: {
     '/api/pedidos/*/pdf/route': ['./node_modules/@sparticuz/chromium/bin/**'],
     '/api/catalogo/gerar/route': ['./node_modules/@sparticuz/chromium/bin/**'],

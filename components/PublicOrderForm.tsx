@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { ReactNode } from 'react'
+import Image from 'next/image'
 import { submitPublicOrder } from '@/app/pedido/[slug]/actions'
 import type { Category, Customer, DeliveryMethod, Product } from '@/lib/types'
 import { formatAddress, formatPrice, isValidZipCode } from '@/lib/format'
@@ -231,35 +232,13 @@ export default function PublicOrderForm({
 
       <StepHeader step={step} />
 
-      <section className={`flex flex-col gap-4 ${step === 1 ? '' : 'hidden'}`}>
+      <section className={`flex flex-col gap-5 ${step === 1 ? '' : 'hidden'}`}>
         {groups.map(({ category, items }) => (
           <div key={category.id} className="flex flex-col gap-2">
             <h2 className="text-sm font-bold">{category.name}</h2>
-            <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {items.map((p) => (
-                <div key={p.id} className="flex items-center gap-3 p-3 text-sm">
-                  <div className="w-10 h-10 rounded-md bg-paper border border-line shrink-0 overflow-hidden">
-                    {p.image_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.image_url} className="w-full h-full object-cover" alt="" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{p.name}</p>
-                    <p className="text-xs text-muted truncate">
-                      {p.brand} · {formatPrice(p.price)}
-                    </p>
-                  </div>
-                  <input type="hidden" name="product_id" value={p.id} />
-                  <input
-                    name="quantity"
-                    type="number"
-                    min={0}
-                    value={quantities[p.id] ?? 0}
-                    onChange={(e) => setQuantity(p.id, Number(e.target.value))}
-                    className="input w-16 text-center shrink-0"
-                  />
-                </div>
+                <ProductCard key={p.id} product={p} quantity={quantities[p.id] ?? 0} onChange={(qty) => setQuantity(p.id, qty)} />
               ))}
             </div>
           </div>
@@ -668,5 +647,76 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {label}
       {children}
     </label>
+  )
+}
+
+// Card de vitrine: antes cada produto era uma linha de texto com uma thumb
+// de 40px — aqui virou o protagonista (foto grande, 1:1) com um stepper de
+// quantidade em vez de um <input type="number"> nu, que no celular abre o
+// teclado inteiro só pra escolher "2". O <input> continua existindo (nome
+// "quantity", é ele que a submissão do form lê) só que sem as setas nativas,
+// espremido entre os botões − e +.
+function ProductCard({
+  product,
+  quantity,
+  onChange,
+}: {
+  product: Product
+  quantity: number
+  onChange: (quantity: number) => void
+}) {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-xl border border-line bg-white">
+      <div className="relative aspect-square bg-paper">
+        {product.image_url ? (
+          <Image
+            src={product.image_url}
+            alt={product.name}
+            fill
+            sizes="(min-width: 640px) 200px, 45vw"
+            className="object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-muted text-xs text-center p-2">Sem foto</div>
+        )}
+      </div>
+      <div className="flex flex-col gap-2 p-2.5">
+        <div className="min-w-0">
+          <p className="font-semibold text-sm truncate">{product.name}</p>
+          <p className="text-xs text-muted truncate">{product.brand}</p>
+          <p className="font-bold text-sm mt-0.5">{formatPrice(product.price)}</p>
+        </div>
+
+        <input type="hidden" name="product_id" value={product.id} />
+        <div className="flex items-center justify-between gap-1">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(0, quantity - 1))}
+            disabled={quantity <= 0}
+            aria-label={`Diminuir quantidade de ${product.name}`}
+            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg border border-line text-base font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            −
+          </button>
+          <input
+            name="quantity"
+            type="number"
+            min={0}
+            value={quantity}
+            onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
+            aria-label={`Quantidade de ${product.name}`}
+            className="w-full min-w-0 text-center text-sm font-semibold border-0 bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(quantity + 1)}
+            aria-label={`Aumentar quantidade de ${product.name}`}
+            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg border border-line text-base font-bold"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
