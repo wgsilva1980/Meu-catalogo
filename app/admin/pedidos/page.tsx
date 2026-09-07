@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import { deleteOrder, updateOrderStatus } from './actions'
-import { PencilIcon, TrashIcon } from '@/components/icons'
+import DeleteOrderButton from '@/components/DeleteOrderButton'
+import { PencilIcon } from '@/components/icons'
 import type { OrderStatus } from '@/lib/types'
 
 const statusLabel: Record<OrderStatus, string> = {
@@ -139,17 +140,12 @@ export default async function PedidosPage({
                 <PencilIcon className="w-3.5 h-3.5" />
                 Editar
               </Link>
-              <form action={deleteOrder}>
-                <input type="hidden" name="id" value={o.id} />
-                <button
-                  type="submit"
-                  title="Excluir pedido"
-                  className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
-                >
-                  <TrashIcon className="w-3.5 h-3.5" />
-                  Excluir
-                </button>
-              </form>
+              <DeleteOrderButton
+                orderId={o.id}
+                orderNumber={o.number}
+                disabledReason={o.status === 'confirmado' ? 'Pedidos confirmados não podem ser excluídos.' : null}
+                deleteOrder={deleteOrder}
+              />
             </div>
           </div>
         ))}

@@ -287,25 +287,38 @@ export async function updateOrderStatus(formData: FormData) {
   revalidatePath('/admin/estoque')
 }
 
-export async function deleteOrder(formData: FormData) {
+export type DeleteOrderResult = { ok: true } | { ok: false; error: string }
+
+// Pedido confirmado só sai daqui virando cancelado (que libera estoque
+// normalmente pelo fluxo de status) — excluir de vez apagaria o histórico
+// de uma venda que já aconteceu de verdade. A checagem é sempre feita aqui,
+// não só escondendo o botão no client: quem chama essa action direto (fora
+// do form) não pode contornar a regra.
+export async function deleteOrder(formData: FormData): Promise<DeleteOrderResult> {
   const active = await resolveActiveCompany()
-  if (!active.ok) return
+  if (!active.ok) return { ok: false, error: 'Não autorizado.' }
 
   const supabase = await createClient()
   const id = formData.get('id') as string
 
   const { data: order } = await supabase
     .from('sales_orders')
-    .select('stock_committed')
+    .select('status, stock_committed')
     .eq('id', id)
     .eq('company_id', active.companyId)
     .maybeSingle()
 
-  if (order?.stock_committed) {
+  if (!order) return { ok: false, error: 'Pedido não encontrado.' }
+  if (order.status === 'confirmado') {
+    return { ok: false, error: 'Pedidos confirmados não podem ser excluídos. Cancele o pedido antes, se precisar.' }
+  }
+
+  if (order.stock_committed) {
     await supabase.rpc('release_order_stock', { p_company_id: active.companyId, p_order_id: id })
   }
 
   await supabase.from('sales_orders').delete().eq('id', id).eq('company_id', active.companyId)
   revalidatePath('/admin/pedidos')
   revalidatePath('/admin/estoque')
+  return { ok: true }
 }
