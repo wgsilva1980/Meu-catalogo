@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatPrice, onlyDigits, isValidZipCode, isValidUuid, UUID_RE } from './format'
+import { formatAddress, formatPrice, onlyDigits, isValidZipCode, isValidUuid, UUID_RE } from './format'
 
 describe('formatPrice', () => {
   it('formata em reais com vírgula decimal', () => {
@@ -45,5 +45,40 @@ describe('isValidUuid / UUID_RE', () => {
 
   it('UUID_RE exportado casa com o mesmo padrão', () => {
     expect(UUID_RE.test('74aa5884-727e-4961-a88a-65ee627b6d67')).toBe(true)
+  })
+})
+
+describe('formatAddress', () => {
+  it('junta rua/número/complemento/bairro/cidade-UF/CEP com · ', () => {
+    expect(
+      formatAddress({
+        street: 'Rua X',
+        number: '10',
+        complement: 'Apto 2',
+        neighborhood: 'Centro',
+        city: 'São Paulo',
+        state: 'SP',
+        zip_code: '01000-000',
+      })
+    ).toBe('Rua X, 10 - Apto 2 · Centro · São Paulo - SP · CEP 01000-000')
+  })
+
+  it('omite complemento quando ausente', () => {
+    expect(
+      formatAddress({
+        street: 'Rua X',
+        number: '10',
+        complement: '',
+        neighborhood: 'Centro',
+        city: 'São Paulo',
+        state: 'SP',
+        zip_code: '01000-000',
+      })
+    ).toBe('Rua X, 10 · Centro · São Paulo - SP · CEP 01000-000')
+  })
+
+  it('omite campos ausentes sem deixar separadores soltos', () => {
+    expect(formatAddress({ city: 'São Paulo', state: 'SP' })).toBe('São Paulo - SP')
+    expect(formatAddress({})).toBe('')
   })
 })

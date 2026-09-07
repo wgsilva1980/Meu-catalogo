@@ -9,6 +9,7 @@ import { isBot, readField } from '@/lib/publicForm'
 import { isValidCpfCnpj } from '@/lib/cpfCnpj'
 import { resolveMotoQuote } from '@/lib/lalamove'
 import { quoteMelhorEnvioForCart, type CompanyForShippingQuote } from '@/lib/melhorEnvio'
+import { formatAddress } from '@/lib/format'
 import type { DeliveryMethod } from '@/lib/types'
 
 const MAX_QUANTITY = 100_000
@@ -436,16 +437,7 @@ export async function submitPublicOrder(formData: FormData) {
           ? {
               method: deliveryMethod,
               fee: deliveryFee,
-              address: deliveryAddress
-                ? [
-                    [deliveryAddress.street, deliveryAddress.number].filter(Boolean).join(', '),
-                    deliveryAddress.neighborhood,
-                    [deliveryAddress.city, deliveryAddress.state].filter(Boolean).join(' - '),
-                    deliveryAddress.zip_code ? `CEP ${deliveryAddress.zip_code}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')
-                : null,
+              address: deliveryAddress ? formatAddress(deliveryAddress) : null,
             }
           : null,
       paymentMethod: paymentMethodName,

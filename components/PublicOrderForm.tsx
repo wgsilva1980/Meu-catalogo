@@ -4,26 +4,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { submitPublicOrder } from '@/app/pedido/[slug]/actions'
 import type { Category, Customer, DeliveryMethod, Product } from '@/lib/types'
-import { formatPrice, isValidZipCode } from '@/lib/format'
-
-function formatAddress(addr: {
-  zip_code: string
-  street: string
-  number: string
-  complement: string
-  neighborhood: string
-  city: string
-  state: string
-}) {
-  return [
-    [addr.street, addr.number].filter(Boolean).join(', ') + (addr.complement ? ` - ${addr.complement}` : ''),
-    addr.neighborhood,
-    [addr.city, addr.state].filter(Boolean).join(' - '),
-    addr.zip_code ? `CEP ${addr.zip_code}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
+import { formatAddress, formatPrice, isValidZipCode } from '@/lib/format'
 
 type ViaCepResponse = {
   erro?: boolean
