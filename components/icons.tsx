@@ -189,3 +189,14 @@ export function SlidersIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
+// Botão de abrir o menu da sidebar no mobile — ver components/Sidebar.tsx,
+// achado P2 da "Raio-X do Catálogo II" (a sidebar virava uma linha
+// horizontal de rolagem em vez de um menu de verdade no celular).
+export function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className} aria-hidden="true">
+      <path strokeLinecap="round" d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17" />
+    </svg>
+  )
+}

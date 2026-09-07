@@ -1,10 +1,10 @@
 'use client'
 
+import { useEffect, useState, type ComponentType } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import SignOutButton from '@/components/SignOutButton'
-import { SunIcon, MoonIcon } from '@/components/icons'
-import type { ComponentType } from 'react'
+import { SunIcon, MoonIcon, MenuIcon, XIcon } from '@/components/icons'
 
 export type SidebarItem = {
   href: string
@@ -36,17 +36,36 @@ export default function Sidebar({
   const pathname = usePathname()
   const showThemeToggle = onToggleDark !== undefined
 
+  // No mobile, a lista de itens virava uma linha horizontal com scroll —
+  // dava pra escanear, mas não era um menu de verdade (achado P2 da
+  // segunda auditoria). Agora fica escondida atrás de um botão de
+  // hambúrguer, como um menu de verdade, e fecha sozinha ao navegar.
+  const [mobileOpen, setMobileOpen] = useState(false)
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
+
   return (
-    <aside className="w-full md:w-52 shrink-0 border-b md:border-b-0 md:border-r border-line bg-paper flex flex-col gap-2 p-3 md:p-4">
-      <div className="flex items-center justify-between gap-2 md:block">
-        <span className="font-display text-base md:text-lg px-2 md:pb-3 truncate">{title}</span>
+    <aside className="w-full md:w-52 shrink-0 border-b md:border-b-0 md:border-r border-line bg-paper flex flex-col p-3 md:p-4 md:gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-display text-base md:text-lg md:px-2 md:pb-3 truncate">{title}</span>
         <div className="flex items-center gap-1 md:hidden shrink-0">
           {showThemeToggle && <ThemeToggleButton dark={Boolean(dark)} onToggle={onToggleDark} />}
-          <SignOutButton className="text-xs font-semibold text-accent px-2" />
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
+            className="w-8 h-8 flex items-center justify-center rounded-md text-muted hover:bg-ink/5 hover:text-accent transition-colors"
+          >
+            {mobileOpen ? <XIcon className="w-4.5 h-4.5" /> : <MenuIcon className="w-4.5 h-4.5" />}
+          </button>
         </div>
       </div>
 
-      <nav className="flex md:flex-col gap-1 flex-1 overflow-x-auto">
+      <nav
+        className={`${mobileOpen ? 'flex' : 'hidden'} md:flex flex-col gap-1 flex-1 mt-2 md:mt-0`}
+      >
         {items.map((item) => {
           const active = pathname === item.href
           return (
@@ -64,10 +83,12 @@ export default function Sidebar({
         })}
       </nav>
 
-      <div className="hidden md:flex md:flex-col mt-auto pt-3 border-t border-line text-xs text-muted gap-2">
+      <div
+        className={`${mobileOpen ? 'flex' : 'hidden'} md:flex md:flex-col mt-2 md:mt-auto pt-3 border-t border-line text-xs text-muted gap-2`}
+      >
         <div className="flex items-center justify-between gap-2">
           <p className="truncate">{email}</p>
-          {showThemeToggle && <ThemeToggleButton dark={Boolean(dark)} onToggle={onToggleDark} />}
+          <div className="hidden md:block">{showThemeToggle && <ThemeToggleButton dark={Boolean(dark)} onToggle={onToggleDark} />}</div>
         </div>
         <SignOutButton className="font-semibold text-accent w-fit" />
       </div>

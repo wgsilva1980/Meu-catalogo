@@ -55,6 +55,7 @@ export default function PublicOrderForm({
 }) {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [quantities, setQuantities] = useState<Record<string, number>>({})
+  const [search, setSearch] = useState('')
 
   const [method, setMethod] = useState<DeliveryMethod>('a_combinar')
   const [addr, setAddr] = useState({
@@ -88,8 +89,12 @@ export default function PublicOrderForm({
     method === 'motoboy' && quote ? quote.fee : method === 'melhor_envio' && meSelected ? Number(meSelected.price) : 0
   const total = productsTotal + deliveryFee
 
+  // Sem busca até aqui — rolar a lista inteira era a única forma de achar um
+  // produto num catálogo grande. Ver "Raio-X do Catálogo II", achado P2.
+  const searchTerm = search.trim().toLowerCase()
+  const matchesSearch = (p: Product) => !searchTerm || `${p.name} ${p.brand}`.toLowerCase().includes(searchTerm)
   const groups = categories
-    .map((category) => ({ category, items: products.filter((p) => p.category_id === category.id) }))
+    .map((category) => ({ category, items: products.filter((p) => p.category_id === category.id && matchesSearch(p)) }))
     .filter((g) => g.items.length > 0)
 
   function setQuantity(productId: string, value: number) {
@@ -236,6 +241,17 @@ export default function PublicOrderForm({
       <StepHeader step={step} />
 
       <section className={`flex flex-col gap-5 ${step === 1 ? '' : 'hidden'}`}>
+        {products.length > 0 && (
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar produto por nome ou marca..."
+            aria-label="Buscar produto"
+            className="input"
+          />
+        )}
+
         {groups.map(({ category, items }) => (
           <div key={category.id} className="flex flex-col gap-2">
             <h2 className="text-sm font-bold">{category.name}</h2>
@@ -248,6 +264,9 @@ export default function PublicOrderForm({
         ))}
         {products.length === 0 && (
           <p className="text-sm text-muted">Nenhum produto disponível no momento. Volte em breve!</p>
+        )}
+        {products.length > 0 && groups.length === 0 && (
+          <p className="text-sm text-muted">Nenhum produto encontrado para &quot;{search}&quot;.</p>
         )}
 
         <CartSummary itemCount={itemCount} productsTotal={productsTotal} />
@@ -698,6 +717,11 @@ function ProductCard({
           <p className="font-semibold text-sm truncate">{product.name}</p>
           <p className="text-xs text-muted truncate">{product.brand}</p>
           <p className="font-bold text-sm mt-0.5">{formatPrice(product.price)}</p>
+          {product.low_stock_threshold > 0 && product.stock_quantity <= product.low_stock_threshold && (
+            <p className="text-xs text-warning font-semibold mt-0.5">
+              Só restam {product.stock_quantity} {product.stock_quantity === 1 ? 'unidade' : 'unidades'}
+            </p>
+          )}
         </div>
 
         <input type="hidden" name="product_id" value={product.id} />
