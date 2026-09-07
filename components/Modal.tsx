@@ -22,8 +22,32 @@ export default function Modal({ open, onClose, title, children, actions }: Modal
   useEffect(() => {
     if (!open) return
 
+    // Sem isso, Tab escapava do diálogo pra elementos por trás dele — as
+    // duas únicas ações que usam Modal são as mais destrutivas do painel,
+    // exatamente onde isso custa mais caro pra quem navega por teclado.
+    // Ver "Raio-X do Catálogo III", achado P1.
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+
+      const panel = panelRef.current
+      if (!panel) return
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', handleKey)
 
@@ -38,7 +62,11 @@ export default function Modal({ open, onClose, title, children, actions }: Modal
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40"
+      // bg-black/50 fixo de propósito, não um token — `ink` (o token de
+      // texto) troca de direção entre os temas (escuro no claro, claro no
+      // escuro), então usá-lo aqui fazia o véu clarear o fundo no dark
+      // mode em vez de escurecê-lo. Ver "Raio-X do Catálogo III", achado P1.
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       onClick={onClose}
     >
       <div
