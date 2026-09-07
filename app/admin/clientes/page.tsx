@@ -41,7 +41,7 @@ export default async function ClientesPage({
         />
       </form>
 
-      <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
+      <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-surface">
         {(customers ?? []).map((c) => (
           <div key={c.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <div className="flex-1 min-w-0 basis-full sm:basis-0">

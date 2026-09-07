@@ -12,7 +12,7 @@ type HeaderCompany = {
 
 export default function StoreHeader({ company }: { company: HeaderCompany }) {
   return (
-    <header className="bg-white border-b border-line">
+    <header className="bg-surface border-b border-line">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2.5">
         {company.logo_url ? (
           <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden">

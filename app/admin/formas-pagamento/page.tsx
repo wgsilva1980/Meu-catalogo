@@ -26,7 +26,7 @@ export default async function FormasPagamentoPage() {
         </p>
       </div>
 
-      <div className="border border-line rounded-lg overflow-hidden bg-white divide-y divide-line">
+      <div className="border border-line rounded-lg overflow-hidden bg-surface divide-y divide-line">
         {methods.map((m) => (
           <div key={m.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <span className={`font-semibold flex-1 min-w-0 truncate ${m.active ? '' : 'text-muted line-through'}`}>
@@ -35,7 +35,7 @@ export default async function FormasPagamentoPage() {
             <form action={togglePaymentMethod}>
               <input type="hidden" name="id" value={m.id} />
               <input type="hidden" name="active" value={(!m.active).toString()} />
-              <button className="text-xs font-semibold text-muted hover:text-accent">
+              <button className="text-xs font-semibold text-muted hover:text-accent transition-colors">
                 {m.active ? 'Desativar' : 'Ativar'}
               </button>
             </form>

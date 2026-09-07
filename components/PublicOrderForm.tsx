@@ -674,7 +674,7 @@ function ProductCard({
   onChange: (quantity: number) => void
 }) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-line bg-white">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface">
       <div className="relative aspect-square bg-paper">
         {product.image_url ? (
           <Image

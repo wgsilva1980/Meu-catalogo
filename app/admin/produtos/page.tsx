@@ -62,7 +62,7 @@ export default async function ProdutosPage({
         <ProductFilterBar categories={categories ?? []} />
       </Suspense>
 
-      <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
+      <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-surface">
         {(products ?? []).map((p: any) => (
           <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <div className="relative w-10 h-10 rounded-md bg-paper border border-line shrink-0 overflow-hidden">

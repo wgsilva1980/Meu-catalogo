@@ -103,7 +103,7 @@ export default async function EditarEmpresaPage({
           </Alert>
         )}
 
-        <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
+        <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-surface">
           {users.map((u) => {
             const isSelf = u.id === currentUser?.id
             return (

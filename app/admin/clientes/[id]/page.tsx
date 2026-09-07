@@ -62,12 +62,12 @@ export default async function EditarClientePage({
 
       <div>
         <h2 className="font-display text-lg mb-3">Pedidos do cliente</h2>
-        <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-white">
+        <div className="flex flex-col divide-y divide-line border border-line rounded-lg overflow-hidden bg-surface">
           {(orders ?? []).map((o: any) => (
             <Link
               key={o.id}
               href={`/admin/pedidos/${o.id}`}
-              className="flex flex-wrap items-center gap-3 p-3 text-sm hover:bg-accent/5"
+              className="flex flex-wrap items-center gap-3 p-3 text-sm hover:bg-accent/5 transition-colors"
             >
               <div className="flex-1 min-w-0 basis-full sm:basis-0">
                 <p className="font-semibold truncate">#{o.number}</p>

@@ -107,7 +107,7 @@ export default async function EstoqueProdutoPage({
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-bold">Histórico de movimentações</h2>
-        <div className="border border-line rounded-lg overflow-x-auto bg-white">
+        <div className="border border-line rounded-lg overflow-x-auto bg-surface">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-muted border-b border-line">

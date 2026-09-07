@@ -33,7 +33,7 @@ export default function StoreFooter({ company }: { company: FooterCompany }) {
       <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">
         {company.phone && <span>{company.phone}</span>}
         {company.email && (
-          <a href={`mailto:${company.email}`} className="hover:text-accent">
+          <a href={`mailto:${company.email}`} className="hover:text-accent transition-colors">
             {company.email}
           </a>
         )}
@@ -42,13 +42,13 @@ export default function StoreFooter({ company }: { company: FooterCompany }) {
             href={`https://instagram.com/${instagramHandle}`}
             target="_blank"
             rel="noreferrer"
-            className="hover:text-accent"
+            className="hover:text-accent transition-colors"
           >
             @{instagramHandle}
           </a>
         )}
         {company.website && (
-          <a href={normalizeWebsite(company.website)} target="_blank" rel="noreferrer" className="hover:text-accent">
+          <a href={normalizeWebsite(company.website)} target="_blank" rel="noreferrer" className="hover:text-accent transition-colors">
             {company.website}
           </a>
         )}

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import AdminSidebar from '@/components/AdminSidebar'
+import AdminThemeShell from '@/components/AdminThemeShell'
 import ImpersonationBanner from '@/components/ImpersonationBanner'
 import SignOutButton from '@/components/SignOutButton'
 
@@ -34,12 +35,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: company } = await supabase.from('companies').select('name').eq('id', active.companyId).single()
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      <AdminSidebar email={user?.email ?? ''} companyName={company?.name ?? ''} />
-      <main className="flex-1 min-w-0 p-5 md:p-8">
-        {active.impersonating && <ImpersonationBanner companyName={company?.name ?? ''} />}
-        {children}
-      </main>
-    </div>
+    <AdminThemeShell>
+      {({ dark, toggleDark }) => (
+        <>
+          <AdminSidebar email={user?.email ?? ''} companyName={company?.name ?? ''} dark={dark} onToggleDark={toggleDark} />
+          <main className="flex-1 min-w-0 p-5 md:p-8">
+            {active.impersonating && <ImpersonationBanner companyName={company?.name ?? ''} />}
+            {children}
+          </main>
+        </>
+      )}
+    </AdminThemeShell>
   )
 }

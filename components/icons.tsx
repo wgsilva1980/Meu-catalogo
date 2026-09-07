@@ -156,6 +156,29 @@ export function AlertIcon({ className }: { className?: string }) {
   )
 }
 
+// Alterna claro/escuro no painel do lojista (components/AdminSidebar.tsx).
+// Ver "Raio-X do Catálogo", Fase 5 do plano de redesign — dark mode
+// opcional, só na área logada, nunca nas telas públicas.
+export function SunIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path
+        strokeLinecap="round"
+        d="M12 2.5v2M12 19.5v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2.5 12h2M19.5 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+      />
+    </svg>
+  )
+}
+
+export function MoonIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
+    </svg>
+  )
+}
+
 export function SlidersIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={className} aria-hidden="true">

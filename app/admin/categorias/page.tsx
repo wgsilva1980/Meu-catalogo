@@ -21,7 +21,7 @@ export default async function CategoriasPage() {
         <p className="text-sm text-muted">Organização do catálogo</p>
       </div>
 
-      <div className="border border-line rounded-lg overflow-hidden bg-white divide-y divide-line">
+      <div className="border border-line rounded-lg overflow-hidden bg-surface divide-y divide-line">
         {(categories ?? []).map((c: any) => (
           <div key={c.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
             <span className="font-semibold flex-1 min-w-0 truncate">{c.name}</span>

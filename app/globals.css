@@ -3,6 +3,65 @@
 @tailwind utilities;
 
 @layer base {
+  /* Tokens de cor (Fase 5 do plano de redesign — Polish). Triplets RGB
+     "R G B" (sem vírgula) porque é o formato que o Tailwind espera pra
+     `rgb(var(--x) / <alpha-value>)` em tailwind.config.ts continuar
+     respeitando opacidade (bg-accent/10 etc.).
+
+     accent/success/warning/danger/promo ficam com o MESMO valor nos dois
+     temas — só ink/paper/surface/muted/line trocam. Foi uma escolha
+     deliberada, não um esquecimento: escurecer o fundo exige clarear o
+     accent pra manter contraste como texto (ex.: link, borda do
+     btn-ghost-accent), mas o mesmo accent também é fundo sólido do
+     btn-primary com texto branco em cima — um valor não serve bem pros
+     dois papéis ao mesmo tempo (verificado: um accent claro o bastante
+     pra passar como texto sobre fundo escuro cai pra ~3.6:1 branco-sobre-
+     accent, abaixo do 4.5:1 que o próprio produto exige desde o achado
+     P0). Resolver isso direito pede separar "accent de fundo" de "accent
+     de texto" em dois tokens — seria uma migração de call-site do
+     tamanho da Fase 3 inteira de novo. Pra um dark mode opcional de uso
+     interno, manter a cor igual (~3.3–3.6:1 como texto sobre fundo
+     escuro, ainda acima do 3:1 não-textual da WCAG 1.4.11) foi o
+     trade-off consciente; separar os tokens fica pra uma iteração futura. */
+  :root {
+    --color-ink: 18 24 42;
+    --color-paper: 244 245 241;
+    --color-surface: 255 255 255;
+    --color-muted: 91 100 114;
+    --color-line: 141 140 135;
+    --color-accent: 190 74 27;
+    --color-success: 79 122 87;
+    --color-warning: 180 83 9;
+    --color-danger: 185 28 28;
+    --color-promo: 201 122 23;
+  }
+
+  /* `.dark` só existe dentro do wrapper que components/AdminThemeShell.tsx
+     monta em app/admin/layout.tsx — nenhuma tela pública (cadastro/pedido/
+     acompanhamento) ou o painel master (/master) recebe essa classe, então
+     continuam sempre no claro. */
+  .dark {
+    --color-ink: 237 239 234;
+    --color-paper: 20 23 26;
+    --color-surface: 27 31 30;
+    --color-muted: 154 163 156;
+    --color-line: 102 111 103;
+  }
+
+  /* prefers-reduced-motion — nenhuma transição do produto (hover dos
+     botões, foco dos inputs, o toggle de tema acima) tinha esse respeito
+     até aqui. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   /* Source Sans 3 (lib/fonts.ts, self-hosted via next/font) em vez da pilha
      do sistema — a única fonte própria do produto até aqui era o Georgia
      dos títulos. Ver "Raio-X do Catálogo", Fase 1 do plano de redesign. */
@@ -17,7 +76,7 @@
      tinha antes disso era o azul padrão do navegador. Ver "Raio-X do
      Catálogo", quick win "Foco visível customizado nos inputs". */
   .input {
-    @apply border border-line rounded-lg px-3 py-2 text-sm bg-white w-full outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:border-accent;
+    @apply border border-line rounded-lg px-3 py-2 text-sm bg-surface w-full outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:border-accent;
   }
 
   /* Botão, card e badge existiam antes só como combinações de utilitárias
@@ -35,13 +94,13 @@
     @apply bg-accent text-white hover:bg-accent/90;
   }
   .btn-secondary {
-    @apply border border-line text-ink hover:bg-black/5;
+    @apply border border-line text-ink hover:bg-ink/5;
   }
   .btn-danger {
     @apply border border-line text-danger hover:bg-danger/5;
   }
   .btn-ghost {
-    @apply border border-line text-muted hover:bg-black/5;
+    @apply border border-line text-muted hover:bg-ink/5;
   }
   .btn-ghost-accent {
     @apply border border-line text-accent hover:bg-accent/5;
@@ -51,10 +110,10 @@
   }
 
   .card {
-    @apply bg-white border border-line rounded-2xl p-6;
+    @apply bg-surface border border-line rounded-2xl p-6;
   }
   .card-tight {
-    @apply bg-white border border-line rounded-xl p-4;
+    @apply bg-surface border border-line rounded-xl p-4;
   }
 
   .badge {
@@ -73,7 +132,7 @@
     @apply bg-danger/10 text-danger;
   }
   .badge-neutral {
-    @apply bg-black/5 text-muted;
+    @apply bg-ink/5 text-muted;
   }
   /* Token declarado no Tailwind config e nunca consumido em nenhuma tela
      (achado P3 do "Raio-X do Catálogo") — a única promoção real do produto

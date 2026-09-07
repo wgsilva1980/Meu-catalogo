@@ -93,7 +93,7 @@ export default function MercadoPagoCard({
                 defaultValue={account.min_installment_amount}
                 className="input w-32"
               />
-              <Button type="submit" variant="secondary" size="sm" className="hover:bg-black/5">
+              <Button type="submit" variant="secondary" size="sm" className="hover:bg-ink/5">
                 Salvar
               </Button>
             </div>

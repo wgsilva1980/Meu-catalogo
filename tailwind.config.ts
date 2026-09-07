@@ -1,32 +1,46 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  darkMode: 'class',
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Fase 5 do plano de redesign (Polish): os tokens neutros passaram de
+      // hex fixo pra variável CSS (definida em app/globals.css, com
+      // sobrescrita em `.dark`) — cada classe que já usava `bg-paper`,
+      // `text-ink`, `border-line`, `bg-surface`, `text-muted` etc. passa a
+      // responder ao tema sozinha, sem precisar de nenhuma variante `dark:`
+      // espalhada pelo código. A classe `.dark` só existe dentro do wrapper
+      // de app/admin/layout.tsx (ver components/AdminThemeShell.tsx) — as
+      // telas públicas nunca ganham essa classe, então continuam sempre
+      // claras. `rgb(var(...) / <alpha-value>)` é o formato que o Tailwind
+      // exige pra opacidade (bg-accent/10 etc.) continuar funcionando com
+      // cor vinda de variável.
       colors: {
-        ink: '#12182A',
-        paper: '#F4F5F1',
+        ink: 'rgb(var(--color-ink) / <alpha-value>)',
+        paper: 'rgb(var(--color-paper) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
         // Escurecido de #FF5A36 pra passar contraste AA (4.5:1) como texto/
         // botão sobre branco e sobre paper — o tom original reprovava a
         // 3.10:1 (branco sobre accent), abaixo do mínimo pra texto normal.
-        // Ver "Raio-X do Catálogo", achado P0.
-        accent: '#BE4A1B',
-        muted: '#5B6472',
+        // Ver "Raio-X do Catálogo", achado P0. Mantido igual no escuro —
+        // ver nota sobre accent/success/warning/danger/promo em globals.css.
+        accent: 'rgb(var(--color-accent) / <alpha-value>)',
+        muted: 'rgb(var(--color-muted) / <alpha-value>)',
         // Escurecido de #DEDCD4 (1.25:1 contra `paper`, bem abaixo do 3:1 que
         // WCAG 1.4.11 pede pra borda de campo de formulário) pra 3.08:1 —
         // era o único dos 4 pares de contraste reprovados na seção 04 do
         // audit que a correção do accent (P0) não resolvia de tabela.
-        line: '#8D8C87',
-        promo: '#C97A17',
-        success: '#4F7A57',
+        line: 'rgb(var(--color-line) / <alpha-value>)',
+        promo: 'rgb(var(--color-promo) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
         // `warning`/`danger` nunca existiram como token — cada tela escrevia
         // `text-amber-600`/`text-red-600` direto. Os hex abaixo são os
         // mesmos `amber-700`/`red-700` que os badges já usavam (ambos já
         // passavam AA: 5.02:1 e 6.47:1 contra branco), só formalizados em
         // token — mesma cor, sem mudança visual.
-        warning: '#B45309',
-        danger: '#B91C1C',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
       },
       fontFamily: {
         // As variáveis vêm de next/font (lib/fonts.ts), aplicadas em
