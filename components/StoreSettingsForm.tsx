@@ -29,7 +29,14 @@ const CARRIER_FALLBACK = [
 type BoxRow = { name: string; length_cm: string; width_cm: string; height_cm: string; max_weight_kg: string }
 
 function initialBoxes(settings: Company): BoxRow[] {
-  const list = settings.shipping_packages ?? []
+  // A coluna é jsonb not null default '[]' — na teoria sempre um array. Na
+  // prática, `resolveShippingBoxes` (lib/melhorEnvio.ts:337) já precisou
+  // desse guard pro mesmo campo, então blindar aqui também em vez de confiar
+  // só no tipo do TypeScript: se a linha vier de um ambiente/estado onde o
+  // valor não é um array de verdade, `.map` direto derruba a renderização
+  // inteira da tela (é exatamente o tipo de erro de Server/Client Component
+  // sem stack trace visível em produção).
+  const list = Array.isArray(settings.shipping_packages) ? settings.shipping_packages : []
   if (list.length > 0) {
     return list.map((b) => ({
       name: b.name ?? '',

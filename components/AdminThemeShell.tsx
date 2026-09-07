@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
+import AdminSidebar from '@/components/AdminSidebar'
 
 const STORAGE_KEY = 'admin-theme'
 
@@ -13,13 +14,27 @@ const STORAGE_KEY = 'admin-theme'
 //
 // Preferência salva em localStorage (por navegador, não por conta) — dá
 // pra abrir sem JS/local storage disponível sem quebrar nada, só cai no
-// claro por padrão. Render-props em vez de Context porque só a sidebar
-// (o botão) e este wrapper (a classe) precisam do estado — não vale a
-// complexidade de um Provider pra dois consumidores.
+// claro por padrão.
+//
+// Antes disso o estado era repassado como render-prop (`children` era uma
+// função `({dark, toggleDark}) => ReactNode`, chamada aqui dentro) — parecia
+// uma forma simples de compartilhar `dark`/`toggleDark` com a sidebar sem a
+// complexidade de um Provider de Context. Só que app/admin/layout.tsx (que
+// passa `children`) é Server Component, e Server Component não pode passar
+// uma função como prop pra um Client Component — só Server Actions (com
+// "use server") cruzam essa fronteira. Isso derrubava a renderização inteira
+// com "Functions cannot be passed directly to Client Components" (visível
+// só como um digest sem stack trace em produção). A sidebar mudou de "quem
+// recebe children como função" pra "quem este componente já renderiza
+// direto" — `children` volta a ser um ReactNode normal, sempre serializável.
 export default function AdminThemeShell({
+  email,
+  companyName,
   children,
 }: {
-  children: (props: { dark: boolean; toggleDark: () => void }) => ReactNode
+  email: string
+  companyName: string
+  children: ReactNode
 }) {
   const [dark, setDark] = useState(false)
 
@@ -45,7 +60,8 @@ export default function AdminThemeShell({
 
   return (
     <div className={`min-h-screen flex flex-col md:flex-row bg-paper ${dark ? 'dark' : ''}`}>
-      {children({ dark, toggleDark })}
+      <AdminSidebar email={email} companyName={companyName} dark={dark} onToggleDark={toggleDark} />
+      {children}
     </div>
   )
 }
