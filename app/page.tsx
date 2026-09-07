@@ -10,7 +10,7 @@ import Badge from '@/components/Badge'
 // produto faz" antes mesmo do visitante ler o parágrafo.
 function VitrinePreview() {
   return (
-    <div className="w-full max-w-[280px] rounded-xl border border-line bg-surface shadow-sm overflow-hidden">
+    <div aria-hidden="true" className="w-full max-w-[280px] rounded-xl border border-line bg-surface shadow-sm overflow-hidden">
       <div className="flex items-center gap-1.5 border-b border-line px-3 py-2">
         <span className="w-2 h-2 rounded-full bg-line" />
         <span className="w-2 h-2 rounded-full bg-line" />
