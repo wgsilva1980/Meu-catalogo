@@ -3,11 +3,15 @@
 import { useState, useTransition } from 'react'
 import { TrashIcon } from '@/components/icons'
 import Button from '@/components/Button'
+import Modal from '@/components/Modal'
 import type { DeleteOrderResult } from '@/app/admin/pedidos/actions'
 
 // Confirma antes de excluir (irreversível) e mostra que o pedido está sendo
 // excluído enquanto a action roda — chama a server action direto (fora de
-// um <form>) pra poder gatear com window.confirm antes de disparar.
+// um <form>) pra poder gatear com um Modal antes de disparar. Era
+// window.confirm() nativo do navegador até a "Raio-X do Catálogo II"
+// (achado P1) apontar que era a única caixa de diálogo do produto sem
+// nenhuma marca.
 export default function DeleteOrderButton({
   orderId,
   orderNumber,
@@ -21,9 +25,10 @@ export default function DeleteOrderButton({
 }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const handleClick = () => {
-    if (!window.confirm(`Excluir o pedido #${orderNumber}? Essa ação não pode ser desfeita.`)) return
+  function handleConfirm() {
+    setConfirmOpen(false)
     setError(null)
     const formData = new FormData()
     formData.set('id', orderId)
@@ -37,7 +42,7 @@ export default function DeleteOrderButton({
     <div className="flex flex-col items-end gap-1">
       <Button
         type="button"
-        onClick={handleClick}
+        onClick={() => setConfirmOpen(true)}
         disabled={isPending || Boolean(disabledReason)}
         title={disabledReason ?? 'Excluir pedido'}
         variant="danger"
@@ -48,6 +53,24 @@ export default function DeleteOrderButton({
         {isPending ? 'Excluindo…' : 'Excluir'}
       </Button>
       {error && <p className="text-xs text-danger max-w-[16rem] text-right">{error}</p>}
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Excluir pedido?"
+        actions={
+          <>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="danger" size="sm" onClick={handleConfirm}>
+              Excluir
+            </Button>
+          </>
+        }
+      >
+        Excluir o pedido #{orderNumber}? Essa ação não pode ser desfeita.
+      </Modal>
     </div>
   )
 }

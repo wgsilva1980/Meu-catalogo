@@ -3,11 +3,13 @@
 import { useState, useTransition } from 'react'
 import { TrashIcon } from '@/components/icons'
 import Button from '@/components/Button'
+import Modal from '@/components/Modal'
 import type { DeleteProductResult } from '@/app/admin/produtos/actions'
 
 // Mesmo padrão de components/DeleteOrderButton.tsx: confirma antes de excluir
-// (irreversível) e mostra que o produto está sendo excluído enquanto a
-// action roda, em vez do form puro de antes que apagava no primeiro clique.
+// (irreversível) por um Modal (era window.confirm() nativo até o achado P1
+// da "Raio-X do Catálogo II") e mostra que o produto está sendo excluído
+// enquanto a action roda.
 export default function DeleteProductButton({
   productId,
   productName,
@@ -19,9 +21,10 @@ export default function DeleteProductButton({
 }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const handleClick = () => {
-    if (!window.confirm(`Excluir o produto "${productName}"? Essa ação não pode ser desfeita.`)) return
+  function handleConfirm() {
+    setConfirmOpen(false)
     setError(null)
     const formData = new FormData()
     formData.set('id', productId)
@@ -35,7 +38,7 @@ export default function DeleteProductButton({
     <div className="flex flex-col items-end gap-1">
       <Button
         type="button"
-        onClick={handleClick}
+        onClick={() => setConfirmOpen(true)}
         disabled={isPending}
         title="Excluir produto"
         variant="danger"
@@ -46,6 +49,24 @@ export default function DeleteProductButton({
         {isPending ? 'Excluindo…' : 'Excluir'}
       </Button>
       {error && <p className="text-xs text-danger max-w-[16rem] text-right">{error}</p>}
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Excluir produto?"
+        actions={
+          <>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="danger" size="sm" onClick={handleConfirm}>
+              Excluir
+            </Button>
+          </>
+        }
+      >
+        Excluir o produto &quot;{productName}&quot;? Essa ação não pode ser desfeita.
+      </Modal>
     </div>
   )
 }

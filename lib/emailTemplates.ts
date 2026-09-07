@@ -1,6 +1,13 @@
 // Templates de e-mail HTML. Ficam separados de lib/email.ts (que só cuida do
 // envio) e usam apenas os campos que realmente precisam — não os tipos
 // completos de lib/types — para não acoplar o template a colunas extras.
+//
+// #BE4A1B é o mesmo accent corrigido no app (achado P0 do "Raio-X do
+// Catálogo" original — o #FF5A36 antigo reprovava contraste, inclusive
+// aqui: branco sobre o laranja velho no bloco de "Total" media 3,10:1).
+// Estes templates têm HTML/CSS inline próprios, sem os tokens de
+// app/globals.css, então não herdavam a correção sozinhos — achado P1 da
+// segunda auditoria.
 import { formatPrice } from '@/lib/format'
 
 const statusLabel: Record<string, string> = {
@@ -98,7 +105,7 @@ export function buildOrderNotificationEmail({
     : ''
 
   const footerLink = panelUrl
-    ? ` · <a href="${panelUrl}" style="color:#FF5A36;text-decoration:none;font-weight:700;">Ver no painel</a>`
+    ? ` · <a href="${panelUrl}" style="color:#BE4A1B;text-decoration:none;font-weight:700;">Ver no painel</a>`
     : ''
 
   return `<!DOCTYPE html>
@@ -144,7 +151,7 @@ export function buildOrderNotificationEmail({
   ${paymentHtml}
 
   <tr><td style="padding:24px 32px 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FF5A36;border-radius:12px;"><tr>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#BE4A1B;border-radius:12px;"><tr>
       <td style="padding:16px 20px;color:#FFFFFF;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Total</td>
       <td align="right" style="padding:16px 20px;color:#FFFFFF;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;">${formatPrice(order.total)}</td>
     </tr></table>
@@ -203,7 +210,7 @@ export function buildPaymentConfirmedEmail({
   </td></tr>
 
   <tr><td style="padding:20px 32px 28px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FF5A36;border-radius:12px;"><tr>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#BE4A1B;border-radius:12px;"><tr>
       <td align="center" style="padding:16px 20px;">
         <a href="${trackingUrl}" style="color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none;">Acompanhar meu pedido</a>
       </td>
