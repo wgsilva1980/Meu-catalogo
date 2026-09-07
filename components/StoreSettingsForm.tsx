@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import Image from 'next/image'
 import { saveStoreSettings } from '@/app/admin/configuracoes/actions'
 import Card from '@/components/Card'
 import Button from '@/components/Button'
@@ -208,10 +209,9 @@ export default function StoreSettingsForm({ settings }: { settings: Company }) {
       <Card as="section" tight className="flex flex-col gap-3">
         <h2 className="text-sm font-bold">Logo da loja</h2>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="w-24 h-24 border border-dashed border-line rounded-lg overflow-hidden bg-paper flex items-center justify-center text-muted text-xs text-center p-2 shrink-0">
+          <div className="relative w-24 h-24 border border-dashed border-line rounded-lg overflow-hidden bg-paper flex items-center justify-center text-muted text-xs text-center p-2 shrink-0">
             {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              <Image src={logoUrl} alt="Logo da loja" fill sizes="96px" className="object-contain" />
             ) : (
               'Sem logo'
             )}

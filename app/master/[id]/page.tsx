@@ -172,7 +172,9 @@ export default async function EditarEmpresaPage({
               </div>
             )
           })}
-          {users.length === 0 && <p className="p-4 text-sm text-muted">Nenhum usuário cadastrado ainda.</p>}
+          {users.length === 0 && (
+            <p className="p-4 text-sm text-muted">Nenhum usuário ainda — adicione o primeiro abaixo.</p>
+          )}
         </div>
 
         <form action={createCompanyUser} className="flex flex-col gap-3 card-tight">

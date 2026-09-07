@@ -65,7 +65,11 @@ export default async function ClientesPage({
             </div>
           </div>
         ))}
-        {(customers ?? []).length === 0 && <p className="p-4 text-sm text-muted">Nenhum cliente encontrado.</p>}
+        {(customers ?? []).length === 0 && (
+          <p className="p-4 text-sm text-muted">
+            {q ? 'Nenhum cliente encontrado com esse termo.' : 'Nenhum cliente cadastrado ainda — cadastre o primeiro acima.'}
+          </p>
+        )}
       </div>
     </div>
   )

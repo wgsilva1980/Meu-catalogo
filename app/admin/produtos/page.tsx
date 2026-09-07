@@ -89,7 +89,11 @@ export default async function ProdutosPage({
             </div>
           </div>
         ))}
-        {(products ?? []).length === 0 && <p className="p-4 text-sm text-muted">Nenhum produto encontrado.</p>}
+        {(products ?? []).length === 0 && (
+          <p className="p-4 text-sm text-muted">
+            {q || categoria ? 'Nenhum produto encontrado com esse filtro.' : 'Nenhum produto ainda — cadastre o primeiro acima.'}
+          </p>
+        )}
       </div>
     </div>
   )

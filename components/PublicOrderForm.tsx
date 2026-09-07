@@ -246,7 +246,9 @@ export default function PublicOrderForm({
             </div>
           </div>
         ))}
-        {products.length === 0 && <p className="text-sm text-muted">Nenhum produto disponível no momento.</p>}
+        {products.length === 0 && (
+          <p className="text-sm text-muted">Nenhum produto disponível no momento. Volte em breve!</p>
+        )}
 
         <CartSummary itemCount={itemCount} productsTotal={productsTotal} />
       </section>
@@ -320,17 +322,21 @@ export default function PublicOrderForm({
                 >
                   {quoteStatus === 'loading' ? 'Calculando...' : 'Calcular entrega'}
                 </Button>
-                {quote && (
-                  <span className="text-sm font-semibold text-green-700">
-                    Motoboy: {formatPrice(quote.fee)}
-                    {quote.distanceKm != null ? ` · ~${quote.distanceKm} km` : ''}
-                  </span>
+                <span role="status" aria-live="polite">
+                  {quote && (
+                    <span className="text-sm font-semibold text-green-700">
+                      Motoboy: {formatPrice(quote.fee)}
+                      {quote.distanceKm != null ? ` · ~${quote.distanceKm} km` : ''}
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div role="status" aria-live="polite">
+                {quoteError && <p className="text-xs text-red-600">{quoteError}</p>}
+                {!quote && !quoteError && (
+                  <p className="text-xs text-muted">Calcule a entrega para conseguir avançar com motoboy.</p>
                 )}
               </div>
-              {quoteError && <p className="text-xs text-red-600">{quoteError}</p>}
-              {!quote && !quoteError && (
-                <p className="text-xs text-muted">Calcule a entrega para conseguir avançar com motoboy.</p>
-              )}
 
               {quote && (
                 <>
@@ -359,10 +365,12 @@ export default function PublicOrderForm({
                   {meStatus === 'loading' ? 'Calculando...' : 'Calcular frete'}
                 </Button>
               </div>
-              {meError && <p className="text-xs text-red-600">{meError}</p>}
-              {meOptions.length === 0 && !meError && (
-                <p className="text-xs text-muted">Calcule o frete para ver as opções de envio.</p>
-              )}
+              <div role="status" aria-live="polite">
+                {meError && <p className="text-xs text-red-600">{meError}</p>}
+                {meOptions.length === 0 && !meError && (
+                  <p className="text-xs text-muted">Calcule o frete para ver as opções de envio.</p>
+                )}
+              </div>
 
               {meOptions.length > 0 && (
                 <div className="flex flex-col gap-2">

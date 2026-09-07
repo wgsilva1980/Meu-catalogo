@@ -114,7 +114,11 @@ export default async function EstoquePage({
             </div>
           )
         })}
-        {filtered.length === 0 && <p className="p-4 text-sm text-muted">Nenhum produto encontrado.</p>}
+        {filtered.length === 0 && (
+          <p className="p-4 text-sm text-muted">
+            {term || filtro ? 'Nenhum produto encontrado com esse filtro.' : 'Nenhum produto cadastrado ainda.'}
+          </p>
+        )}
       </div>
     </div>
   )

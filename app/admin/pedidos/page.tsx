@@ -159,7 +159,11 @@ export default async function PedidosPage({
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <p className="p-4 text-sm text-muted">Nenhum pedido encontrado.</p>}
+        {filtered.length === 0 && (
+          <p className="p-4 text-sm text-muted">
+            {q || status ? 'Nenhum pedido encontrado com esse filtro.' : 'Nenhum pedido registrado ainda.'}
+          </p>
+        )}
       </div>
     </div>
   )

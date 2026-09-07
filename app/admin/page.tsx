@@ -81,7 +81,9 @@ export default async function PainelPage() {
               <span className="text-muted text-xs shrink-0">{new Date(p.updated_at).toLocaleDateString('pt-BR')}</span>
             </div>
           ))}
-          {(recentes ?? []).length === 0 && <p className="py-3 text-sm text-muted">Nenhum produto cadastrado ainda.</p>}
+          {(recentes ?? []).length === 0 && (
+            <p className="py-3 text-sm text-muted">Nenhum produto cadastrado ainda — comece adicionando um acima.</p>
+          )}
         </div>
       </div>
     </div>

@@ -225,9 +225,11 @@ export default function ShippingCard({
             </p>
           )}
 
-          {trackingStatus === 'error' && (
-            <p className="text-xs text-red-600">Falha ao consultar o rastreio. Tente novamente em instantes.</p>
-          )}
+          <div role="status" aria-live="polite">
+            {trackingStatus === 'error' && (
+              <p className="text-xs text-red-600">Falha ao consultar o rastreio. Tente novamente em instantes.</p>
+            )}
+          </div>
 
           {tracking?.events && tracking.events.length > 0 ? (
             <ol className="flex flex-col gap-2 border-l border-line pl-3 mt-0.5">
@@ -267,7 +269,9 @@ export default function ShippingCard({
         </Button>
       </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div role="status" aria-live="polite">
+        {error && <p className="text-xs text-red-600">{error}</p>}
+      </div>
 
       {box && (
         <p className={`text-xs ${box.fits ? 'text-muted' : 'text-amber-600'}`}>

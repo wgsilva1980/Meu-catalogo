@@ -49,7 +49,9 @@ export default async function MasterPage() {
             </div>
           </div>
         ))}
-        {(companies ?? []).length === 0 && <p className="p-4 text-sm text-muted">Nenhuma empresa cadastrada ainda.</p>}
+        {(companies ?? []).length === 0 && (
+          <p className="p-4 text-sm text-muted">Nenhuma empresa ainda — cadastre a primeira acima.</p>
+        )}
       </div>
     </div>
   )

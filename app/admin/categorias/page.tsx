@@ -36,7 +36,9 @@ export default async function CategoriasPage() {
             )}
           </div>
         ))}
-        {(categories ?? []).length === 0 && <p className="p-4 text-sm text-muted">Nenhuma categoria cadastrada.</p>}
+        {(categories ?? []).length === 0 && (
+          <p className="p-4 text-sm text-muted">Nenhuma categoria ainda — adicione a primeira abaixo.</p>
+        )}
       </div>
 
       <form action={addCategory} className="flex gap-2">

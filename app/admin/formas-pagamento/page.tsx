@@ -45,7 +45,9 @@ export default async function FormasPagamentoPage() {
             </form>
           </div>
         ))}
-        {methods.length === 0 && <p className="p-4 text-sm text-muted">Nenhuma forma de pagamento cadastrada.</p>}
+        {methods.length === 0 && (
+          <p className="p-4 text-sm text-muted">Nenhuma forma de pagamento ainda — adicione a primeira abaixo.</p>
+        )}
       </div>
 
       <form action={addPaymentMethod} className="flex gap-2">
