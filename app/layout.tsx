@@ -1,20 +1,13 @@
 import type { Metadata } from 'next'
 import { fraunces, sourceSans3 } from '@/lib/fonts'
+import { getSiteUrl } from '@/lib/siteUrl'
 import './globals.css'
 
-// process.env.VERCEL_URL/VERCEL_PROJECT_PRODUCTION_URL são preenchidos
-// automaticamente pela Vercel (preview e produção) — sem precisar cadastrar
-// uma env var própria só pra isso. metadataBase é o que permite os campos
-// relativos abaixo (e os de generateMetadata das páginas públicas) virarem
-// URLs absolutas nas prévias de OpenGraph/Twitter.
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`) ??
-  (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ??
-  'http://localhost:3000'
-
+// metadataBase é o que permite os campos relativos abaixo (e os de
+// generateMetadata das páginas públicas) virarem URLs absolutas nas
+// prévias de OpenGraph/Twitter.
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(getSiteUrl()),
   title: 'Meu Catalogo — Painel',
   description: 'Monte seu catálogo, receba pedidos e acompanhe pagamento e entrega — sem planilha.',
   openGraph: {

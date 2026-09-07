@@ -6,6 +6,7 @@ import type { StockMovementType } from '@/lib/types'
 import StockMovementForms from '@/components/StockMovementForms'
 import Alert from '@/components/Alert'
 import Badge, { type BadgeVariant } from '@/components/Badge'
+import { Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from '@/components/Table'
 
 const OK_MESSAGES: Record<string, string> = {
   entrada: 'Entrada registrada.',
@@ -107,53 +108,49 @@ export default async function EstoqueProdutoPage({
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-bold">Histórico de movimentações</h2>
-        <div className="border border-line rounded-lg overflow-x-auto bg-surface">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-muted border-b border-line">
-                <th className="px-3 py-2 font-semibold">Data</th>
-                <th className="px-3 py-2 font-semibold">Tipo</th>
-                <th className="px-3 py-2 font-semibold text-right">Qtd</th>
-                <th className="px-3 py-2 font-semibold text-right">Saldo</th>
-                <th className="px-3 py-2 font-semibold">Observação</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {(movements ?? []).map((m: any) => (
-                <tr key={m.id}>
-                  <td className="px-3 py-2 whitespace-nowrap text-muted">
-                    {new Date(m.created_at).toLocaleDateString('pt-BR')}
-                  </td>
-                  <td className="px-3 py-2">
-                    <Badge variant={TYPE_VARIANT[m.type as StockMovementType]} size="sm">
-                      {TYPE_LABEL[m.type as StockMovementType]}
-                    </Badge>
-                  </td>
-                  <td className={`px-3 py-2 text-right tabular-nums font-semibold ${m.delta < 0 ? 'text-danger' : 'text-success'}`}>
-                    {m.delta > 0 ? `+${m.delta}` : m.delta}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{m.balance_after}</td>
-                  <td className="px-3 py-2 text-muted">
-                    {m.sales_orders?.number ? (
-                      <Link href={`/admin/pedidos/${m.order_id}`} className="text-accent font-semibold">
-                        Pedido #{m.sales_orders.number}
-                      </Link>
-                    ) : (
-                      m.note || '—'
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {(movements ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-3 py-4 text-muted">
-                    Nenhuma movimentação ainda.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHead>
+            <TableHeaderCell>Data</TableHeaderCell>
+            <TableHeaderCell>Tipo</TableHeaderCell>
+            <TableHeaderCell align="right">Qtd</TableHeaderCell>
+            <TableHeaderCell align="right">Saldo</TableHeaderCell>
+            <TableHeaderCell>Observação</TableHeaderCell>
+          </TableHead>
+          <TableBody>
+            {(movements ?? []).map((m: any) => (
+              <TableRow key={m.id}>
+                <TableCell className="whitespace-nowrap text-muted">
+                  {new Date(m.created_at).toLocaleDateString('pt-BR')}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={TYPE_VARIANT[m.type as StockMovementType]} size="sm">
+                    {TYPE_LABEL[m.type as StockMovementType]}
+                  </Badge>
+                </TableCell>
+                <TableCell numeric className={`font-semibold ${m.delta < 0 ? 'text-danger' : 'text-success'}`}>
+                  {m.delta > 0 ? `+${m.delta}` : m.delta}
+                </TableCell>
+                <TableCell numeric>{m.balance_after}</TableCell>
+                <TableCell className="text-muted">
+                  {m.sales_orders?.number ? (
+                    <Link href={`/admin/pedidos/${m.order_id}`} className="text-accent font-semibold">
+                      Pedido #{m.sales_orders.number}
+                    </Link>
+                  ) : (
+                    m.note || '—'
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+            {(movements ?? []).length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-muted">
+                  Nenhuma movimentação ainda.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </section>
     </div>
   )
