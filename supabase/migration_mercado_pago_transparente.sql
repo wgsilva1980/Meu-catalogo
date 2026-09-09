@@ -16,8 +16,22 @@ begin;
 
 alter table sales_orders add column if not exists payment_lock_at timestamptz;
 
-create or replace function claim_order_payment(p_company_id uuid, p_order_id uuid, p_paid_at timestamptz)
-returns table (id uuid, number int, status text, customer_id uuid, public_token uuid, stock_ok boolean)
+-- `sales_orders.number` é bigint (não int) — RETURNS TABLE com o tipo errado
+-- faz o RETURN QUERY estourar "structure of query does not match function
+-- result type" *depois* do UPDATE já ter rodado, revertendo a transação
+-- inteira: o pagamento fica approved em `payments`, mas o pedido nunca sai
+-- de rascunho/paid_at nulo, sem erro visível no webhook (responde 200 do
+-- mesmo jeito, porque a falha é só logada em `recordPaymentResult`). Achado
+-- ao investigar o primeiro Pix pago em produção que ficou preso.
+--
+-- `drop` + `create` (não `create or replace`) porque Postgres não deixa
+-- trocar o tipo de uma coluna de retorno com `or replace` — reaplicar esta
+-- migração num banco que já tem a função com `number int` quebra com
+-- "cannot change return type of existing function" sem o drop antes.
+drop function if exists claim_order_payment(uuid, uuid, timestamptz);
+
+create function claim_order_payment(p_company_id uuid, p_order_id uuid, p_paid_at timestamptz)
+returns table (id uuid, number bigint, status text, customer_id uuid, public_token uuid, stock_ok boolean)
 language plpgsql
 as $$
 declare

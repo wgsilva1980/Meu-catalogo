@@ -1058,8 +1058,13 @@ begin;
 
 alter table sales_orders add column if not exists payment_lock_at timestamptz;
 
-create or replace function claim_order_payment(p_company_id uuid, p_order_id uuid, p_paid_at timestamptz)
-returns table (id uuid, number int, status text, customer_id uuid, public_token uuid, stock_ok boolean)
+-- number é bigint (bigserial) em sales_orders, não int — ver nota em
+-- migration_mercado_pago_transparente.sql. drop + create (não `or replace`)
+-- pelo mesmo motivo: Postgres não troca o tipo de retorno com `or replace`.
+drop function if exists claim_order_payment(uuid, uuid, timestamptz);
+
+create function claim_order_payment(p_company_id uuid, p_order_id uuid, p_paid_at timestamptz)
+returns table (id uuid, number bigint, status text, customer_id uuid, public_token uuid, stock_ok boolean)
 language plpgsql
 as $$
 declare
