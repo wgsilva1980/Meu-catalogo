@@ -50,7 +50,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const html = buildLabelHtml({ company, customer, order })
 
   try {
-    const pdfBuffer = await renderHtmlToPdf(html)
+    const pdfBuffer = await renderHtmlToPdf(html, { format: 'a6' })
 
     const admin = createAdminClient()
     const path = `${companyId}/etiqueta-${order.number}-${Date.now()}.pdf`

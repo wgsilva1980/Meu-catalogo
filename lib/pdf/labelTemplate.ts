@@ -97,25 +97,28 @@ export function buildLabelHtml({
 </html>`
 }
 
+// Página A6 (105 x 148mm) = 1/4 de uma folha A4, o formato de fato passado
+// pro puppeteer (renderHtmlToPdf com format: 'a6') — não é só um box pequeno
+// dentro de uma A4, a página do PDF já sai nesse tamanho.
 const labelCss = `
   ${FRAUNCES_600_FONT_FACE}
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; color: #12182A; }
-  .page { width: 210mm; min-height: 297mm; padding: 20mm 18mm; display: flex; flex-direction: column; gap: 16px; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #12182A; padding-bottom: 12px; }
-  .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 600; }
-  .muted { color: #5B6472; font-size: 12px; margin-top: 2px; }
+  .page { width: 105mm; min-height: 148mm; padding: 6mm; display: flex; flex-direction: column; gap: 6px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #12182A; padding-bottom: 6px; }
+  .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 13px; font-weight: 600; }
+  .muted { color: #5B6472; font-size: 8px; margin-top: 2px; }
   .order-meta { text-align: right; }
-  .order-num { font-size: 16px; font-weight: 700; }
-  .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5B6472; }
-  .box { border: 1px solid #E4E1D9; border-radius: 10px; padding: 14px 16px; }
-  .box.from { margin-top: 8px; }
-  .box.from .name { font-size: 14px; font-weight: 700; margin-top: 4px; }
-  .box.to { border: 2px solid #12182A; padding: 20px 22px; margin-top: 4px; }
-  .box.to .name { font-size: 24px; font-weight: 700; margin-top: 8px; }
-  .box.to .addr { font-size: 16px; margin-top: 8px; line-height: 1.5; }
-  .line { font-size: 12px; margin-top: 4px; }
-  .box.to .line { font-size: 15px; margin-top: 8px; }
-  .notes { border-top: 1px solid #E4E1D9; padding-top: 12px; }
-  .notes p { font-size: 12px; white-space: pre-wrap; margin: 4px 0 0; }
+  .order-num { font-size: 10px; font-weight: 700; }
+  .label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5B6472; }
+  .box { border: 1px solid #E4E1D9; border-radius: 6px; padding: 6px 8px; }
+  .box.from { margin-top: 2px; }
+  .box.from .name { font-size: 9px; font-weight: 700; margin-top: 2px; }
+  .box.to { border: 1.5px solid #12182A; padding: 8px 9px; margin-top: 2px; flex: 1; }
+  .box.to .name { font-size: 13px; font-weight: 700; margin-top: 4px; }
+  .box.to .addr { font-size: 9px; margin-top: 4px; line-height: 1.4; }
+  .line { font-size: 8px; margin-top: 2px; }
+  .box.to .line { font-size: 9px; margin-top: 4px; }
+  .notes { border-top: 1px solid #E4E1D9; padding-top: 6px; }
+  .notes p { font-size: 8px; white-space: pre-wrap; margin: 2px 0 0; }
 `
