@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveActiveCompany } from '@/lib/company'
 import OrderForm from '@/components/OrderForm'
 import OrderPdfButton from '@/components/OrderPdfButton'
+import OrderLabelButton from '@/components/OrderLabelButton'
 import DeliveryCard from '@/components/DeliveryCard'
 import CopyLinkField from '@/components/CopyLinkField'
 import { CheckIcon, AlertIcon, XIcon } from '@/components/icons'
@@ -99,12 +100,22 @@ export default async function EditarPedidoPage({
         paymentMethods={paymentMethods ?? []}
       />
       {(order.delivery_method ?? 'a_combinar') !== 'melhor_envio' && (
-        <DeliveryCard
-          method={order.delivery_method ?? 'a_combinar'}
-          fee={Number(order.delivery_fee ?? 0)}
-          address={order.delivery_address ?? null}
-          quote={order.delivery_quote ?? null}
-        />
+        <>
+          <DeliveryCard
+            method={order.delivery_method ?? 'a_combinar'}
+            fee={Number(order.delivery_fee ?? 0)}
+            address={order.delivery_address ?? null}
+            quote={order.delivery_quote ?? null}
+          />
+          <Card as="section" tight className="flex flex-col gap-2">
+            <h2 className="text-sm font-bold">Etiqueta de envio</h2>
+            <p className="text-xs text-muted">
+              Para entregas feitas pessoalmente ou por app (Uber etc.), gere uma etiqueta em PDF com os dados do
+              remetente e do destinatário para colar no pacote.
+            </p>
+            <OrderLabelButton orderId={order.id} />
+          </Card>
+        </>
       )}
       {trackingUrl && (
         <Card as="section" tight className="flex flex-col gap-2">
