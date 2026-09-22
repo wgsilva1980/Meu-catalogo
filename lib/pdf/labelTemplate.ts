@@ -77,50 +77,52 @@ export function buildLabelHtml({
         </div>
       </header>
 
-      <section class="boxes">
-        <section class="box from">
-          <div class="label">Remetente</div>
-          <div class="name">${esc(senderName)}</div>
-          ${company.shipping_origin_document ? `<div class="line">${esc(company.shipping_origin_document)}</div>` : ''}
-          ${senderAddress ? `<div class="line">${esc(senderAddress)}</div>` : ''}
-          ${company.phone ? `<div class="line">${esc(company.phone)}</div>` : ''}
-        </section>
-
-        <section class="box to">
-          <div class="label">Destinatário</div>
-          <div class="name">${esc(customer.name)}</div>
-          ${recipientAddress ? `<div class="addr">${esc(recipientAddress)}</div>` : ''}
-          ${customer.phone ? `<div class="line">${esc(customer.phone)}</div>` : ''}
-        </section>
+      <section class="box from">
+        <div class="label">Remetente</div>
+        <div class="name">${esc(senderName)}</div>
+        ${company.shipping_origin_document ? `<div class="line">${esc(company.shipping_origin_document)}</div>` : ''}
+        ${senderAddress ? `<div class="line">${esc(senderAddress)}</div>` : ''}
+        ${company.phone ? `<div class="line">${esc(company.phone)}</div>` : ''}
       </section>
+
+      <section class="box to">
+        <div class="label">Destinatário</div>
+        <div class="name">${esc(customer.name)}</div>
+        ${recipientAddress ? `<div class="addr">${esc(recipientAddress)}</div>` : ''}
+        ${customer.phone ? `<div class="line">${esc(customer.phone)}</div>` : ''}
+      </section>
+
+      ${order.notes ? `<section class="notes"><div class="label">Observações</div><p>${esc(order.notes)}</p></section>` : ''}
     </section>
   </section>
 </body>
 </html>`
 }
 
-// A folha do PDF continua A4 (papel comum de impressora). O quadrante da
-// etiqueta ocupa a largura toda e altura de 74,25mm — exatamente 1/4 da
-// altura de uma A4 (297mm) — com remetente e destinatário lado a lado
-// dentro dele, e borda tracejada pra recortar.
+// A folha do PDF continua A4 (papel comum de impressora), mas o conteúdo da
+// etiqueta fica todo dentro de um quadrante de 105 x 148,5mm — exatamente
+// 1/4 da A4 — no canto superior esquerdo, com borda tracejada pra recortar.
+// O resto da folha fica em branco.
 const labelCss = `
   ${FRAUNCES_600_FONT_FACE}
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; color: #12182A; }
   .page { width: 210mm; min-height: 297mm; padding: 10mm; }
-  .quadrant { width: 100%; height: 74.25mm; padding: 5mm 6mm; display: flex; flex-direction: column; gap: 5px; border: 1px dashed #B8B2A3; overflow: hidden; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #12182A; padding-bottom: 5px; }
+  .quadrant { width: 105mm; height: 148.5mm; padding: 6mm; display: flex; flex-direction: column; gap: 6px; border: 1px dashed #B8B2A3; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #12182A; padding-bottom: 6px; }
   .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 13px; font-weight: 600; }
   .muted { color: #5B6472; font-size: 8px; margin-top: 2px; }
   .order-meta { text-align: right; }
   .order-num { font-size: 10px; font-weight: 700; }
   .label { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5B6472; }
-  .boxes { display: flex; flex-direction: row; gap: 8px; flex: 1; min-height: 0; }
-  .box { flex: 1; min-width: 0; border: 1px solid #E4E1D9; border-radius: 6px; padding: 6px 8px; overflow: hidden; }
+  .box { border: 1px solid #E4E1D9; border-radius: 6px; padding: 6px 8px; }
+  .box.from { margin-top: 2px; }
   .box.from .name { font-size: 9px; font-weight: 700; margin-top: 2px; }
-  .box.to { border: 1.5px solid #12182A; padding: 8px 9px; }
-  .box.to .name { font-size: 12px; font-weight: 700; margin-top: 4px; }
-  .box.to .addr { font-size: 8.5px; margin-top: 4px; line-height: 1.35; }
+  .box.to { border: 1.5px solid #12182A; padding: 8px 9px; margin-top: 2px; flex: 1; }
+  .box.to .name { font-size: 13px; font-weight: 700; margin-top: 4px; }
+  .box.to .addr { font-size: 9px; margin-top: 4px; line-height: 1.4; }
   .line { font-size: 8px; margin-top: 2px; }
-  .box.to .line { font-size: 8.5px; margin-top: 4px; }
+  .box.to .line { font-size: 9px; margin-top: 4px; }
+  .notes { border-top: 1px solid #E4E1D9; padding-top: 6px; }
+  .notes p { font-size: 8px; white-space: pre-wrap; margin: 2px 0 0; }
 `
