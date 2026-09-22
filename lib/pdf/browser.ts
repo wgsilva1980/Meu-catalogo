@@ -16,7 +16,7 @@ export async function launchBrowser() {
 // desligado e apenas imagens http(s) podem ser carregadas — qualquer outra
 // requisição de sub-recurso (scripts, fetch, iframes) é abortada. Isso limita
 // o estrago caso texto não escapado escape para dentro do markup.
-export async function renderHtmlToPdf(html: string, options?: { format?: 'a4' | 'a6' }): Promise<Buffer> {
+export async function renderHtmlToPdf(html: string): Promise<Buffer> {
   let browser: Awaited<ReturnType<typeof launchBrowser>> | undefined
   try {
     browser = await launchBrowser()
@@ -36,7 +36,7 @@ export async function renderHtmlToPdf(html: string, options?: { format?: 'a4' | 
       else req.abort().catch(() => {})
     })
     await page.setContent(html, { waitUntil: 'load' })
-    const pdfBuffer = await page.pdf({ format: options?.format ?? 'a4', printBackground: true })
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true })
     return Buffer.from(pdfBuffer)
   } finally {
     if (browser) await browser.close().catch(() => {})

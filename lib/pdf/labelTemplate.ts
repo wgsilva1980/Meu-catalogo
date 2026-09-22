@@ -68,43 +68,47 @@ export function buildLabelHtml({
 </head>
 <body>
   <section class="page">
-    <header class="head">
-      <div class="brand">${esc(senderName)}</div>
-      <div class="order-meta">
-        <div class="order-num">Pedido #${esc(order.number)}</div>
-        <div class="muted">${esc(date)} · ${esc(deliveryLabel[method] ?? method)}</div>
-      </div>
-    </header>
+    <section class="quadrant">
+      <header class="head">
+        <div class="brand">${esc(senderName)}</div>
+        <div class="order-meta">
+          <div class="order-num">Pedido #${esc(order.number)}</div>
+          <div class="muted">${esc(date)} · ${esc(deliveryLabel[method] ?? method)}</div>
+        </div>
+      </header>
 
-    <section class="box from">
-      <div class="label">Remetente</div>
-      <div class="name">${esc(senderName)}</div>
-      ${company.shipping_origin_document ? `<div class="line">${esc(company.shipping_origin_document)}</div>` : ''}
-      ${senderAddress ? `<div class="line">${esc(senderAddress)}</div>` : ''}
-      ${company.phone ? `<div class="line">${esc(company.phone)}</div>` : ''}
+      <section class="box from">
+        <div class="label">Remetente</div>
+        <div class="name">${esc(senderName)}</div>
+        ${company.shipping_origin_document ? `<div class="line">${esc(company.shipping_origin_document)}</div>` : ''}
+        ${senderAddress ? `<div class="line">${esc(senderAddress)}</div>` : ''}
+        ${company.phone ? `<div class="line">${esc(company.phone)}</div>` : ''}
+      </section>
+
+      <section class="box to">
+        <div class="label">Destinatário</div>
+        <div class="name">${esc(customer.name)}</div>
+        ${recipientAddress ? `<div class="addr">${esc(recipientAddress)}</div>` : ''}
+        ${customer.phone ? `<div class="line">${esc(customer.phone)}</div>` : ''}
+      </section>
+
+      ${order.notes ? `<section class="notes"><div class="label">Observações</div><p>${esc(order.notes)}</p></section>` : ''}
     </section>
-
-    <section class="box to">
-      <div class="label">Destinatário</div>
-      <div class="name">${esc(customer.name)}</div>
-      ${recipientAddress ? `<div class="addr">${esc(recipientAddress)}</div>` : ''}
-      ${customer.phone ? `<div class="line">${esc(customer.phone)}</div>` : ''}
-    </section>
-
-    ${order.notes ? `<section class="notes"><div class="label">Observações</div><p>${esc(order.notes)}</p></section>` : ''}
   </section>
 </body>
 </html>`
 }
 
-// Página A6 (105 x 148mm) = 1/4 de uma folha A4, o formato de fato passado
-// pro puppeteer (renderHtmlToPdf com format: 'a6') — não é só um box pequeno
-// dentro de uma A4, a página do PDF já sai nesse tamanho.
+// A folha do PDF continua A4 (papel comum de impressora), mas o conteúdo da
+// etiqueta fica todo dentro de um quadrante de 105 x 148,5mm — exatamente
+// 1/4 da A4 — no canto superior esquerdo, com borda tracejada pra recortar.
+// O resto da folha fica em branco.
 const labelCss = `
   ${FRAUNCES_600_FONT_FACE}
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; color: #12182A; }
-  .page { width: 105mm; min-height: 148mm; padding: 6mm; display: flex; flex-direction: column; gap: 6px; }
+  .page { width: 210mm; min-height: 297mm; padding: 10mm; }
+  .quadrant { width: 105mm; height: 148.5mm; padding: 6mm; display: flex; flex-direction: column; gap: 6px; border: 1px dashed #B8B2A3; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #12182A; padding-bottom: 6px; }
   .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 13px; font-weight: 600; }
   .muted { color: #5B6472; font-size: 8px; margin-top: 2px; }
