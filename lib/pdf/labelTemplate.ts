@@ -99,30 +99,30 @@ export function buildLabelHtml({
 </html>`
 }
 
-// A folha do PDF continua A4 (papel comum de impressora), com o quadrante
-// da etiqueta (85 x 98,5mm — 105/148,5 menos 2cm de largura e 5cm de
-// altura) alinhado no canto superior esquerdo, borda tracejada pra
-// recortar. O resto da folha fica em branco.
+// A folha do PDF continua A4 (papel comum de impressora), mas o conteúdo da
+// etiqueta fica todo dentro de um quadrante de 105 x 148,5mm — exatamente
+// 1/4 da A4 — no canto superior esquerdo, com borda tracejada pra recortar.
+// O resto da folha fica em branco.
 const labelCss = `
   ${FRAUNCES_600_FONT_FACE}
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, Helvetica, Arial, sans-serif; color: #12182A; }
-  .page { width: 210mm; min-height: 297mm; padding: 10mm; display: flex; flex-direction: column; align-items: flex-start; }
-  .quadrant { width: 85mm; height: 98.5mm; padding: 6mm; display: flex; flex-direction: column; gap: 6px; border: 1px dashed #B8B2A3; overflow: hidden; }
+  .page { width: 210mm; min-height: 297mm; padding: 10mm; }
+  .quadrant { width: 105mm; height: 148.5mm; padding: 6mm; display: flex; flex-direction: column; gap: 6px; border: 1px dashed #B8B2A3; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #12182A; padding-bottom: 6px; }
-  .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 14px; font-weight: 600; }
-  .muted { color: #5B6472; font-size: 9px; margin-top: 2px; }
+  .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 16px; font-weight: 600; }
+  .muted { color: #5B6472; font-size: 11px; margin-top: 2px; }
   .order-meta { text-align: right; }
-  .order-num { font-size: 11px; font-weight: 700; }
-  .label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5B6472; }
+  .order-num { font-size: 13px; font-weight: 700; }
+  .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5B6472; }
   .box { border: 1px solid #E4E1D9; border-radius: 6px; padding: 6px 8px; }
   .box.from { margin-top: 2px; }
-  .box.from .name { font-size: 10px; font-weight: 700; margin-top: 2px; }
+  .box.from .name { font-size: 12px; font-weight: 700; margin-top: 2px; }
   .box.to { border: 1.5px solid #12182A; padding: 8px 9px; margin-top: 2px; flex: 1; }
-  .box.to .name { font-size: 15px; font-weight: 700; margin-top: 4px; }
-  .box.to .addr { font-size: 10.5px; margin-top: 4px; line-height: 1.4; }
-  .line { font-size: 9px; margin-top: 2px; }
-  .box.to .line { font-size: 10.5px; margin-top: 4px; }
+  .box.to .name { font-size: 16px; font-weight: 700; margin-top: 4px; }
+  .box.to .addr { font-size: 12px; margin-top: 4px; line-height: 1.4; }
+  .line { font-size: 11px; margin-top: 2px; }
+  .box.to .line { font-size: 12px; margin-top: 4px; }
   .notes { border-top: 1px solid #E4E1D9; padding-top: 6px; }
-  .notes p { font-size: 9px; white-space: pre-wrap; margin: 2px 0 0; }
+  .notes p { font-size: 11px; white-space: pre-wrap; margin: 2px 0 0; }
 `
