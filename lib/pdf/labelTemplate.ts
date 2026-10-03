@@ -110,19 +110,19 @@ const labelCss = `
   .page { width: 210mm; min-height: 297mm; padding: 10mm; }
   .quadrant { width: 105mm; height: 148.5mm; padding: 6mm; display: flex; flex-direction: column; gap: 6px; border: 1px dashed #B8B2A3; }
   .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #12182A; padding-bottom: 6px; }
-  .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 16px; font-weight: 600; }
-  .muted { color: #5B6472; font-size: 11px; margin-top: 2px; }
+  .brand { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; font-size: 19px; font-weight: 600; }
+  .muted { color: #5B6472; font-size: 14px; margin-top: 2px; }
   .order-meta { text-align: right; }
-  .order-num { font-size: 13px; font-weight: 700; }
-  .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5B6472; }
+  .order-num { font-size: 16px; font-weight: 700; }
+  .label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5B6472; }
   .box { border: 1px solid #E4E1D9; border-radius: 6px; padding: 6px 8px; }
   .box.from { margin-top: 2px; }
-  .box.from .name { font-size: 12px; font-weight: 700; margin-top: 2px; }
+  .box.from .name { font-size: 15px; font-weight: 700; margin-top: 2px; }
   .box.to { border: 1.5px solid #12182A; padding: 8px 9px; margin-top: 2px; flex: 1; }
-  .box.to .name { font-size: 16px; font-weight: 700; margin-top: 4px; }
-  .box.to .addr { font-size: 12px; margin-top: 4px; line-height: 1.4; }
-  .line { font-size: 11px; margin-top: 2px; }
-  .box.to .line { font-size: 12px; margin-top: 4px; }
+  .box.to .name { font-size: 19px; font-weight: 700; margin-top: 4px; }
+  .box.to .addr { font-size: 15px; margin-top: 4px; line-height: 1.4; }
+  .line { font-size: 14px; margin-top: 2px; }
+  .box.to .line { font-size: 15px; margin-top: 4px; }
   .notes { border-top: 1px solid #E4E1D9; padding-top: 6px; }
-  .notes p { font-size: 11px; white-space: pre-wrap; margin: 2px 0 0; }
+  .notes p { font-size: 14px; white-space: pre-wrap; margin: 2px 0 0; }
 `
